@@ -11,7 +11,7 @@ from pcd.io import IO
 class PointCloudVisualizer:
     def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
     
-    def __init__(self, app, cfg: EasyDict, io: IO, callbacks: dict = {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}):
+    def __init__(self, app, cfg: EasyDict, io: IO, callbacks: dict = get_callbacks_dict()):
         # set vars
         self.__set_vars__(app, cfg, io, callbacks)
         # create visualizer
@@ -47,12 +47,12 @@ class PointCloudVisualizer:
         self.viz.clear_geometries()
         # add coordinate frame
         coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
-        self.viz.add_geometry(coordinate_frame, reset_bounding_box=reset_bounding_box)
+        self.add_geometry('coordinate_frame', coordinate_frame, reset_bounding_box=reset_bounding_box)
 
         # add range bounds
         bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg.data.range[0:3], self.cfg.data.range[3:6])
         bound.color = self.cfg.visualize.bound_color
-        self.viz.add_geometry(bound, reset_bounding_box=reset_bounding_box)
+        self.add_geometry('bound', bound, reset_bounding_box=reset_bounding_box)
         
         # global point cloud
         self.point_cloud = create_pcd(np.zeros((1000, 4)))
