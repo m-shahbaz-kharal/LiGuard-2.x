@@ -119,7 +119,7 @@ class BaseConfiguration:
                     sub_container = gui.Horiz()
                     sub_container.add_child(gui.Label(label_text + ":"))
                     global_key = ".".join(parent_keys + [key])
-                    G[global_key] = {'view': gui.CheckBox(), 'type': type(item[key])}
+                    G[global_key] = {'view': gui.Checkbox(key), 'type': type(item[key])}
                     G[global_key].view.checked = item[key]
                     sub_container.add_child(G[global_key].view)
                     container.add_child(sub_container)
