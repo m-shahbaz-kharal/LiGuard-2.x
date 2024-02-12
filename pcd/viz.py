@@ -6,12 +6,13 @@ import numpy as np
 import threading
 
 from pcd.utils import create_pcd
-from pcd.io import IO
+from pcd.file_io import FileIO
+from pcd.sensor_io import SensorIO
 
 class PointCloudVisualizer:
     def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
     
-    def __init__(self, app, cfg: EasyDict, io: IO, callbacks: dict = get_callbacks_dict()):
+    def __init__(self, app, cfg: EasyDict, io: [FileIO, SensorIO], callbacks: dict = get_callbacks_dict()):
         # set vars
         self.__set_vars__(app, cfg, io, callbacks)
         # create visualizer
