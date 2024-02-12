@@ -1,6 +1,12 @@
 # This configuration file can be used across entire LiGuard suite.
 
 data: # dataset configurations
+    streaming: # allows live streaming from sensor
+        enabled: False # set True to stream point clouds from sensor
+        sensor_hostname: 'localhost' # sensor ip address or hostname
+        sensor_manufacturer: 'Ouster' # sensor manufacturer
+        sensor_model: 'OS1' # sensor model
+        sensor_serial_number: '122204001078' # sensor serial number
     path: /mnt/d/work/urbanity/hands_on/experiments/liguard-2.0/data # base path, path/points => point clouds, path/output => output labels
     type: '.npy' # can be .bin or .npy
     label_type: 'kitti' # can be kitti, ips, lumpi

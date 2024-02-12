@@ -1,7 +1,8 @@
 import open3d.visualization.gui as gui
 
 from config.config_gui import BaseConfiguration
-from pcd.io import IO as PCD_IO
+from pcd.file_io import FileIO as PCD_IO
+from pcd.sensor_io import SensorIO as PCD_Sensor_IO
 from pcd.viz import PointCloudVisualizer
 
 class LiGuard:
@@ -11,6 +12,7 @@ class LiGuard:
         
         self.config = BaseConfiguration(self.app)
         self.pcd_io = None
+        self.sensor_io = None
         self.visualizer = None
         
         self.callbacks = dict()
@@ -32,15 +34,19 @@ class LiGuard:
     def reset(self, cfg):
         if self.pcd_io != None:
             self.pcd_io.close()
-            self.pcd_io = PCD_IO(cfg)
+            if cfg.data.streaming.enabled: self.pcd_io = PCD_Sensor_IO(cfg)
+            else: self.pcd_io = PCD_IO(cfg)
         else:
-            self.pcd_io = PCD_IO(cfg)
+            if cfg.data.streaming.enabled: self.pcd_io = PCD_Sensor_IO(cfg)
+            else: self.pcd_io = PCD_IO(cfg)
+            
         if self.visualizer != None: self.visualizer.reset(cfg, self.pcd_io, self.callbacks['visualizer'])
         else:
             self.visualizer = PointCloudVisualizer(self.app, cfg, self.pcd_io)
             self.visualizer.start()
             
     def quit(self, cfg):
+        if self.pcd_io != None: self.pcd_io.close()
         if self.visualizer != None: self.visualizer.close()
         self.app.quit()
         
