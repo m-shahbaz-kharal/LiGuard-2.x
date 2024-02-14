@@ -5,9 +5,14 @@ import time
 import numpy as np
 import threading
 
-from pcd.utils import create_pcd
-from pcd.file_io import FileIO
-from pcd.sensor_io import SensorIO
+if __name__ == "__main__":
+    from utils import create_pcd
+    from file_io import FileIO
+    from sensor_io import SensorIO
+else:
+    from pcd.utils import create_pcd
+    from pcd.file_io import FileIO
+    from pcd.sensor_io import SensorIO
 
 class PointCloudVisualizer:
     def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
@@ -105,3 +110,38 @@ class PointCloudVisualizer:
     def __key_space__(self, viz):
         self.is_playing = not self.is_playing
         for callback in self.callbacks['key_space']: callback()
+        
+if __name__ == "__main__":
+    cfg = EasyDict({
+        'data': {
+            'range': [-10, -10, -10, 10, 10, 10]
+        },
+        'visualize': {
+            'point_size': 1,
+            'bound_color': [0, 0, 1],
+            'space_color': [0, 0, 0]
+        },
+        'sensors': { # lidar and camera configurations
+            'lidar': {
+                'enabled': False, # set True to stream point clouds from sensor
+                'hostname': '192.168.1.12', # sensor ip address or hostname
+                'manufacturer': 'Ouster', # sensor manufacturer
+                'model': 'OS1-64', # sensor model
+                'serial_number': '122204001078' # sensor serial number
+            }
+        }
+    })
+    sensor_io = SensorIO(cfg)
+    app = o3d.visualization.gui.Application.instance
+    pcd_visualizer = PointCloudVisualizer(app, cfg, sensor_io)
+    running = threading.Event()
+    running.set()
+    pcd_visualizer.viz.register_key_callback(ord('Q'), lambda viz: running.clear())
+    pcd_viz_begin_fn, pcd_viz_loop_fn, pcd_viz_end_fn =  pcd_visualizer.get_main_functions()
+    pcd_viz_begin_fn()
+    while running.is_set():
+        pcd_viz_loop_fn()
+        time.sleep(0.01)
+    pcd_viz_end_fn()
+    sensor_io.close()
+    print("Done.")
