@@ -18,26 +18,6 @@ class Handler:
         self.camera = camera_list.GetBySerial(self.serial_no)
         self.camera.Init()
         
-        # set it to continuous 
-        nodemap = self.camera.GetNodeMap()
-        node_acquisition_mode = pyspin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
-        node_acquisition_mode_continuous = node_acquisition_mode.GetEntryByName('Continuous')
-        acquisition_mode_continuous = node_acquisition_mode_continuous.GetValue()
-        node_acquisition_mode.SetIntValue(acquisition_mode_continuous)
-        
-        # & latest frame only mode
-        sNodemap = self.camera.GetTLStreamNodeMap()
-        node_bufferhandling_mode = pyspin.CEnumerationPtr(sNodemap.GetNode('StreamBufferHandlingMode'))
-        node_newestonly = node_bufferhandling_mode.GetEntryByName('NewestOnly')
-        node_newestonly_mode = node_newestonly.GetValue()
-        node_bufferhandling_mode.SetIntValue(node_newestonly_mode)
-        
-        # set to BGR8 pixel format
-        node_pixel_format = pyspin.CEnumerationPtr(nodemap.GetNode('PixelFormat'))
-        node_bgr8 = node_pixel_format.GetEntryByName('BGR8')
-        pixel_format_bgr8 = node_bgr8.GetValue()
-        node_pixel_format.SetIntValue(pixel_format_bgr8)
-        
         # start the camera
         self.camera.BeginAcquisition()
         
