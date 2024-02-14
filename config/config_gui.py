@@ -48,8 +48,8 @@ class BaseConfiguration:
         # -- set callbacks
         self.new_config_button.set_on_clicked(self.__new_config__)
         self.open_config_button.set_on_clicked(self.__open_config__)
-        self.apply_and_save_config_button.set_on_clicked(self.__apply_and_apply_and_save_config__)
-        self.apply_and_save_as_config_button.set_on_clicked(self.__apply_and_apply_and_save_as_config__)
+        self.apply_and_save_config_button.set_on_clicked(self.__apply_and_save_config__)
+        self.apply_and_save_as_config_button.set_on_clicked(self.__apply_and_save_as_config__)
         self.apply_only_config_button.set_on_clicked(self.__apply_only_config__)
         # -- add to button container
         button_container.add_stretch()
@@ -70,8 +70,7 @@ class BaseConfiguration:
         # add to main window
         self.mwin.add_child(self.base_container)
         
-    def set_callbacks(self, callbacks):
-        self.callbacks = callbacks
+    def update_callbacks(self, callbacks): self.callbacks = callbacks
         
     def load_config(self, cfg_path):
         with open(cfg_path) as f: cfg = yaml.safe_load(f)
@@ -181,7 +180,7 @@ class BaseConfiguration:
         
         for callback in self.callbacks['open_config']: callback(self.cfg)
     
-    def __apply_and_apply_and_save_config__(self):
+    def __apply_and_save_config__(self):
         try:
             self.update_cfg_from_gui(self.cfg, ['cfg'])
             self.apply_and_save_config(self.cfg, self.config_file_path_textedit.text_value)
@@ -192,7 +191,7 @@ class BaseConfiguration:
             self.__close_issue_dialog__()
         for callback in self.callbacks['apply_and_save_config']: callback(self.cfg)
             
-    def __apply_and_apply_and_save_as_config__(self):
+    def __apply_and_save_as_config__(self):
         def save_cfg_and_close_dialog(cfg, cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
             self.update_cfg_from_gui(self.cfg, ['cfg'])
