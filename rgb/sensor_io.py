@@ -23,7 +23,7 @@ class SensorIO:
     def __get_item__(self, idx):
         if idx > self.idx:
             img_bgr = next(self.reader)
-            self.img_rgb = img_bgr
+            self.img_rgb = img_bgr[:,:,::-1].copy()
             self.idx = idx
         return self.img_rgb
         
