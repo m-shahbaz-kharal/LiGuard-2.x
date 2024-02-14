@@ -7,9 +7,9 @@ supported_models = ['os1']
 
 class SensorIO:
     def __init__(self, cfg: EasyDict):
-        self.manufacturer = cfg.data.streaming.sensor_manufacturer.lower()
-        self.model = cfg.data.streaming.sensor_model.lower()
-        self.serial_no = cfg.data.streaming.sensor_serial_number
+        self.manufacturer = cfg.sensors.lidar.sensor_manufacturer.lower()
+        self.model = cfg.sensors.lidar.sensor_model.lower()
+        self.serial_no = cfg.sensors.lidar.sensor_serial_number
         
         if self.manufacturer not in supported_manufacturers: raise NotImplementedError("Manufacturer not supported. Supported manufacturers: " + ', '.join(supported_manufacturers) + ".")
         if self.model not in supported_models: raise NotImplementedError("Model not supported. Supported models: " + ', '.join(supported_models) + ".")

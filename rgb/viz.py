@@ -5,21 +5,17 @@ import time
 import numpy as np
 import threading
 
-from pcd.utils import create_pcd
-from pcd.file_io import FileIO
-from pcd.sensor_io import SensorIO
+from rgb.sensor_io import SensorIO
 
-class PointCloudVisualizer:
+class ImageVisualizer:
     def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
     
-    def __init__(self, app, cfg: EasyDict, io: [FileIO, SensorIO], callbacks: dict = get_callbacks_dict()):
+    def __init__(self, app, cfg: EasyDict, io: SensorIO, callbacks: dict = get_callbacks_dict()):
         # set vars
         self.__set_vars__(app, cfg, io, callbacks)
         # create visualizer
         self.viz = o3d.visualization.VisualizerWithKeyCallback()
-        self.viz.create_window("PointCloud Feed", width=1440, height=1080, left=480, top=30)
-        # set rendering options
-        self.__set_render_options(cfg)
+        self.viz.create_window("Image Feed", width=int(1440/4), height=int(1080/4), left=480 - int(1440/4), top=30)
         # key callbacks
         self.viz.register_key_callback(262, self.__key_right_arrow__) # right arrow key
         self.viz.register_key_callback(263, self.__key_left_arrow__) # left arrow key
@@ -40,27 +36,11 @@ class PointCloudVisualizer:
         
     def update_callbacks(self, callbacks): self.callbacks = callbacks
         
-    def __set_render_options(self, cfg):
-        render_options = self.viz.get_render_option()
-        render_options.point_size = cfg.visualize.point_size
-        render_options.background_color = cfg.visualize.space_color
-        
     def __init_default_geoms__(self, reset_bounding_box=True):
         self.viz.clear_geometries()
-        # status text
-        status_text = o3d.geometry.OrientedBoundingBox()
-        # add coordinate frame
-        coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
-        self.add_geometry('coordinate_frame', coordinate_frame, reset_bounding_box=reset_bounding_box)
-
-        # add range bounds
-        bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg.data.range[0:3], self.cfg.data.range[3:6])
-        bound.color = self.cfg.visualize.bound_color
-        self.add_geometry('bound', bound, reset_bounding_box=reset_bounding_box)
-        
         # global point cloud
-        self.point_cloud = create_pcd(np.zeros((1000, 4)))
-        self.add_geometry('point_cloud', self.point_cloud, reset_bounding_box=reset_bounding_box)
+        self.img = o3d.geometry.Image(np.zeros((1080, 1440, 3), dtype=np.uint8))
+        self.add_geometry('image', self.img, reset_bounding_box=reset_bounding_box)
         
     def add_geometry(self, name, geom, reset_bounding_box=True):
         if name in self.geoms: self.viz.remove_geometry(self.geoms[name], reset_bounding_box=False)
@@ -72,14 +52,13 @@ class PointCloudVisualizer:
         
     def reset(self, cfg, io, callbacks):
         self.__set_vars__(self.app, cfg, io, callbacks)
-        self.__set_render_options(cfg)
         self.__init_default_geoms__(False)
         
     def __process_single_frame__(self):
         if self.is_playing and self.index < len(self.io) - 1: self.index += 1
-        pcd = self.io.__get_item__(self.index)
-        self.point_cloud.points = o3d.utility.Vector3dVector(pcd[:, 0:3])
-        self.update_geometry('point_cloud', self.point_cloud)
+        img = self.io.__get_item__(self.index)
+        self.img = o3d.geometry.Image(img)
+        self.add_geometry('image', self.img)
     
     def get_main_functions(self):
         def begin_fn(): self.running = True

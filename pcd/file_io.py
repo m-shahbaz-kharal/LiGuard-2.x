@@ -8,7 +8,7 @@ import threading, time
 class FileIO:
     def __init__(self, cfg: EasyDict):
         self.pcd_dir = os.path.join(cfg.data.path, 'points')
-        self.pcd_type = cfg.data.type
+        self.pcd_type = cfg.data.pcd_type
         self.pcd_count = cfg.data.size
         files = glob.glob(os.path.join(self.pcd_dir, '*' + self.pcd_type))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
