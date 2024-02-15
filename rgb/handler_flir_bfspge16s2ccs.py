@@ -25,7 +25,7 @@ class Handler:
             
     def __get__reader__(self):
         while True:
-            image_result = self.camera.GetNextImage(1000) # 1000 ms timeout
+            image_result = self.camera.GetNextImage(10) # 10 ms timeout
             if image_result.IsIncomplete(): print('An incomplete image is received. Dropping ...')
             else:
                 img_np = image_result.GetNDArray()
