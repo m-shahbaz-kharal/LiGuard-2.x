@@ -5,6 +5,7 @@ from config.config_gui import BaseConfiguration
 from pcd.file_io import FileIO as PCD_File_IO
 from pcd.sensor_io import SensorIO as PCD_Sensor_IO
 from pcd.viz import PointCloudVisualizer
+from pcd.utils import colorize_pcd
 
 from rgb.sensor_io import SensorIO as RGB_Sensor_IO
 from rgb.viz import ImageVisualizer
@@ -77,6 +78,7 @@ class LiGuard:
         while self.is_running.is_set():
             pcd_viz_loop_fn()
             rgb_viz_loop_fn()
+            colorize_pcd(self.pcd_visualizer.geoms['point_cloud'], self.rgb_visualizer.img_np, self.config.cfg.sensors.camera.camera_matrix, self.config.cfg.sensors.camera.distortion_coeffs, self.config.cfg.sensors.camera.T_lidar_camera)
             time.sleep(cfg.debug.asyncio_sleep)
         pcd_viz_end_fn()
         rgb_viz_end_fn()
