@@ -15,7 +15,7 @@ else:
     from pcd.sensor_io import SensorIO
 
 class PointCloudVisualizer:
-    def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
+    def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': [], 'preprocess_geoms': [], 'postprocess_geoms': []}
     
     def __init__(self, app, cfg: EasyDict, io: [FileIO, SensorIO], callbacks: dict = get_callbacks_dict()):
         # set vars
@@ -81,10 +81,13 @@ class PointCloudVisualizer:
         self.__init_default_geoms__(False)
         
     def __process_single_frame__(self):
+        for callback in self.callbacks['preprocess_geoms']: callback(self.index, self.geoms)
         if self.is_playing and self.index < len(self.io) - 1: self.index += 1
-        pcd = self.io.__get_item__(self.index)
-        self.point_cloud.points = o3d.utility.Vector3dVector(pcd[:, 0:3])
+        self.pcd_np = self.io.__get_item__(self.index)
+        self.point_cloud.points = o3d.utility.Vector3dVector(self.pcd_np[:, 0:3])
         self.update_geometry('point_cloud', self.point_cloud)
+        for callback in self.callbacks['postprocess_geoms']: callback(self.index, self.geoms)
+
     
     def get_main_functions(self):
         def begin_fn(): self.running = True

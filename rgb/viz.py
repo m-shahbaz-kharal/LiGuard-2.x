@@ -11,7 +11,7 @@ else:
     from rgb.sensor_io import SensorIO
 
 class ImageVisualizer:
-    def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
+    def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': [], 'preprocess_geoms': [], 'postprocess_geoms': []}
     
     def __init__(self, app, cfg: EasyDict, io: SensorIO, callbacks: dict = get_callbacks_dict()):
         # set vars
@@ -58,10 +58,12 @@ class ImageVisualizer:
         self.__init_default_geoms__(False)
         
     def __process_single_frame__(self):
+        for callback in self.callbacks['preprocess_geoms']: callback(self.index, self.geoms)
         if self.is_playing and self.index < len(self.io) - 1: self.index += 1
-        img = self.io.__get_item__(self.index)
-        self.img = o3d.geometry.Image(img)
+        self.img_np = self.io.__get_item__(self.index)
+        self.img = o3d.geometry.Image(self.img_np)
         self.add_geometry('image', self.img)
+        for callback in self.callbacks['postprocess_geoms']: callback(self.index, self.geoms)
     
     def get_main_functions(self):
         def begin_fn(): self.running = True
