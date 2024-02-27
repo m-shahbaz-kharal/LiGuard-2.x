@@ -27,7 +27,7 @@ class FileIO:
     def __read_npy__(self, file_abs_path: str):
         return np.load(file_abs_path)
 
-    def __read_ply__(self, file_abs_path: str):
+    def __read_ply_or_pcd__(self, file_abs_path: str):
         points = np.asarray(o3d.io.read_point_cloud(file_abs_path).points, dtype=np.float32)
         points = np.hstack((points, np.ones((points.shape[0], 1), dtype=np.float32)))
         return points
@@ -35,7 +35,8 @@ class FileIO:
     def get_reader_by_type(self, pcd_type: str):
         if pcd_type == '.bin': return self.__read_bin__
         elif pcd_type == '.npy': return self.__read_npy__
-        elif pcd_type == '.ply': return self.__read_ply__
+        elif pcd_type == '.ply': return self.__read_ply_or_pcd__
+        elif pcd_type == '.pcd': return self.__read_ply_or_pcd__
         else: raise NotImplementedError()
         
     def get_abs_path(self, idx: int):
