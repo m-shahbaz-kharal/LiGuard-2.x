@@ -1,11 +1,11 @@
 import open3d.visualization.gui as gui
 
-from config.config_gui import BaseConfiguration
+from config.gui import BaseConfiguration as BaseConfigurationGUI
 
 from pcd.file_io import FileIO as PCD_File_IO
 from pcd.sensor_io import SensorIO as PCD_Sensor_IO
 from pcd.viz import PointCloudVisualizer
-from pcd.utils import colorize_pcd
+from pcd.proc.utils import project_img_to_pcd
 
 from rgb.file_io import FileIO as RGB_File_IO
 from rgb.sensor_io import SensorIO as RGB_Sensor_IO
@@ -18,7 +18,7 @@ class LiGuard:
         self.app = gui.Application.instance
         self.app.initialize()
         
-        self.config = BaseConfiguration(self.app)
+        self.config = BaseConfigurationGUI(self.app)
         
         self.pcd_io = None
         self.pcd_visualizer = None
@@ -47,6 +47,7 @@ class LiGuard:
         
     def reset(self, cfg):
         self.is_running.clear()
+        
         if self.pcd_io != None: self.pcd_io.close()
         if cfg.sensors.lidar.enabled: self.pcd_io = PCD_Sensor_IO(cfg)
         else: self.pcd_io = PCD_File_IO(cfg)
@@ -79,7 +80,7 @@ class LiGuard:
         while self.is_running.is_set():
             pcd_viz_loop_fn()
             rgb_viz_loop_fn()
-            colorize_pcd(self.pcd_visualizer.geoms['point_cloud'], self.rgb_visualizer.img_np, self.config.cfg.sensors.camera.camera_matrix, self.config.cfg.sensors.camera.distortion_coeffs, self.config.cfg.sensors.camera.T_lidar_camera)
+            project_img_to_pcd(self.pcd_visualizer.geoms['point_cloud'], self.rgb_visualizer.img_np, self.config.cfg.sensors.camera.camera_matrix, self.config.cfg.sensors.camera.distortion_coeffs, self.config.cfg.sensors.camera.T_lidar_camera)
             time.sleep(cfg.debug.asyncio_sleep)
         pcd_viz_end_fn()
         rgb_viz_end_fn()
@@ -93,5 +94,4 @@ class LiGuard:
 def main():
     liguard = LiGuard()
     
-if __name__ == "__main__":
-    main()
+main()
