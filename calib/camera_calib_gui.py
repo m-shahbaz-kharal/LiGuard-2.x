@@ -240,6 +240,5 @@ def main():
     calib_gui.__set_callbacks__()
     
     app.run()
-    
-if __name__ == "__main__":
-    main()
+
+main()

@@ -5,10 +5,7 @@ import time
 import numpy as np
 import threading
 
-if __name__ == '__main__':
-    from sensor_io import SensorIO
-else:
-    from rgb.sensor_io import SensorIO
+from rgb.sensor_io import SensorIO
 
 class ImageVisualizer:
     def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': [], 'preprocess_geoms': [], 'postprocess_geoms': []}
@@ -89,29 +86,3 @@ class ImageVisualizer:
     def __key_space__(self, viz):
         self.is_playing = not self.is_playing
         for callback in self.callbacks['key_space']: callback()
-        
-if __name__ == "__main__":
-    cfg = EasyDict({
-        'sensors': {
-            'camera': {
-                'hostname': 'localhost',
-                'manufacturer': 'Flir',
-                'model': 'BFS-PGE-16S2C-CS',
-                'serial_number': '23422874'
-            }
-        }
-    })
-    sensor_io = SensorIO(cfg)
-    app = o3d.visualization.gui.Application.instance
-    img_visualizer = ImageVisualizer(app, cfg, sensor_io)
-    running = threading.Event()
-    running.set()
-    img_visualizer.viz.register_key_callback(ord('Q'), lambda viz: running.clear())
-    img_viz_begin_fn, img_viz_loop_fn, img_viz_end_fn =  img_visualizer.get_main_functions()
-    img_viz_begin_fn()
-    while running.is_set():
-        img_viz_loop_fn()
-        time.sleep(0.01)
-    img_viz_end_fn()
-    sensor_io.close()
-    print("Done.")

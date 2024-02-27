@@ -30,27 +30,5 @@ class SensorIO:
     def __len__(self): return 1000000 # a large number
     
     def close(self): self.handle.close()
-
-if __name__ == "__main__":
-    cfg = EasyDict({
-        'sensors': {
-            'camera': {
-                'hostname': 'localhost',
-                'manufacturer': 'Flir',
-                'model': 'BFS-PGE-16S2C-CS',
-                'serial_number': '23422874'
-            }
-        }
-    })
-    sensor_io = SensorIO(cfg)
-    import open3d as o3d
-    viz = o3d.visualization.Visualizer()
-    for i in range(10):
-        img = sensor_io[i]
-        img_o3d = o3d.geometry.Image(img)
-        print(img.shape)
-        o3d.visualization.draw_geometries([img_o3d])
-    sensor_io.close()
-    print("Done.")
     
     

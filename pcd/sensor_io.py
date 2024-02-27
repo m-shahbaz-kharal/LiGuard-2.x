@@ -31,24 +31,3 @@ class SensorIO:
     def __len__(self): return 1000000 # a large number
     
     def close(self): self.handle.close()
-
-if __name__ == "__main__":
-    import time
-    cfg = EasyDict({
-        'sensors': {
-            'lidar': {
-                'manufacturer': 'ouster',
-                'model': 'os1-64',
-                'serial_number': '122204001078',
-                'hostname': '192.168.1.12'
-            }
-        }
-    })
-    sensor_io = SensorIO(cfg)
-    for i in range(100):
-        tick = time.time()
-        pcd = sensor_io[i]
-        tock = time.time()
-        print('shape:', pcd.shape, 'capture time:', tock - tick)
-    sensor_io.close()
-    print("Done.")
