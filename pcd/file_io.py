@@ -50,7 +50,7 @@ class FileIO:
         
     def __len__(self): return len(self.files_basenames)
     
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         try:
             with self.data_lock: return self.data[idx]
         except:

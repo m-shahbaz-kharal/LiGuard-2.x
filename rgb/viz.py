@@ -60,7 +60,7 @@ class ImageVisualizer:
     def __process_single_frame__(self):
         for callback in self.callbacks['preprocess_geoms']: callback(self.index, self.geoms)
         if self.is_playing and self.index < len(self.io) - 1: self.index += 1
-        self.img_np = self.io.__get_item__(self.index)
+        self.img_np = self.io[self.index]
         self.img = o3d.geometry.Image(self.img_np)
         self.add_geometry('image', self.img)
         for callback in self.callbacks['postprocess_geoms']: callback(self.index, self.geoms)

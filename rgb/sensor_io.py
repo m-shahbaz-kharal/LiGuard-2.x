@@ -20,7 +20,7 @@ class SensorIO:
         self.reader = self.handle.reader
         self.idx = -1
         
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         if idx > self.idx:
             img_bgr = next(self.reader)
             self.img_rgb = img_bgr[:,:,::-1].copy()
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     import open3d as o3d
     viz = o3d.visualization.Visualizer()
     for i in range(10):
-        img = sensor_io.__get_item__(i)
+        img = sensor_io[i]
         img_o3d = o3d.geometry.Image(img)
         print(img.shape)
         o3d.visualization.draw_geometries([img_o3d])

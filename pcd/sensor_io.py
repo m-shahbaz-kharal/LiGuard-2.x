@@ -22,7 +22,7 @@ class SensorIO:
         self.reader = self.handle.reader
         self.idx = -1
         
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         if idx > self.idx:
             self.pcd_intensity_np = next(self.reader)
             self.idx = idx
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     sensor_io = SensorIO(cfg)
     for i in range(100):
         tick = time.time()
-        pcd = sensor_io.__get_item__(i)
+        pcd = sensor_io[i]
         tock = time.time()
         print('shape:', pcd.shape, 'capture time:', tock - tick)
     sensor_io.close()
