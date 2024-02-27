@@ -7,6 +7,7 @@ from pcd.sensor_io import SensorIO as PCD_Sensor_IO
 from pcd.viz import PointCloudVisualizer
 from pcd.utils import colorize_pcd
 
+from rgb.file_io import FileIO as RGB_File_IO
 from rgb.sensor_io import SensorIO as RGB_Sensor_IO
 from rgb.viz import ImageVisualizer
 
@@ -52,7 +53,7 @@ class LiGuard:
         
         if self.rgb_io != None: self.rgb_io.close()
         if cfg.sensors.camera.enabled: self.rgb_io = RGB_Sensor_IO(cfg)
-        else: self.rgb_io = self.rgb_io = RGB_Sensor_IO(cfg) # implement file io and replace this line
+        else: self.rgb_io = self.rgb_io = RGB_File_IO(cfg)
              
         if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg, self.pcd_io, self.callbacks['pcd_visualizer'])
         else: self.pcd_visualizer = PointCloudVisualizer(self.app, cfg, self.pcd_io)
