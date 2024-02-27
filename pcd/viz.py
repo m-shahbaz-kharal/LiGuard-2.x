@@ -1,44 +1,33 @@
 import open3d as o3d
 
 from easydict import EasyDict
-import time
 import numpy as np
-import threading
 
 from pcd.proc.utils import create_pcd
 from pcd.file_io import FileIO
 from pcd.sensor_io import SensorIO
 
 class PointCloudVisualizer:
-    def get_callbacks_dict(): return {'key_right_arrow': [], 'key_left_arrow': [], 'key_space': []}
-    
-    def __init__(self, app, cfg: EasyDict, io: [FileIO, SensorIO], callbacks: dict = get_callbacks_dict()):
+    def __init__(self, app, cfg: EasyDict, io):
         # set vars
-        self.__set_vars__(app, cfg, io, callbacks)
+        self.__set_vars__(app, cfg, io)
         # create visualizer
-        self.viz = o3d.visualization.VisualizerWithKeyCallback()
+        self.viz = o3d.visualization.Visualizer()
         self.viz.create_window("PointCloud Feed", width=1440, height=1080, left=480, top=30)
         # set rendering options
         self.__set_render_options(cfg)
-        # key callbacks
-        self.viz.register_key_callback(262, self.__key_right_arrow__) # right arrow key
-        self.viz.register_key_callback(263, self.__key_left_arrow__) # left arrow key
-        self.viz.register_key_callback(32, self.__key_space__) # space bar key
         # add default geometries
         self.__init_default_geoms__()
 
-    def __set_vars__(self, app, cfg, io, callbacks):
+    def __set_vars__(self, app, cfg, io):
         self.app = app
         self.cfg = cfg
         self.io = io
-        self.callbacks = callbacks
         
         self.geoms = dict()
         self.running = False
         self.is_playing = False
         self.index = 0
-        
-    def update_callbacks(self, callbacks): self.callbacks = callbacks
         
     def __set_render_options(self, cfg):
         render_options = self.viz.get_render_option()
@@ -70,8 +59,8 @@ class PointCloudVisualizer:
     def update_geometry(self, name, geom):
         if name in self.geoms: self.viz.update_geometry(geom)
         
-    def reset(self, cfg, io, callbacks):
-        self.__set_vars__(self.app, cfg, io, callbacks)
+    def reset(self, cfg, io):
+        self.__set_vars__(self.app, cfg, io)
         self.__set_render_options(cfg)
         self.__init_default_geoms__(False)
         
@@ -92,17 +81,20 @@ class PointCloudVisualizer:
             self.running = False
             self.viz.destroy_window()
         return begin_fn, loop_fn, end_fn
+    
+    def key_handler(self, key_event): # key_event: keyboard.KeyboardEvent
+        if key_event.event_type == 'down':
+            if key_event.name == 'left': self.__key_left_arrow__()
+            elif key_event.name == 'right': self.__key_right_arrow__()
+            elif key_event.name == 'space': self.__key_space__()
             
-    def __key_right_arrow__(self, viz):
+    def __key_right_arrow__(self):
         self.is_playing = False
         if self.index < len(self.io) - 1: self.index += 1
-        for callback in self.callbacks['key_right_arrow']: callback()
         
-    def __key_left_arrow__(self, viz):
+    def __key_left_arrow__(self):
         self.is_playing = False
         if self.index > 0: self.index -= 1
-        for callback in self.callbacks['key_left_arrow']: callback()
         
-    def __key_space__(self, viz):
+    def __key_space__(self):
         self.is_playing = not self.is_playing
-        for callback in self.callbacks['key_space']: callback()
