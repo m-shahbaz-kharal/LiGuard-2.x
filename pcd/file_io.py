@@ -5,6 +5,8 @@ import os
 import glob
 import threading, time
 
+supported_file_types = ['.bin', '.npy', '.ply', '.pcd']
+
 class FileIO:
     def __init__(self, cfg: EasyDict):
         self.pcd_dir = os.path.join(cfg.data.path, 'points')
@@ -14,7 +16,9 @@ class FileIO:
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
         self.files_basenames = file_basenames[:self.pcd_count]
-        self.reader = self.get_reader_by_type(self.pcd_type)
+        
+        if self.pcd_type not in supported_file_types: raise NotImplementedError("File type not supported. Supported file types: " + ', '.join(supported_file_types) + ".")
+        self.reader = getattr(self, '__read_' + self.pcd_type[1:] + '__')
         
         self.data_lock = threading.Lock()
         self.data = []
@@ -27,17 +31,15 @@ class FileIO:
     def __read_npy__(self, file_abs_path: str):
         return np.load(file_abs_path)
 
-    def __read_ply_or_pcd__(self, file_abs_path: str):
+    def __read_ply__(self, file_abs_path: str):
         points = np.asarray(o3d.io.read_point_cloud(file_abs_path).points, dtype=np.float32)
         points = np.hstack((points, np.ones((points.shape[0], 1), dtype=np.float32)))
         return points
-
-    def get_reader_by_type(self, pcd_type: str):
-        if pcd_type == '.bin': return self.__read_bin__
-        elif pcd_type == '.npy': return self.__read_npy__
-        elif pcd_type == '.ply': return self.__read_ply_or_pcd__
-        elif pcd_type == '.pcd': return self.__read_ply_or_pcd__
-        else: raise NotImplementedError()
+    
+    def __read_pcd__(self, file_abs_path: str):
+        points = np.asarray(o3d.io.read_point_cloud(file_abs_path).points, dtype=np.float32)
+        points = np.hstack((points, np.ones((points.shape[0], 1), dtype=np.float32)))
+        return points
         
     def get_abs_path(self, idx: int):
         return os.path.join(self.pcd_dir, self.files_basenames[idx] + self.pcd_type)
