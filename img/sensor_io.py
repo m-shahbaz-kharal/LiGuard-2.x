@@ -1,8 +1,8 @@
 from easydict import EasyDict
 import os
 
-supported_manufacturers = [sm.split('_')[1] for sm in os.listdir('rgb') if 'handler' in sm]
-supported_models = [sm.split('_')[2].replace('.py','') for sm in os.listdir('rgb') if 'handler' in sm]
+supported_manufacturers = [sm.split('_')[1] for sm in os.listdir('img') if 'handler' in sm]
+supported_models = [sm.split('_')[2].replace('.py','') for sm in os.listdir('img') if 'handler' in sm]
 
 class SensorIO:
     def __init__(self, cfg: EasyDict):
@@ -15,7 +15,7 @@ class SensorIO:
         
         self.cfg = cfg
         
-        handler = __import__('rgb.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
+        handler = __import__('img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         self.handle = handler(self.cfg)
         self.reader = self.handle.reader
         self.idx = -1
@@ -27,7 +27,7 @@ class SensorIO:
             self.idx = idx
         return self.img_rgb
         
-    def __len__(self): return 1000000 # a large number
+    def __len__(self): return float('inf')
     
     def close(self): self.handle.close()
     
