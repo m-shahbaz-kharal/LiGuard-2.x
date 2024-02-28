@@ -28,6 +28,6 @@ class SensorIO:
             self.idx = idx
         return self.pcd_intensity_np
         
-    def __len__(self): return 1000000 # a large number
+    def __len__(self): return float('inf')
     
     def close(self): self.handle.close()
