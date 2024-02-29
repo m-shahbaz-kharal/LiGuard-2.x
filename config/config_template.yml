@@ -7,8 +7,6 @@ data: # dataset configurations
     lbl_type: 'kitti' # can be kitti, ips, lumpi
     extra_args: None # can be measurement csv path for lumpi
     size: 10 # number of frames to annotate - set 0 to annotate full
-    range: [-5, -5, -5, 5, 5, 5] # the region of interest to crop
-    rotation: [0, 0, 0] # rotation in degrees
 
 sensors: # lidar and camera configurations
     lidar:
@@ -27,56 +25,61 @@ sensors: # lidar and camera configurations
         distortion_coeffs: [-0.368698, 0.042837, -0.002189, -0.000758, 0.000000] # distortion coefficients (D)
         T_lidar_camera: [[-0.00315, 0.00319, 0.99999, -0.17392], [-0.99985, -0.01715, -0.00309, 0.00474], [0.01714, -0.99985, 0.00324, -0.05174], [0.00000, 0.00000, 0.00000, 1.00000]] # 4x4 transformation matrix from camera to lidar
 
-process: # liguard processing configurations
-    background: # background detection configurations
-        selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
-        SimplePlaneModelBasedFilter: # it uses plane model to filter ground points
-            query_size: 1 # only a placeholder, don't change
-            model: [0.0, 0.0, 1.0, 0.0] # ground plane model in form of [a, b, c, d] where ax + by + cz + d = 0
-            threshold: 0.1 # threshold for distance from point to plane
-        SimpleVoxelDensityFilter: # it uses threshold on normalized density over multiple point clouds to filter background voxels
-            query_size: 100 # number of point clouds used for generating filter
-            voxel_size: [0.1, 0.1, 0.1] # voxel size - take care to not set strange sizes
-            threshold: 0.1 # voxels having more density than threshold are considered background voxels
-        D_HistDPPFilter: # Discrete Histogram of Distances-Per-Point
-            pcd_size: 1000 # number of points in point cloud
-            query_size: 10 # number of point clouds used for generating filter
-            total_bins: 100 # number of bins in histogram
-            background_bins: 10 # number of bins in background histogram
-            bin_height_threshold: 0.1 # threshold for background bin height
-            distance_threshold: 0.1 # threshold for distance from point to background bin
+proc: # liguard processing configurations
+    lidar:
+        crop:
+            enabled: True # set True to crop point cloud
+            min_xyz: [-5, -5, -5] # minimum x, y, z
+            max_xyz: [+5, +5, +5] # maximum x, y, z
+    # background: # background detection configurations
+    #     selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
+    #     SimplePlaneModelBasedFilter: # it uses plane model to filter ground points
+    #         query_size: 1 # only a placeholder, don't change
+    #         model: [0.0, 0.0, 1.0, 0.0] # ground plane model in form of [a, b, c, d] where ax + by + cz + d = 0
+    #         threshold: 0.1 # threshold for distance from point to plane
+    #     SimpleVoxelDensityFilter: # it uses threshold on normalized density over multiple point clouds to filter background voxels
+    #         query_size: 100 # number of point clouds used for generating filter
+    #         voxel_size: [0.1, 0.1, 0.1] # voxel size - take care to not set strange sizes
+    #         threshold: 0.1 # voxels having more density than threshold are considered background voxels
+    #     D_HistDPPFilter: # Discrete Histogram of Distances-Per-Point
+    #         pcd_size: 1000 # number of points in point cloud
+    #         query_size: 10 # number of point clouds used for generating filter
+    #         total_bins: 100 # number of bins in histogram
+    #         background_bins: 10 # number of bins in background histogram
+    #         bin_height_threshold: 0.1 # threshold for background bin height
+    #         distance_threshold: 0.1 # threshold for distance from point to background bin
     
-    cluster: # clustering configurations
-        selected: 'DBSCANClusteringAlgo'
-        DBSCANClusteringAlgo: # famous DBSCAN algorithm
-            eps: 0.6 # maximum radius to search
-            min_pts: 4 # minimum number of points to consider a cluster valid
+    # cluster: # clustering configurations
+    #     selected: 'DBSCANClusteringAlgo'
+    #     DBSCANClusteringAlgo: # famous DBSCAN algorithm
+    #         eps: 0.6 # maximum radius to search
+    #         min_pts: 4 # minimum number of points to consider a cluster valid
     
-    bbox: # bbox generation configurations
-        regressor: # regressor configurations
-            selected: 'SimpleBBoxRegressor'
-            SimpleBBoxRegressor: # uses Open3D's AxisAligned or OrientedBoundingBox to regress bboxes from objects' point clouds
-                type: 'Oriented'
-        validator: # bbox validator configurations
-            selected: 'SimpleBBoxValidator'
-            SimpleBBoxValidator: # uses some hardcoded heuristics to filter noisy bboxes
-                min_b: 0.2 # minimum possible bbox base length (lenghtier side is considered base)
-                max_b: 6.0 # maximum possible bbox base length (lenghtier side is considered base)
-                min_h: 0.6 # minimum possible bbox height
-                max_h: 1.8 # maximum possible bbox height
-                max_z_location: -4.0 # maximum location of bbox in z direction
+    # bbox: # bbox generation configurations
+    #     regressor: # regressor configurations
+    #         selected: 'SimpleBBoxRegressor'
+    #         SimpleBBoxRegressor: # uses Open3D's AxisAligned or OrientedBoundingBox to regress bboxes from objects' point clouds
+    #             type: 'Oriented'
+    #     validator: # bbox validator configurations
+    #         selected: 'SimpleBBoxValidator'
+    #         SimpleBBoxValidator: # uses some hardcoded heuristics to filter noisy bboxes
+    #             min_b: 0.2 # minimum possible bbox base length (lenghtier side is considered base)
+    #             max_b: 6.0 # maximum possible bbox base length (lenghtier side is considered base)
+    #             min_h: 0.6 # minimum possible bbox height
+    #             max_h: 1.8 # maximum possible bbox height
+    #             max_z_location: -4.0 # maximum location of bbox in z direction
 
-    classifier: # classification method configuration
-        selected: 'SimpleVolumeBasedClassifier'
-        SimpleSizeBasedClassifier: # a two class classifier that only uses base length and height of the bbox to classify
-            Targets: ['Car', 'Pedestrian'] # classes to be annotated
-            Car: ['base_length', 'height'] # assumption 01: car's base length is more than its height
-            Pedestrian: ['height', 'base_length'] # assumption 02: pedestrian's height is more than its base length
-        SimpleVolumeBasedClassifier: # a mult class classifier that uses volume of the bbox to classify
-            Targets: ['Car', 'Pedestrian', 'Cyclist'] # classes to be annotated
-            Car: [10, 20] # volume range of car bbox
-            Pedestrian: [0.25, 1.5] # volume range of pedestrian bbox
-            Cyclist: [1.75, 4.0] # volume range of cyclist bbox
+    # classifier: # classification method configuration
+    #     selected: 'SimpleVolumeBasedClassifier'
+    #     SimpleSizeBasedClassifier: # a two class classifier that only uses base length and height of the bbox to classify
+    #         Targets: ['Car', 'Pedestrian'] # classes to be annotated
+    #         Car: ['base_length', 'height'] # assumption 01: car's base length is more than its height
+    #         Pedestrian: ['height', 'base_length'] # assumption 02: pedestrian's height is more than its base length
+    #     SimpleVolumeBasedClassifier: # a mult class classifier that uses volume of the bbox to classify
+    #         Targets: ['Car', 'Pedestrian', 'Cyclist'] # classes to be annotated
+    #         Car: [10, 20] # volume range of car bbox
+    #         Pedestrian: [0.25, 1.5] # volume range of pedestrian bbox
+    #         Cyclist: [1.75, 4.0] # volume range of cyclist bbox
 
 
 visualize: # visualization parameters

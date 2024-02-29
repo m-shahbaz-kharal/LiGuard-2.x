@@ -1,6 +1,5 @@
 import open3d as o3d
 import numpy as np
-import cv2
 
 def create_pcd(points: np.ndarray) -> o3d.geometry.PointCloud:
     pcd = o3d.geometry.PointCloud()

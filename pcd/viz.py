@@ -3,7 +3,7 @@ import open3d as o3d
 from easydict import EasyDict
 import numpy as np
 
-from pcd.proc.utils import create_pcd
+from pcd.utils import create_pcd
 
 class PointCloudVisualizer:
     def __init__(self, app, cfg: EasyDict):
@@ -32,7 +32,7 @@ class PointCloudVisualizer:
         self.__add_geometry__('coordinate_frame', coordinate_frame, reset_bounding_box)
 
         # add range bounds
-        bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg.data.range[0:3], self.cfg.data.range[3:6])
+        bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg.proc.lidar.crop.min_xyz, self.cfg.proc.lidar.crop.max_xyz)
         bound.color = self.cfg.visualize.bound_color
         self.__add_geometry__('bound', bound, reset_bounding_box)
         
