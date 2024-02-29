@@ -21,7 +21,7 @@ class LiGuard:
         
         self.config = BaseConfigurationGUI(self.app)
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
-        config_call_backs['apply_only_config'] = [self.reset]
+        config_call_backs['apply_only_config'] = [self.reset, self.start]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         
@@ -73,7 +73,7 @@ class LiGuard:
         if self.img_visualizer != None: self.img_visualizer.reset(cfg)
         else: self.img_visualizer = ImageVisualizer(self.app, cfg)
         
-        # main loop
+    def start(self, cfg):
         with self.lock: self.is_running = True
         while True:
             with self.lock:
