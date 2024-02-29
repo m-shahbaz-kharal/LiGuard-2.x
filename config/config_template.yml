@@ -4,7 +4,7 @@ data: # dataset configurations
     path: D:\datasets\shahbaz\datasets\pedsafe_human_labeled # base path, path/points => point clouds, path/output => output labels
     pcd_type: '.npy' # can be .bin or .npy
     img_type: '.png' # most image types are supported
-    label_type: 'kitti' # can be kitti, ips, lumpi
+    lbl_type: 'kitti' # can be kitti, ips, lumpi
     extra_args: None # can be measurement csv path for lumpi
     size: 10 # number of frames to annotate - set 0 to annotate full
     range: [-5, -5, -5, 5, 5, 5] # the region of interest to crop
