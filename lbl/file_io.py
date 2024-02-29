@@ -6,7 +6,7 @@ import threading
 supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir('lbl') if 'handler' in lbl_handler]
 label_type_to_extension = {'kitti': '.txt', 'nuscenes': '.json'}
 
-class LabelIO:
+class FileIO:
     def __init__(self, cfg: EasyDict):
         self.lbl_dir = os.path.join(cfg.data.path, 'label')
         self.lbl_type = cfg.data.lbl_type
@@ -31,8 +31,8 @@ class LabelIO:
         for idx in range(len(self.files_basenames)):
             if self.stop.is_set(): break
             file_abs_path = self.get_abs_path(idx)
-            xyz_lwh_rxryrz_np = self.reader(file_abs_path)
-            with self.data_lock: self.data.append(xyz_lwh_rxryrz_np)
+            annotation = self.reader(file_abs_path)
+            with self.data_lock: self.data.append(annotation)
         
     def __len__(self): return len(self.files_basenames)
     

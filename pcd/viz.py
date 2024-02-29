@@ -45,7 +45,7 @@ class PointCloudVisualizer:
         
     def __add_geometry__(self, name, geometry, reset_bounding_box):
         if name in self.geometries: self.viz.remove_geometry(self.geometries[name], reset_bounding_box=False)
-        self.geometries[name] = geometry
+        else: self.geometries[name] = geometry
         self.viz.add_geometry(geometry, reset_bounding_box=reset_bounding_box)
         
     def __update_geometry__(self, name, geometry):
@@ -58,7 +58,14 @@ class PointCloudVisualizer:
         self.point_cloud.points = o3d.utility.Vector3dVector(pcd_np[:, 0:3])
         self.__update_geometry__('point_cloud', self.point_cloud)
         
-    def add_bbox(self, bbox):
+    def add_bbox(self, label_dict: dict):
+        lidar_bbox_dict = label_dict['lidar_bbox']
+        center = lidar_bbox_dict['xyz_center']
+        extent = lidar_bbox_dict['wlh_extent']
+        rotation_matrix = lidar_bbox_dict['around_z_rotation_matrix']
+        color = lidar_bbox_dict['rgb_bbox_color']
+        bbox = o3d.geometry.OrientedBoundingBox(center, rotation_matrix, extent)
+        bbox.color = color
         self.bboxes.append(bbox)
         self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', bbox, False)
         
