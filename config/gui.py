@@ -92,9 +92,8 @@ class BaseConfiguration:
         G = self.generated_config_gui_dict
         if type(item) == EasyDict:
             for key in item.keys():
-                label_text = ' '.join([k.capitalize() for k in key.split('_')])
+                label_text = key
                 if type(item[key]) == EasyDict:
-                    label_text = key[0].upper() + key[1:]
                     collapsable_container = gui.CollapsableVert(label_text, self.em * 0.2, gui.Margins(self.em * margin, self.em * 0.2, self.em * 0.2, self.em * 0.2))
                     self.generate_config_gui_from_cfg(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
                     container.add_child(collapsable_container)
