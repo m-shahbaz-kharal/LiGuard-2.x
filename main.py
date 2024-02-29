@@ -73,6 +73,10 @@ class LiGuard:
         if self.img_visualizer != None: self.img_visualizer.reset(cfg)
         else: self.img_visualizer = ImageVisualizer(self.app, cfg)
         
+        self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.lidar if cfg.proc.lidar[proc].enabled]
+        self.camera_procs = []
+        self.label_procs = [__import__('algo.label', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.label if cfg.proc.label[proc].enabled]
+        
     def start(self, cfg):
         with self.lock: self.is_running = True
         while True:
@@ -83,6 +87,10 @@ class LiGuard:
             pcd_np = self.pcd_io[self.frame_index]
             img_np = self.img_io[self.frame_index]
             lbl_list = self.lbl_io[self.frame_index]
+            
+            for proc in self.lidar_procs: pcd_np = proc(pcd_np, cfg)
+            for proc in self.camera_procs: img_np = proc(img_np, cfg)
+            for proc in self.label_procs: lbl_list = proc(lbl_list, cfg)
             
             self.pcd_visualizer.update_pcd(pcd_np)
             self.pcd_visualizer.clear_bboxes()

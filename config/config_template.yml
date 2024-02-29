@@ -31,6 +31,10 @@ proc: # liguard processing configurations
             enabled: True # set True to crop point cloud
             min_xyz: [-5, -5, -5] # minimum x, y, z
             max_xyz: [+5, +5, +5] # maximum x, y, z
+
+    label:
+        crop_out_of_bound_bboxes: # crop out of bound bboxes
+            enabled: True # set True to crop labels
     # background: # background detection configurations
     #     selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
     #     SimplePlaneModelBasedFilter: # it uses plane model to filter ground points
