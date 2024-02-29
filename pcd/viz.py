@@ -40,17 +40,31 @@ class PointCloudVisualizer:
         self.point_cloud = create_pcd(np.zeros((1000, 4)))
         self.__add_geometry__('point_cloud', self.point_cloud, reset_bounding_box)
         
+        # bboxes
+        self.bboxes = []
+        
     def __add_geometry__(self, name, geometry, reset_bounding_box):
         if name in self.geometries: self.viz.remove_geometry(self.geometries[name], reset_bounding_box=False)
         self.geometries[name] = geometry
         self.viz.add_geometry(geometry, reset_bounding_box=reset_bounding_box)
         
     def __update_geometry__(self, name, geometry):
-        if name in self.geometries: self.viz.update_geometry(geometry)
+        if name in self.geometries:
+            self.viz.update_geometry(geometry)
+            return True
+        return False
         
     def update_pcd(self, pcd_np: np.ndarray):
         self.point_cloud.points = o3d.utility.Vector3dVector(pcd_np[:, 0:3])
         self.__update_geometry__('point_cloud', self.point_cloud)
+        
+    def add_bbox(self, bbox):
+        self.bboxes.append(bbox)
+        self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', bbox, False)
+        
+    def clear_bboxes(self):
+        for bbox in self.bboxes: self.viz.remove_geometry(bbox, False)
+        self.bboxes.clear()
         
     def redraw(self):
         self.viz.poll_events()

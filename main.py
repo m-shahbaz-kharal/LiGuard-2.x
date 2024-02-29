@@ -10,6 +10,8 @@ from img.file_io import FileIO as IMG_File_IO
 from img.sensor_io import SensorIO as IMG_Sensor_IO
 from img.viz import ImageVisualizer
 
+from lbl.label_io import LabelIO as LBL_File_IO
+
 import keyboard, threading, time
 
 class LiGuard:
@@ -28,6 +30,8 @@ class LiGuard:
         
         self.img_io = None
         self.img_visualizer = None
+        
+        self.label_io = None
         
         self.lock = threading.Lock()
         self.is_running = False # if the app is running
@@ -59,6 +63,9 @@ class LiGuard:
         if self.img_io != None: self.img_io.close()
         if cfg.sensors.camera.enabled: self.img_io = IMG_Sensor_IO(cfg)
         else: self.img_io = self.img_io = IMG_File_IO(cfg)
+        
+        if self.label_io != None: self.label_io.close()
+        self.label_io = LBL_File_IO(cfg)
              
         if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
         else: self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
@@ -75,8 +82,11 @@ class LiGuard:
             
             pcd_np = self.pcd_io[self.frame_index]
             img_np = self.img_io[self.frame_index]
+            lbl_list = self.label_io[self.frame_index]
             
             self.pcd_visualizer.update_pcd(pcd_np)
+            self.pcd_visualizer.clear_bboxes()
+            for lbl in lbl_list: self.pcd_visualizer.add_bbox(lbl['lidar_bbox'])
             self.img_visualizer.update_img(img_np)
             
             self.pcd_visualizer.redraw()
