@@ -7,7 +7,7 @@ import threading, time
 
 class FileIO:
     def __init__(self, cfg: EasyDict):
-        self.img_dir = os.path.join(cfg.data.path, 'imgs')
+        self.img_dir = os.path.join(cfg.data.path, 'camera')
         self.img_type = cfg.data.img_type
         self.img_count = cfg.data.size
         files = glob.glob(os.path.join(self.img_dir, '*' + self.img_type))
@@ -21,7 +21,10 @@ class FileIO:
         self.stop = threading.Event()
         threading.Thread(target=self.__async_read_fn__).start()
     
-    def __read_img__(self, file_abs_path: str): return cv2.imread(file_abs_path)
+    def __read_img__(self, file_abs_path: str):
+        img_bgr = cv2.imread(file_abs_path)
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        return img_rgb
         
     def get_abs_path(self, idx: int): return os.path.join(self.img_dir, self.files_basenames[idx] + self.img_type)
         
