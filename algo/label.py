@@ -1,6 +1,7 @@
 import numpy as np
 
-def crop_out_of_bound_bboxes(lbl_list: list, cfg) -> dict:
+def crop_out_of_bound_bboxes(data, cfg) -> dict:
+    lbl_list = data.current_label_list
     min_xyz = cfg.proc.lidar.crop.min_xyz
     max_xyz = cfg.proc.lidar.crop.max_xyz
     output = []
@@ -10,4 +11,4 @@ def crop_out_of_bound_bboxes(lbl_list: list, cfg) -> dict:
         y_condition = np.logical_and(min_xyz[1] <= bbox_center[1], bbox_center[1] <= max_xyz[1])
         z_condition = np.logical_and(min_xyz[2] <= bbox_center[2], bbox_center[2] <= max_xyz[2])
         if x_condition and y_condition and z_condition: output.append(lbl_dict)
-    return output
+    data.current_label_list = output

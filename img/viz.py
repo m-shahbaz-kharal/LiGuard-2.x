@@ -36,11 +36,12 @@ class ImageVisualizer:
     def __update_geometry__(self, name, geometry):
         if name in self.geometries: self.viz.update_geometry(geometry)
         
-    def update_img(self, img_np: np.ndarray):
-        self.img = o3d.geometry.Image(img_np)
+    def update(self, data):
+        self.img = o3d.geometry.Image(data.current_image_numpy)
         self.__add_geometry__('image', self.img, False)
+        for lbl in data.current_label_list: self.__add_bbox__(lbl)
         
-    def add_bbox(self, label_dict: dict):
+    def __add_bbox__(self, label_dict: dict):
         camera_bbox_dict = label_dict['camera_bbox']
         center = camera_bbox_dict['xyz_center']
         w, l, h = camera_bbox_dict['wlh_extent']

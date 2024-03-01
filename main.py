@@ -13,6 +13,7 @@ from img.viz import ImageVisualizer
 from lbl.file_io import FileIO as LBL_File_IO
 
 import keyboard, threading, time
+from easydict import EasyDict
 
 class LiGuard:
     def __init__(self):
@@ -37,6 +38,7 @@ class LiGuard:
         self.is_running = False # if the app is running
         self.is_playing = False # if the frames are playing
         self.frame_index = 0
+        self.data = EasyDict()
         
         keyboard.hook(self.handle_key_event)
         self.app.run()
@@ -76,6 +78,7 @@ class LiGuard:
         self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.lidar if cfg.proc.lidar[proc].enabled]
         self.camera_procs = []
         self.label_procs = [__import__('algo.label', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.label if cfg.proc.label[proc].enabled]
+        self.fusion_procs = [__import__('algo.fusion', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.fusion if cfg.proc.fusion[proc].enabled]
         
     def start(self, cfg):
         with self.lock: self.is_running = True
@@ -84,19 +87,20 @@ class LiGuard:
                 if not self.is_running: break
                 elif self.is_playing and self.frame_index < len(self.pcd_io) - 1: self.frame_index += 1
             
-            pcd_np = self.pcd_io[self.frame_index]
-            img_np = self.img_io[self.frame_index]
-            lbl_list = self.lbl_io[self.frame_index]
+            self.data.current_point_cloud_numpy = self.pcd_io[self.frame_index]
+            self.data.current_image_numpy = self.img_io[self.frame_index]
+            self.data.current_label_list = self.lbl_io[self.frame_index]
             
-            for proc in self.lidar_procs: pcd_np = proc(pcd_np, cfg)
-            for proc in self.camera_procs: img_np = proc(img_np, cfg)
-            for proc in self.label_procs: lbl_list = proc(lbl_list, cfg)
+            for proc in self.lidar_procs: proc(self.data, cfg)
+            for proc in self.camera_procs: proc(self.data, cfg)
+            for proc in self.label_procs: proc(self.data, cfg)
             
-            self.pcd_visualizer.update_points(pcd_np)
-            self.img_visualizer.update_img(img_np)
+            # fusion_input = {'pcd_np': pcd_np, 'img_np': img_np, 'lbl_list': lbl_list}
+            # fusion_output = dict()
+            # for proc in self.fusion_procs: proc(fusion_input, cfg, fusion_output)
             
-            for lbl in lbl_list: self.pcd_visualizer.add_bbox(lbl)
-            for lbl in lbl_list: self.img_visualizer.add_bbox(lbl)
+            self.pcd_visualizer.update(self.data)
+            self.img_visualizer.update(self.data)
             
             self.pcd_visualizer.redraw()
             self.img_visualizer.redraw()

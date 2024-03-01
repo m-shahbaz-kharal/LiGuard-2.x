@@ -54,16 +54,17 @@ class PointCloudVisualizer:
             return True
         return False
         
-    def update_points(self, pcd_np: np.ndarray):
-        self.__clear_bboxes__()
-        self.point_cloud.points = o3d.utility.Vector3dVector(pcd_np[:, 0:3])
+    def update(self, data):
+        self.point_cloud.points = o3d.utility.Vector3dVector(data.current_point_cloud_numpy[:, 0:3])
         self.__update_geometry__('point_cloud', self.point_cloud)
+        self.__clear_bboxes__()
+        for lbl in data.current_label_list: self.__add_bbox__(lbl)
         
     def update_colors(self, pcd_colors: np.ndarray):
         self.point_cloud.colors = o3d.utility.Vector3dVector(pcd_colors)
         self.__update_geometry__('point_cloud', self.point_cloud)
         
-    def add_bbox(self, label_dict: dict):
+    def __add_bbox__(self, label_dict: dict):
         lidar_bbox_dict = label_dict['lidar_bbox']
         center = lidar_bbox_dict['xyz_center']
         extent = lidar_bbox_dict['wlh_extent']
