@@ -92,10 +92,10 @@ class LiGuard:
             for proc in self.camera_procs: img_np = proc(img_np, cfg)
             for proc in self.label_procs: lbl_list = proc(lbl_list, cfg)
             
-            self.pcd_visualizer.update_pcd(pcd_np)
-            self.pcd_visualizer.clear_bboxes()
-            for lbl in lbl_list: self.pcd_visualizer.add_bbox(lbl)
+            self.pcd_visualizer.update_points(pcd_np)
             self.img_visualizer.update_img(img_np)
+            
+            for lbl in lbl_list: self.pcd_visualizer.add_bbox(lbl)
             for lbl in lbl_list: self.img_visualizer.add_bbox(lbl)
             
             self.pcd_visualizer.redraw()

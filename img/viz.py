@@ -60,7 +60,7 @@ class ImageVisualizer:
         # if any corner is behind camera, return
         if np.any(corners_3d[2, :] < 0.1): return
         # project 3D bounding box to 2D image
-        corners_2d = label_dict['transform_from_image_0_to_image_2'] @ nx3_to_nx4(corners_3d.T).T
+        corners_2d = label_dict['calib']['P2'].reshape(3, 4) @ nx3_to_nx4(corners_3d.T).T
         corners_2d = corners_2d.T # 3x8 -> 8x3
         corners_2d = corners_2d[:, 0:2] / corners_2d[:, 2:3]
         corners_2d = corners_2d[:, 0:2].astype(np.int32)

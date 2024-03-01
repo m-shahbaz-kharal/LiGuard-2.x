@@ -54,8 +54,13 @@ class PointCloudVisualizer:
             return True
         return False
         
-    def update_pcd(self, pcd_np: np.ndarray):
+    def update_points(self, pcd_np: np.ndarray):
+        self.__clear_bboxes__()
         self.point_cloud.points = o3d.utility.Vector3dVector(pcd_np[:, 0:3])
+        self.__update_geometry__('point_cloud', self.point_cloud)
+        
+    def update_colors(self, pcd_colors: np.ndarray):
+        self.point_cloud.colors = o3d.utility.Vector3dVector(pcd_colors)
         self.__update_geometry__('point_cloud', self.point_cloud)
         
     def add_bbox(self, label_dict: dict):
@@ -69,7 +74,7 @@ class PointCloudVisualizer:
         self.bboxes.append(bbox)
         self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', bbox, False)
         
-    def clear_bboxes(self):
+    def __clear_bboxes__(self):
         for bbox in self.bboxes: self.viz.remove_geometry(bbox, False)
         self.bboxes.clear()
         

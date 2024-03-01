@@ -51,8 +51,7 @@ def Handler(label_path: str):
         label['obj_length'] = length
         label['image_0_xyz'] = image_0_xyz
         label['image_0_ry'] = image_0_ry
-        label['transform_from_lidar_to_image_0'] = transform_from_lidar_to_image_0
-        label['transform_from_image_0_to_image_2'] = transform_from_image_0_to_image_2
+        label['calib'] = calib
         
         lidar_xyz_center = transform_from_image_0_to_lidar @ nx3_to_nx4(image_0_xyz.reshape(1, 3)).T
         lidar_xyz_center = lidar_xyz_center.T[0]
