@@ -16,6 +16,9 @@ colors = {
     'DontCare': [1, 1, 1]
 }
 
+label_file_extension = '.txt'
+calib_file_extension = '.txt'
+
 def Handler(label_path: str, calib_path: str):
     output = []
     

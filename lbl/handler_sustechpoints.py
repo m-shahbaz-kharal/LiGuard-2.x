@@ -19,6 +19,8 @@ colors = {
     "Misc":           (136,136,0  ),#'#008888',
     "Unknown":        (136,136,0  ),#'#008888',
 }
+label_file_extension = '.json'
+calib_file_extension = '.json'
 
 def Handler(label_path: str, calib_path: str):
     output = []
