@@ -37,8 +37,11 @@ class ImageVisualizer:
         if name in self.geometries: self.viz.update_geometry(geometry)
         
     def update(self, data):
+        if "current_image_numpy" not in data: return
         self.img = o3d.geometry.Image(data.current_image_numpy)
         self.__add_geometry__('image', self.img, False)
+        
+        if "current_label_list" not in data: return
         for lbl in data.current_label_list: self.__add_bbox__(lbl)
         
     def __add_bbox__(self, label_dict: dict):
@@ -69,11 +72,11 @@ class ImageVisualizer:
         img_np = np.asarray(self.img)
         for k in range(0, 4):
             i, j = k, (k + 1) % 4
-            cv2.line(img_np, (corners_2d[i, 0], corners_2d[i, 1]), (corners_2d[j, 0], corners_2d[j, 1]), color, 2)
+            cv2.line(img_np, (corners_2d[i, 0], corners_2d[i, 1]), (corners_2d[j, 0], corners_2d[j, 1]), color, self.cfg.visualization.camera.bbox_line_width)
             i, j = k + 4, (k + 1) % 4 + 4
-            cv2.line(img_np, (corners_2d[i, 0], corners_2d[i, 1]), (corners_2d[j, 0], corners_2d[j, 1]), color, 2)
+            cv2.line(img_np, (corners_2d[i, 0], corners_2d[i, 1]), (corners_2d[j, 0], corners_2d[j, 1]), color, self.cfg.visualization.camera.bbox_line_width)
             i, j = k, k + 4
-            cv2.line(img_np, (corners_2d[i, 0], corners_2d[i, 1]), (corners_2d[j, 0], corners_2d[j, 1]), color, 2)
+            cv2.line(img_np, (corners_2d[i, 0], corners_2d[i, 1]), (corners_2d[j, 0], corners_2d[j, 1]), color, self.cfg.visualization.camera.bbox_line_width)
         
         self.img = o3d.geometry.Image(img_np)
         self.__add_geometry__('image', self.img, False)

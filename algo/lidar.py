@@ -1,6 +1,7 @@
 import numpy as np
 
 def crop(data_dict, cfg) -> np.ndarray:
+    if "current_point_cloud_numpy" not in data_dict: return
     pcd = data_dict.current_point_cloud_numpy
     min_xyz = cfg.proc.lidar.crop.min_xyz
     max_xyz = cfg.proc.lidar.crop.max_xyz

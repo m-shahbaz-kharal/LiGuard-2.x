@@ -4,12 +4,12 @@ import glob
 import threading
 
 supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir('lbl') if 'handler' in lbl_handler]
-label_type_to_extension = {'kitti': '.txt', 'nuscenes': '.json'}
+label_type_to_extension = {'kitti': '.txt', 'nuscenes': '.json', 'sustechpoints': '.json'}
 
 class FileIO:
     def __init__(self, cfg: EasyDict):
         self.lbl_dir = os.path.join(cfg.data.path, 'label')
-        self.lbl_type = cfg.data.lbl_type
+        self.lbl_type = cfg.data.label.lbl_type
         self.lbl_count = cfg.data.size
         files = glob.glob(os.path.join(self.lbl_dir, '*' + label_type_to_extension[self.lbl_type]))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]

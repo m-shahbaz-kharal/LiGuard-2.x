@@ -1,6 +1,7 @@
 import numpy as np
 
 def crop_out_of_bound_bboxes(data, cfg) -> dict:
+    if "current_label_list" not in data: return
     lbl_list = data.current_label_list
     min_xyz = cfg.proc.lidar.crop.min_xyz
     max_xyz = cfg.proc.lidar.crop.max_xyz

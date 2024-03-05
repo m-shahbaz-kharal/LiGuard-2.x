@@ -21,8 +21,8 @@ class PointCloudVisualizer:
         self.viz.clear_geometries()
         # set render options
         render_options = self.viz.get_render_option()
-        render_options.point_size = cfg.visualize.point_size
-        render_options.background_color = cfg.visualize.space_color
+        render_options.point_size = cfg.visualization.lidar.point_size
+        render_options.background_color = cfg.visualization.lidar.space_color
         # add default geometries
         self.__add_default_geometries__(reset_bounding_box)
         
@@ -33,7 +33,7 @@ class PointCloudVisualizer:
 
         # add range bounds
         bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg.proc.lidar.crop.min_xyz, self.cfg.proc.lidar.crop.max_xyz)
-        bound.color = self.cfg.visualize.bound_color
+        bound.color = self.cfg.visualization.lidar.bound_color
         self.__add_geometry__('bound', bound, reset_bounding_box)
         
         # global point cloud
@@ -55,9 +55,12 @@ class PointCloudVisualizer:
         return False
         
     def update(self, data):
+        if "current_point_cloud_numpy" not in data: return
         self.point_cloud.points = o3d.utility.Vector3dVector(data.current_point_cloud_numpy[:, 0:3])
         self.__update_geometry__('point_cloud', self.point_cloud)
         self.__clear_bboxes__()
+        
+        if "current_label_list" not in data: return
         for lbl in data.current_label_list: self.__add_bbox__(lbl)
         
     def update_colors(self, pcd_colors: np.ndarray):

@@ -8,7 +8,7 @@ import threading, time
 class FileIO:
     def __init__(self, cfg: EasyDict):
         self.img_dir = os.path.join(cfg.data.path, 'camera')
-        self.img_type = cfg.data.img_type
+        self.img_type = cfg.data.camera.img_type
         self.img_count = cfg.data.size
         files = glob.glob(os.path.join(self.img_dir, '*' + self.img_type))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]

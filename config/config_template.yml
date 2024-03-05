@@ -2,11 +2,18 @@
 
 data: # dataset configurations
     path: D:\datasets\shahbaz\datasets\pedsafe_human_labeled # base path, path/points => point clouds, path/output => output labels
-    pcd_type: '.npy' # can be .bin or .npy
-    img_type: '.png' # most image types are supported
-    lbl_type: 'kitti' # can be kitti, ips, lumpi
-    extra_args: None # can be measurement csv path for lumpi
     size: 10 # number of frames to annotate - set 0 to annotate full
+
+    lidar:
+        enabled: True # set True to read point clouds from disk
+        pcd_type: '.npy' # can be .bin or .npy
+    camera:
+        enabled: True # set True to read images from disk
+        img_type: '.png' # most image types are supported
+    label:
+        enabled: True # set True to read labels from disk
+        lbl_type: 'kitti' # can be kitti, ips, lumpi
+        extra_args: None # can be measurement csv path for lumpi
 
 sensors: # lidar and camera configurations
     lidar:
@@ -31,10 +38,12 @@ proc: # liguard processing configurations
             enabled: True # set True to crop point cloud
             min_xyz: [-5, -5, -5] # minimum x, y, z
             max_xyz: [+5, +5, +5] # maximum x, y, z
-
     label:
         crop_out_of_bound_bboxes: # crop out of bound bboxes
             enabled: True # set True to crop labels
+    fusion:
+        project_camera_to_lidar:
+            enabled: True # set True to project camera pixel colors to lidar points
     # background: # background detection configurations
     #     selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
     #     SimplePlaneModelBasedFilter: # it uses plane model to filter ground points
@@ -86,18 +95,15 @@ proc: # liguard processing configurations
     #         Cyclist: [1.75, 4.0] # volume range of cyclist bbox
 
 
-visualize: # visualization parameters
-    point_size: 1.0 # rendered point size
-    point_color: [1, 1, 1] # color of point cloud
-    space_color: [0, 0, 0] # color of non-point-cloud
-    bound_color: [0, 0, 1] # point cloud range bound bbox color
-    bbox_colors: # class colors - match the class names
-        Car: [1, 0, 0]
-        GT_Car: [0.25, 0, 0]
-        Pedestrian: [1, 1, 0] # yellow
-        GT_Pedestrian: [0.25, 0.25, 0]
-        Cyclist: [0, 0, 1] # blue
-        GT_Cyclist: [0, 0, 0.25]
+visualization: # visualization parameters
+    enabled: True # set True to visualize
+    lidar:
+        space_color: [0, 0, 0] # color of non-point-cloud
+        bound_color: [0, 0, 1] # point cloud range bound bbox color
+        point_size: 1.0 # rendered point size
+    camera:
+        bbox_line_width: 2 # bbox line width
+        
 
 debug: # don't change unless debugging
     asyncio_sleep: 0.01 # in seconds
