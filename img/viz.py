@@ -45,6 +45,7 @@ class ImageVisualizer:
         for lbl in data.current_label_list: self.__add_bbox__(lbl)
         
     def __add_bbox__(self, label_dict: dict):
+        if 'camera_bbox' not in label_dict: return
         camera_bbox_dict = label_dict['camera_bbox']
         center = camera_bbox_dict['xyz_center']
         w, l, h = camera_bbox_dict['wlh_extent']
