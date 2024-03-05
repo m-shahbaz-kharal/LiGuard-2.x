@@ -2,6 +2,10 @@
 
 data: # dataset configurations
     path: D:\datasets\shahbaz\datasets\pedsafe_human_labeled # base path, path/points => point clouds, path/output => output labels
+    lidar_subdir: 'lidar' # subdirectory containing point clouds
+    camera_subdir: 'camera' # subdirectory containing images
+    label_subdir: 'label' # subdirectory containing labels
+    calib_subdir: 'calib' # subdirectory containing calibration files
     size: 10 # number of frames to annotate - set 0 to annotate full
 
     lidar:

@@ -7,7 +7,7 @@ import threading, time
 
 class FileIO:
     def __init__(self, cfg: EasyDict):
-        self.img_dir = os.path.join(cfg.data.path, 'camera')
+        self.img_dir = os.path.join(cfg.data.path, cfg.data.camera_subdir)
         self.img_type = cfg.data.camera.img_type
         self.img_count = cfg.data.size
         files = glob.glob(os.path.join(self.img_dir, '*' + self.img_type))

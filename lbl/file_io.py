@@ -8,7 +8,8 @@ label_type_to_extension = {'kitti': '.txt', 'nuscenes': '.json', 'sustechpoints'
 
 class FileIO:
     def __init__(self, cfg: EasyDict):
-        self.lbl_dir = os.path.join(cfg.data.path, 'label')
+        self.lbl_dir = os.path.join(cfg.data.path, cfg.data.label_subdir)
+        self.clb_dir = os.path.join(cfg.data.path, cfg.data.calib_subdir)
         self.lbl_type = cfg.data.label.lbl_type
         self.lbl_count = cfg.data.size
         files = glob.glob(os.path.join(self.lbl_dir, '*' + label_type_to_extension[self.lbl_type]))
@@ -25,13 +26,15 @@ class FileIO:
         threading.Thread(target=self.__async_read_fn__).start()
         
     def get_abs_path(self, idx: int):
-        return os.path.join(self.lbl_dir, self.files_basenames[idx] + label_type_to_extension[self.lbl_type])
+        lbl_path = os.path.join(self.lbl_dir, self.files_basenames[idx] + label_type_to_extension[self.lbl_type])
+        clb_path = os.path.join(self.clb_dir, self.files_basenames[idx] + '.txt')
+        return lbl_path, clb_path
         
     def __async_read_fn__(self):
         for idx in range(len(self.files_basenames)):
             if self.stop.is_set(): break
-            file_abs_path = self.get_abs_path(idx)
-            annotation = self.reader(file_abs_path)
+            lbl_abs_path, clb_abs_path = self.get_abs_path(idx)
+            annotation = self.reader(lbl_abs_path, clb_abs_path)
             with self.data_lock: self.data.append(annotation)
         
     def __len__(self): return len(self.files_basenames)
@@ -40,8 +43,8 @@ class FileIO:
         try:
             with self.data_lock: return self.data[idx]
         except:
-            file_abs_path = self.get_abs_path(idx)
-            return self.reader(file_abs_path)
+            lbl_abs_path, clb_abs_path = self.get_abs_path(idx)
+            return self.reader(lbl_abs_path, clb_abs_path)
         
     def close(self):
         self.stop.set()

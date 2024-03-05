@@ -16,11 +16,10 @@ colors = {
     'DontCare': [1, 1, 1]
 }
 
-def Handler(label_path: str):
+def Handler(label_path: str, calib_path: str):
     output = []
     
     # read calib
-    calib_path = label_path.replace('label', 'calib')
     calib = __read_calib__(calib_path)
     transform_from_lidar_to_image_0 = calib['Tr_velo_to_cam'].reshape(3, 4)
     transform_from_image_0_to_image_2 = calib['P2'].reshape(3, 4)

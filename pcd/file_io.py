@@ -9,7 +9,7 @@ supported_file_types = ['.bin', '.npy', '.ply', '.pcd']
 
 class FileIO:
     def __init__(self, cfg: EasyDict):        
-        self.pcd_dir = os.path.join(cfg.data.path, 'lidar')
+        self.pcd_dir = os.path.join(cfg.data.path, cfg.data.lidar_subdir)
         self.pcd_type = cfg.data.lidar.pcd_type
         self.pcd_count = cfg.data.size
         files = glob.glob(os.path.join(self.pcd_dir, '*' + self.pcd_type))

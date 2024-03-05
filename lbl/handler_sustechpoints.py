@@ -15,7 +15,7 @@ colors = {
     'DontCare': [1, 1, 1]
 }
 
-def Handler(label_path: str):
+def Handler(label_path: str, calib_path: str):
     output = []
     
     # read label file
