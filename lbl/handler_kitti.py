@@ -15,7 +15,6 @@ colors = {
     'Misc': [1, 1, 0],
     'DontCare': [1, 1, 1]
 }
-
 label_file_extension = '.txt'
 calib_file_extension = '.txt'
 

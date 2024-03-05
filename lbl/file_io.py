@@ -13,7 +13,8 @@ class FileIO:
         self.lbl_count = cfg.data.size
         
         if self.lbl_type not in supported_label_types: raise NotImplementedError("Label type not supported. Supported file types: " + ', '.join(supported_label_types) + ".")
-        self.lbl_ext, self.clb_ext, self.reader = __import__('lbl.handler_'+self.lbl_type, fromlist=['label_file_extention', 'calib_file_extension', 'Handler']).Handler
+        h = __import__('lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'calib_file_extension', 'Handler'])
+        self.lbl_ext, self.clb_ext, self.reader = h.label_file_extension, h.calib_file_extension, h.Handler
         
         files = glob.glob(os.path.join(self.lbl_dir, '*' + self.lbl_ext))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
