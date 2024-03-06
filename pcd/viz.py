@@ -71,7 +71,7 @@ class PointCloudVisualizer:
         lidar_bbox_dict = label_dict['lidar_bbox']
         center = lidar_bbox_dict['xyz_center']
         extent = lidar_bbox_dict['wlh_extent']
-        rotation_matrix = lidar_bbox_dict['around_z_rotation_matrix']
+        rotation_matrix = lidar_bbox_dict['xyz_rotation_matrix']
         color = lidar_bbox_dict['rgb_bbox_color']
         bbox = o3d.geometry.OrientedBoundingBox(center, rotation_matrix, extent)
         bbox.color = color

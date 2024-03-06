@@ -58,17 +58,17 @@ def Handler(label_path: str, calib_path: str):
         lidar_xyz_center = lidar_xyz_center.T[0]
         lidar_xyz_center[2] += height / 2.0
         lidar_wlh_extent = np.array([width, length, height], dtype=np.float32)
-        lidar_around_z_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, 0, -image_0_ry])
+        lidar_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, 0, -image_0_ry])
         lidar_bbox_color = colors[obj_class]
         
-        label['lidar_bbox'] = {'xyz_center': lidar_xyz_center, 'wlh_extent': lidar_wlh_extent, 'around_z_rotation_matrix': lidar_around_z_rotation_matrix, 'rgb_bbox_color': lidar_bbox_color}
+        label['lidar_bbox'] = {'xyz_center': lidar_xyz_center, 'wlh_extent': lidar_wlh_extent, 'xyz_rotation_matrix': lidar_rotation_matrix, 'rgb_bbox_color': lidar_bbox_color}
         
         camera_xyz_center = image_0_xyz
         camera_wlh_extent = np.array([width, length, height], dtype=np.float32)
-        camera_around_y_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, image_0_ry, 0])
+        camera_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, image_0_ry, 0])
         camera_bbox_color = [i * 255 for i in colors[obj_class]]
         
-        label['camera_bbox'] = {'xyz_center': camera_xyz_center, 'wlh_extent': camera_wlh_extent, 'around_y_rotation_matrix': camera_around_y_rotation_matrix, 'rgb_bbox_color': camera_bbox_color}
+        label['camera_bbox'] = {'xyz_center': camera_xyz_center, 'wlh_extent': camera_wlh_extent, 'xyz_rotation_matrix': camera_rotation_matrix, 'rgb_bbox_color': camera_bbox_color}
         
         output.append(label)
     

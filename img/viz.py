@@ -49,7 +49,7 @@ class ImageVisualizer:
         camera_bbox_dict = label_dict['camera_bbox']
         center = camera_bbox_dict['xyz_center']
         w, l, h = camera_bbox_dict['wlh_extent']
-        rotation_matrix = camera_bbox_dict['around_y_rotation_matrix']
+        rotation_matrix = camera_bbox_dict['xyz_rotation_matrix']
         color = camera_bbox_dict['rgb_bbox_color']
         
         # define 3D bounding box
