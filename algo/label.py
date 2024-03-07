@@ -7,7 +7,7 @@ def crop_out_of_bound_bboxes(data, cfg) -> dict:
     max_xyz = cfg.proc.lidar.crop.max_xyz
     output = []
     for lbl_dict in lbl_list:
-        bbox_center = lbl_dict['lidar_bbox']['xyz_center']
+        bbox_center = lbl_dict['lidar_bbox']['lidar_xyz_center']
         x_condition = np.logical_and(min_xyz[0] <= bbox_center[0], bbox_center[0] <= max_xyz[0])
         y_condition = np.logical_and(min_xyz[1] <= bbox_center[1], bbox_center[1] <= max_xyz[1])
         z_condition = np.logical_and(min_xyz[2] <= bbox_center[2], bbox_center[2] <= max_xyz[2])

@@ -68,15 +68,20 @@ class PointCloudVisualizer:
         self.__update_geometry__('point_cloud', self.point_cloud)
         
     def __add_bbox__(self, label_dict: dict):
+        # bbox params
         lidar_bbox_dict = label_dict['lidar_bbox']
-        center = lidar_bbox_dict['xyz_center']
-        extent = lidar_bbox_dict['wlh_extent']
-        rotation_matrix = lidar_bbox_dict['xyz_rotation_matrix']
+        lidar_xyz_center = lidar_bbox_dict['lidar_xyz_center']
+        lidar_xyz_extent = lidar_bbox_dict['lidar_xyz_extent']
+        lidar_xyz_euler_angles = lidar_bbox_dict['lidar_xyz_euler_angles']
         color = lidar_bbox_dict['rgb_bbox_color']
-        bbox = o3d.geometry.OrientedBoundingBox(center, rotation_matrix, extent)
-        bbox.color = color
-        self.bboxes.append(bbox)
-        self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', bbox, False)
+        
+        # calculating bbox
+        rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(lidar_xyz_euler_angles)
+        lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(lidar_xyz_center, rotation_matrix, lidar_xyz_extent)
+        lidar_xyz_bbox.color = color
+        
+        self.bboxes.append(lidar_xyz_bbox)
+        self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', lidar_xyz_bbox, False)
         
     def __clear_bboxes__(self):
         for bbox in self.bboxes: self.viz.remove_geometry(bbox, False)

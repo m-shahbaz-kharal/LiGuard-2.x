@@ -22,7 +22,7 @@ class FileIO:
         threading.Thread(target=self.__async_read_fn__).start()
     
     def __read_img__(self, file_abs_path: str):
-        img_bgr = cv2.imread(file_abs_path)
+        img_bgr = cv2.imread(file_abs_path, cv2.IMREAD_UNCHANGED)
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         return img_rgb
         

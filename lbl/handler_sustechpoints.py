@@ -3,9 +3,6 @@ import numpy as np
 import open3d as o3d
 import json
 
-import math
-from calib.utils import nx3_to_nx4
-
 colors = {
     "Car":            (0  ,255,0  ),#'#00ff00',
     "Van":            (0  ,255,0  ),#'#00ff00',
@@ -45,9 +42,9 @@ def Handler(label_path: str, calib_path: str):
         obj_id = int(item['obj_id'])
         obj_type = item['obj_type']
         psr = item['psr']
-        psr_position_xyz = [float(psr['position']['x']), float(psr['position']['y']), float(psr['position']['z'])]
-        psr_rotation_xyz = [float(psr['rotation']['x']), float(psr['rotation']['y']), float(psr['rotation']['z'])]
-        psr_scale_xyz = [float(psr['scale']['x']), float(psr['scale']['y']), float(psr['scale']['z'])]
+        psr_position_xyz = np.array([psr['position']['x'], psr['position']['y'], psr['position']['z']], dtype=np.float64)
+        psr_rotation_xyz = np.array([psr['rotation']['x'], psr['rotation']['y'], psr['rotation']['z']], dtype=np.float64)
+        psr_scale_xyz = np.array([psr['scale']['x'], psr['scale']['y'], psr['scale']['z']], dtype=np.float64)
         
         label = dict()
         label['annotator'] = annotator
@@ -56,28 +53,22 @@ def Handler(label_path: str, calib_path: str):
         label['psr'] = psr
         if calib_exists:
             label['calib'] = calib
-            label['calib']['P2'] = nx3_to_nx4(intrinsic_matrix)
+            label['calib']['Tr_velo_to_cam'] = extrinsic_matrix
+            label['calib']['P2'] = intrinsic_matrix
         
-        lidar_xyz_center = np.array(psr_position_xyz, dtype=np.float32)
-        lidar_wlh_extent = np.array(psr_scale_xyz, dtype=np.float32)
-        lidar_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(psr_rotation_xyz)
+        lidar_xyz_center = psr_position_xyz.copy()
+        lidar_xyz_extent = psr_scale_xyz.copy()
+        lidar_xyz_euler_angles = psr_rotation_xyz.copy()
 
-        if obj_type in colors: lidar_bbox_color = [i / 255.0 for i in colors[obj_type]]
-        else: lidar_bbox_color = [0, 0, 0]
+        if obj_type in colors: lidar_bbox_color = np.array([i / 255.0 for i in colors[obj_type]], dtype=np.uint8)
+        else: lidar_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
         
-        label['lidar_bbox'] = {'xyz_center': lidar_xyz_center, 'wlh_extent': lidar_wlh_extent, 'xyz_rotation_matrix': lidar_rotation_matrix, 'rgb_bbox_color': lidar_bbox_color}
+        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
         
         if calib_exists:
-            pass
-            # To-do: add camera bbox by creating camera_xyz_center, camera_wlh_extent, camera_rotation_matrix, camera_bbox_color
-            # camera_xyz_center in camera coordinate system
-            # camera_wlh_extent in object coordinate system
-            # camera_rotation_matrix in camera coordinate system
-            
-            # if obj_type in colors: camera_bbox_color = colors[obj_type]
-            # else: camera_bbox_color = [0, 0, 0]
-            
-            # label['camera_bbox'] = {'xyz_center': camera_xyz_center, 'wlh_extent': camera_wlh_extent, 'xyz_rotation_matrix': camera_rotation_matrix, 'rgb_bbox_color': camera_bbox_color}
+            if obj_type in colors: camera_bbox_color = np.array(colors[obj_type], dtype=np.uint8)
+            else: camera_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
+            label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color}
         
         output.append(label)
     

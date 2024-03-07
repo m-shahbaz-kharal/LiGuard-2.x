@@ -122,7 +122,7 @@ class LiGuard:
             if self.img_io:
                 self.img_visualizer.update(self.data)
                 self.img_visualizer.redraw()
-                
+            
             time.sleep(cfg.debug.asyncio_sleep)
             
     def quit(self, cfg):

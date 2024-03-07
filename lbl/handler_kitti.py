@@ -2,7 +2,7 @@ import os
 import numpy as np
 import open3d as o3d
 
-from calib.utils import inverse_3x4_transform, nx3_to_nx4
+from calib.utils import inverse_3x4_transform
 
 colors = {
     'Car': [0, 1, 0],
@@ -23,8 +23,11 @@ def Handler(label_path: str, calib_path: str):
     
     # read calib
     calib = __read_calib__(calib_path)
-    transform_from_lidar_to_image_0 = calib['Tr_velo_to_cam'].reshape(3, 4)
-    transform_from_image_0_to_image_2 = calib['P2'].reshape(3, 4)
+    calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(3, 4)
+    calib['P2'] = calib['P2'].reshape(3, 4)
+    calib['R0_rect'] = calib['R0_rect'].reshape(3, 3)
+    transform_from_lidar_to_image_0 = calib['Tr_velo_to_cam']
+    transform_from_image_0_to_image_2 = calib['P2']
     transform_from_image_0_to_lidar = inverse_3x4_transform(transform_from_lidar_to_image_0)
     
     # read label file
@@ -54,21 +57,18 @@ def Handler(label_path: str, calib_path: str):
         label['image_0_ry'] = image_0_ry
         label['calib'] = calib
         
-        lidar_xyz_center = transform_from_image_0_to_lidar @ nx3_to_nx4(image_0_xyz.reshape(1, 3)).T
+        lidar_xyz_center = transform_from_image_0_to_lidar @ np.append(image_0_xyz, 1).reshape(4, 1)
         lidar_xyz_center = lidar_xyz_center.T[0]
         lidar_xyz_center[2] += height / 2.0
-        lidar_wlh_extent = np.array([width, length, height], dtype=np.float32)
-        lidar_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, 0, -image_0_ry])
-        lidar_bbox_color = colors[obj_class]
+        lidar_xyz_extent = np.array([width, length, height], dtype=np.float32)
+        lidar_xyz_euler_angles = np.array([0, 0, -image_0_ry], dtype=np.float32)
+        lidar_bbox_color = np.array(colors[obj_class], dtype=np.uint8)
         
-        label['lidar_bbox'] = {'xyz_center': lidar_xyz_center, 'wlh_extent': lidar_wlh_extent, 'xyz_rotation_matrix': lidar_rotation_matrix, 'rgb_bbox_color': lidar_bbox_color}
+        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
         
-        camera_xyz_center = image_0_xyz
-        camera_wlh_extent = np.array([width, length, height], dtype=np.float32)
-        camera_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, image_0_ry, 0])
-        camera_bbox_color = [i * 255 for i in colors[obj_class]]
+        camera_bbox_color = np.array([i * 255 for i in colors[obj_class]], dtype=np.uint8)
         
-        label['camera_bbox'] = {'xyz_center': camera_xyz_center, 'wlh_extent': camera_wlh_extent, 'xyz_rotation_matrix': camera_rotation_matrix, 'rgb_bbox_color': camera_bbox_color}
+        label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color}
         
         output.append(label)
     
