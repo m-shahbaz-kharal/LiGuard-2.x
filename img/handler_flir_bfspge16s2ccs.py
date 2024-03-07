@@ -4,9 +4,9 @@ except: raise ImportError("Spinnaker SDK not installed.\n \
 
 class Handler:
     def __init__(self, cfg):
-        self.manufacturer = cfg.sensors.camera.manufacturer.lower()
-        self.model = cfg.sensors.camera.model.lower().replace('-','')
-        self.serial_no = cfg.sensors.camera.serial_number.lower()
+        self.manufacturer = cfg['sensors']['camera']['manufacturer'].lower()
+        self.model = cfg['sensors']['camera']['model'].lower().replace('-','')
+        self.serial_no = cfg['sensors']['camera']['serial_number'].lower()
         
         self.system = pyspin.System.GetInstance()
         camera_list = self.system.GetCameras()

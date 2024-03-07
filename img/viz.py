@@ -1,11 +1,9 @@
 import open3d as o3d
 import cv2
-
-from easydict import EasyDict
 import numpy as np
 
 class ImageVisualizer:
-    def __init__(self, app, cfg: EasyDict):
+    def __init__(self, app, cfg: dict):
         self.app = app
         # create visualizer
         self.viz = o3d.visualization.Visualizer()
@@ -34,15 +32,15 @@ class ImageVisualizer:
     def __update_geometry__(self, name, geometry):
         if name in self.geometries: self.viz.update_geometry(geometry)
         
-    def update(self, data):
-        if "current_image_numpy" not in data: return
-        self.img = o3d.geometry.Image(data.current_image_numpy)
+    def update(self, data_dict):
+        if "current_image_numpy" not in data_dict: return
+        self.img = o3d.geometry.Image(data_dict['current_image_numpy'])
         self.__add_geometry__('image', self.img, False)
         
-        if "current_label_list" not in data: return
-        for lbl in data.current_label_list: self.__add_bbox__(lbl)
+        if "current_label_list" not in data_dict: return
+        for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl)
         
-    def __add_bbox__(self, label_dict: dict):
+    def __add_bbox__(self, label_dict):
         if 'camera_bbox' not in label_dict: return
         # bbox parameters
         camera_bbox_dict = label_dict['camera_bbox']
@@ -106,19 +104,19 @@ class ImageVisualizer:
         points_in_image = points_in_image.T
         pts = np.int32(points_in_image)
         color = color.tolist()
-        cv2.line(img_np,tuple(pts[0]),tuple(pts[1]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[1]),tuple(pts[2]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[2]),tuple(pts[3]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[3]),tuple(pts[0]),color,self.cfg.visualization.camera.bbox_line_width)
+        cv2.line(img_np,tuple(pts[0]),tuple(pts[1]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[1]),tuple(pts[2]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[2]),tuple(pts[3]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[3]),tuple(pts[0]),color,self.cfg['visualization']['camera']['bbox_line_width'])
         cv2.fillPoly(img_np, [pts[0:4].reshape((-1,1,2))],color)
-        cv2.line(img_np,tuple(pts[4]),tuple(pts[5]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[5]),tuple(pts[6]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[6]),tuple(pts[7]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[7]),tuple(pts[4]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[0]),tuple(pts[4]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[1]),tuple(pts[5]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[2]),tuple(pts[6]),color,self.cfg.visualization.camera.bbox_line_width)
-        cv2.line(img_np,tuple(pts[3]),tuple(pts[7]),color,self.cfg.visualization.camera.bbox_line_width)
+        cv2.line(img_np,tuple(pts[4]),tuple(pts[5]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[5]),tuple(pts[6]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[6]),tuple(pts[7]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[7]),tuple(pts[4]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[0]),tuple(pts[4]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[1]),tuple(pts[5]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[2]),tuple(pts[6]),color,self.cfg['visualization']['camera']['bbox_line_width'])
+        cv2.line(img_np,tuple(pts[3]),tuple(pts[7]),color,self.cfg['visualization']['camera']['bbox_line_width'])
         
         # add to visualizer
         self.img = o3d.geometry.Image(img_np)

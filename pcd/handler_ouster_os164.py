@@ -4,13 +4,13 @@ except: raise ImportError("Ouster-SDK not installed, please install it using 'pi
 import numpy as np
 
 class Handler:
-    def __init__(self, cfg):
+    def __init__(self, cfg: dict):
         self.cfg = cfg
         
-        self.manufacturer = self.cfg.sensors.lidar.manufacturer.lower()
-        self.model = self.cfg.sensors.lidar.model.lower().replace('-','')
-        self.serial_no = self.cfg.sensors.lidar.serial_number
-        self.hostname = self.cfg.sensors.lidar.hostname
+        self.manufacturer = self.cfg['sensors']['lidar']['manufacturer'].lower()
+        self.model = self.cfg['sensors']['lidar']['model'].lower().replace('-','')
+        self.serial_no = self.cfg['sensors']['lidar']['serial_number']
+        self.hostname = self.cfg['sensors']['lidar']['hostname']
         
         self.client = ouster.client
         

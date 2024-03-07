@@ -1,9 +1,6 @@
-
-
-import open3d as o3d
 import open3d.visualization.gui as gui
 
-import os, time
+import os
 import cv2
 import numpy as np
 import threading

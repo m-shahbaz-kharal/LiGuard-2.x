@@ -1,4 +1,3 @@
-from easydict import EasyDict
 import os
 import glob
 import threading
@@ -6,11 +5,11 @@ import threading
 supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir('lbl') if 'handler' in lbl_handler]
 
 class FileIO:
-    def __init__(self, cfg: EasyDict):
-        self.lbl_dir = os.path.join(cfg.data.path, cfg.data.label_subdir)
-        self.clb_dir = os.path.join(cfg.data.path, cfg.data.calib_subdir)
-        self.lbl_type = cfg.data.label.lbl_type
-        self.lbl_count = cfg.data.size
+    def __init__(self, cfg: dict):
+        self.lbl_dir = os.path.join(cfg['data']['path'], cfg['data']['label_subdir'])
+        self.clb_dir = os.path.join(cfg['data']['path'], cfg['data']['calib_subdir'])
+        self.lbl_type = cfg['data']['label']['lbl_type']
+        self.lbl_count = cfg['data']['size']
         
         if self.lbl_type not in supported_label_types: raise NotImplementedError("Label type not supported. Supported file types: " + ', '.join(supported_label_types) + ".")
         h = __import__('lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'calib_file_extension', 'Handler'])

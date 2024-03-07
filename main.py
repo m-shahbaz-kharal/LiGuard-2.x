@@ -13,7 +13,6 @@ from img.viz import ImageVisualizer
 from lbl.file_io import FileIO as LBL_File_IO
 
 import keyboard, threading, time
-from easydict import EasyDict
 
 class LiGuard:
     def __init__(self):
@@ -40,7 +39,7 @@ class LiGuard:
         self.is_running = False # if the app is running
         self.is_playing = False # if the frames are playing
         self.frame_index = 0
-        self.data = EasyDict()
+        self.data = dict()
         
         self.app.run()
         
@@ -49,7 +48,7 @@ class LiGuard:
             with self.lock:
                 if event.name == 'right':
                     self.is_playing = False
-                    if self.frame_index < self.data.max_frame_index: self.frame_index += 1
+                    if self.frame_index < self.data['max_frame_index']: self.frame_index += 1
                 elif event.name == 'left':
                     self.is_playing = False
                     if self.frame_index > 0: self.frame_index -= 1
@@ -61,36 +60,35 @@ class LiGuard:
         with self.lock: self.is_running = False
         
         if self.pcd_io != None: self.pcd_io.close()
-        if cfg.data.lidar.enabled: self.pcd_io = PCD_File_IO(cfg)
-        elif cfg.sensors.lidar.enabled: self.pcd_io = PCD_Sensor_IO(cfg)
+        if cfg['data']['lidar']['enabled']: self.pcd_io = PCD_File_IO(cfg)
+        elif cfg['sensors']['lidar']['enabled']: self.pcd_io = PCD_Sensor_IO(cfg)
         else: self.pcd_io = None
-        self.data.total_pcd_frames = len(self.pcd_io) if self.pcd_io else 0
+        self.data['total_pcd_frames'] = len(self.pcd_io) if self.pcd_io else 0
         
-        if self.pcd_io and cfg.visualization.enabled:
+        if self.pcd_io and cfg['visualization']['enabled']:
             if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
             else: self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
         
         if self.img_io != None: self.img_io.close()
-        if cfg.data.camera.enabled: self.img_io = IMG_File_IO(cfg)
-        elif cfg.sensors.camera.enabled: self.img_io = IMG_Sensor_IO(cfg)
+        if cfg['data']['camera']['enabled']: self.img_io = IMG_File_IO(cfg)
+        elif cfg['sensors']['camera']['enabled']: self.img_io = IMG_Sensor_IO(cfg)
         else: self.img_io = None
-        self.data.total_img_frames = len(self.img_io) if self.img_io else 0
+        self.data['total_img_frames'] = len(self.img_io) if self.img_io else 0
         
-        if self.img_io and cfg.visualization.enabled:
+        if self.img_io and cfg['visualization']['enabled']:
             if self.img_visualizer != None: self.img_visualizer.reset(cfg)
             else: self.img_visualizer = ImageVisualizer(self.app, cfg)
         
         if self.lbl_io != None: self.lbl_io.close()
-        if cfg.data.label.enabled: self.lbl_io = LBL_File_IO(cfg)
+        if cfg['data']['label']['enabled']: self.lbl_io = LBL_File_IO(cfg)
         else: self.lbl_io = None
-        self.data.total_lbl_frames = len(self.lbl_io) if self.lbl_io else 0
+        self.data['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
         
-        self.data.max_frame_index = max(self.data.total_pcd_frames, self.data.total_img_frames, self.data.total_lbl_frames) - 1
+        self.data['max_frame_index'] = max(self.data['total_pcd_frames'], self.data['total_img_frames'], self.data['total_lbl_frames']) - 1
         
-        self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.lidar if cfg.proc.lidar[proc].enabled]
-        self.camera_procs = []
-        self.label_procs = [__import__('algo.label', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.label if cfg.proc.label[proc].enabled]
-        self.fusion_procs = [__import__('algo.fusion', fromlist=[proc]).__dict__[proc] for proc in cfg.proc.fusion if cfg.proc.fusion[proc].enabled]
+        self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['lidar'] if cfg['proc']['lidar'][proc]['enabled']]
+        self.camera_procs = [__import__('algo.camera', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['camera'] if cfg['proc']['camera'][proc]['enabled']]
+        self.label_procs = [__import__('algo.label', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['label'] if cfg['proc']['label'][proc]['enabled']]
         
     def start(self, cfg):
         with self.lock: self.is_running = True
@@ -100,13 +98,13 @@ class LiGuard:
         while True:
             with self.lock:
                 if not self.is_running: break
-                elif self.is_playing and self.frame_index < self.data.max_frame_index: self.frame_index += 1
+                elif self.is_playing and self.frame_index < self.data['max_frame_index']: self.frame_index += 1
             
-            if self.pcd_io: self.data.current_point_cloud_numpy = self.pcd_io[self.frame_index]
+            if self.pcd_io: self.data['current_point_cloud_numpy'] = self.pcd_io[self.frame_index]
             elif 'current_point_cloud_numpy' in self.data: self.data.pop('current_point_cloud_numpy')
-            if self.img_io: self.data.current_image_numpy = self.img_io[self.frame_index]
+            if self.img_io: self.data['current_image_numpy'] = self.img_io[self.frame_index]
             elif 'current_image_numpy' in self.data: self.data.pop('current_image_numpy')
-            if self.lbl_io: self.data.current_label_list = self.lbl_io[self.frame_index]
+            if self.lbl_io: self.data['current_label_list'] = self.lbl_io[self.frame_index]
             elif 'current_label_list' in self.data: self.data.pop('current_label_list')
             
             if self.pcd_io:
@@ -123,7 +121,7 @@ class LiGuard:
                 self.img_visualizer.update(self.data)
                 self.img_visualizer.redraw()
             
-            time.sleep(cfg.debug.asyncio_sleep)
+            time.sleep(cfg['debug']['asyncio_sleep'])
             
     def quit(self, cfg):
         with self.lock: self.is_running = False

@@ -1,9 +1,8 @@
-import open3d as o3d
 import open3d.visualization.gui as gui
 
-import os, time
+import os
+import time
 import yaml
-from easydict import EasyDict
 import ast
 
 class BaseConfiguration:
@@ -63,7 +62,7 @@ class BaseConfiguration:
         
         # all the generated configuration gui will be set here
         self.generated_config = gui.WidgetProxy()
-        self.generated_config_gui_dict = EasyDict()
+        self.generated_config_gui_dict = dict()
         # add to base container
         self.base_container.add_child(self.generated_config)
         
@@ -74,26 +73,17 @@ class BaseConfiguration:
         
     def load_config(self, cfg_path):
         with open(cfg_path) as f: cfg = yaml.safe_load(f)
-        cfg = EasyDict(cfg)
         return cfg
     
     def apply_and_save_config(self, cfg, cfg_path):    
-        def __convert_to_dict__(item):
-            if isinstance(item, EasyDict):
-                item = dict(item)
-                for key in item: item[key] = __convert_to_dict__(item[key])
-            return item
-    
-        with open(cfg_path, 'w') as f:
-            cfg = __convert_to_dict__(cfg)
-            yaml.dump(cfg, f, default_flow_style=False)
+        with open(cfg_path, 'w') as f: yaml.dump(cfg, f, default_flow_style=False)
             
     def generate_config_gui_from_cfg(self, item, container, parent_keys=[], margin = 0.2):
         G = self.generated_config_gui_dict
-        if type(item) == EasyDict:
+        if type(item) == dict:
             for key in item.keys():
                 label_text = key
-                if type(item[key]) == EasyDict:
+                if type(item[key]) == dict:
                     collapsable_container = gui.CollapsableVert(label_text, self.em * 0.2, gui.Margins(self.em * margin, self.em * 0.2, self.em * 0.2, self.em * 0.2))
                     self.generate_config_gui_from_cfg(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
                     container.add_child(collapsable_container)
@@ -102,43 +92,43 @@ class BaseConfiguration:
                     sub_container.add_child(gui.Label(label_text + ":"))
                     global_key = ".".join(parent_keys + [key])
                     G[global_key] = {'view': gui.TextEdit(), 'type': type(item[key])}
-                    G[global_key].view.text_value = str(item[key])
-                    sub_container.add_child(G[global_key].view)
+                    G[global_key]['view'].text_value = str(item[key])
+                    sub_container.add_child(G[global_key]['view'])
                     container.add_child(sub_container)
                 elif type(item[key]) == list:
                     sub_container = gui.Horiz()
                     sub_container.add_child(gui.Label(label_text + ":"))
                     global_key = ".".join(parent_keys + [key])
                     G[global_key] = {'view': gui.TextEdit(), 'type': type(item[key][0])}
-                    G[global_key].view.text_value = str(item[key])
-                    sub_container.add_child(G[global_key].view)
+                    G[global_key]['view'].text_value = str(item[key])
+                    sub_container.add_child(G[global_key]['view'])
                     container.add_child(sub_container)
                 elif type(item[key]) == bool:
                     sub_container = gui.Horiz()
                     sub_container.add_child(gui.Label(label_text + ":"))
                     global_key = ".".join(parent_keys + [key])
                     G[global_key] = {'view': gui.Checkbox(key), 'type': type(item[key])}
-                    G[global_key].view.checked = item[key]
-                    sub_container.add_child(G[global_key].view)
+                    G[global_key]['view'].checked = item[key]
+                    sub_container.add_child(G[global_key]['view'])
                     container.add_child(sub_container)
                 else:
                     raise Exception("Unsupported type: {}".format(type(item[key])))
                 
     def update_cfg_from_gui(self, item, parent_keys=[]):
         G = self.generated_config_gui_dict
-        if type(item) == EasyDict:
+        if type(item) == dict:
             for key in item.keys():
                 global_key = ".".join(parent_keys + [key])
-                if type(item[key]) == EasyDict:
+                if type(item[key]) == dict:
                     self.update_cfg_from_gui(item[key], parent_keys + [key])
                 elif type(item[key]) in [str, int, float]:
-                    item[key] = G[global_key].type(G[global_key].view.text_value)
+                    item[key] = G[global_key]['type'](G[global_key]['view'].text_value)
                 elif type(item[key]) == list:
-                    item[key] = ast.literal_eval(G[global_key].view.text_value)
-                    item[key] = [G[global_key].type(i) for i in item[key]]    
+                    item[key] = ast.literal_eval(G[global_key]['view'].text_value)
+                    item[key] = [G[global_key]['type'](i) for i in item[key]]    
                 elif type(item[key]) == bool:
                     global_key = ".".join(parent_keys + [key])
-                    item[key] = G[global_key].type(G[global_key].view.checked)
+                    item[key] = G[global_key]['type'](G[global_key]['view'].checked)
                 else:
                     raise Exception("Unsupported type: {}".format(type(item[key])))
                 

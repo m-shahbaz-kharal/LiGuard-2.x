@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import open3d as o3d
 
 from calib.utils import inverse_3x4_transform
 

@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import open3d as o3d
 
 colors = {'Green': [0, 1, 0]}
 label_file_extension = '.txt'
@@ -28,11 +27,11 @@ def Handler(label_path: str, calib_path: str):
         label['category_name'] = obj_class
         
         lidar_xyz_center = xyz_dxdydz_rz[0:3]
-        lidar_wlh_extent = xyz_dxdydz_rz[3:6]
-        lidar_xyz_rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_axis_angle([0, 0, xyz_dxdydz_rz[6]])
+        lidar_xyz_extent = xyz_dxdydz_rz[3:6]
+        lidar_xyz_euler_angles = np.array([0, 0, xyz_dxdydz_rz[6]], dtype=np.float32)
         lidar_bbox_color = colors['Green']
         
-        label['lidar_bbox'] = {'xyz_center': lidar_xyz_center, 'wlh_extent': lidar_wlh_extent, 'xyz_rotation_matrix': lidar_xyz_rotation_matrix, 'rgb_bbox_color': lidar_bbox_color}
+        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
         
         output.append(label)
     

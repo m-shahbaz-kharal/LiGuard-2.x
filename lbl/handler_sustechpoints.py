@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import open3d as o3d
 import json
 
 colors = {
@@ -46,10 +45,10 @@ def Handler(label_path: str, calib_path: str):
         psr_rotation_xyz = np.array([psr['rotation']['x'], psr['rotation']['y'], psr['rotation']['z']], dtype=np.float64)
         psr_scale_xyz = np.array([psr['scale']['x'], psr['scale']['y'], psr['scale']['z']], dtype=np.float64)
         
-        label = dict()
+        label = {}
         label['annotator'] = annotator
-        label['id'] = obj_id
-        label['type'] = obj_type
+        label['obj_id'] = obj_id
+        label['obj_type'] = obj_type
         label['psr'] = psr
         if calib_exists:
             label['calib'] = calib

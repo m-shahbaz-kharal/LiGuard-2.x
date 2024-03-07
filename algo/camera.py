@@ -1,0 +1,1 @@
+def dummy(data_dict: dict, cfg_dict:dict): pass
