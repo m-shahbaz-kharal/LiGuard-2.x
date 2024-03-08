@@ -55,15 +55,12 @@ class PointCloudVisualizer:
     def update(self, data_dict):
         if "current_point_cloud_numpy" not in data_dict: return
         self.point_cloud.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, 0:3])
+        if 'current_point_cloud_point_colors' in data_dict: self.point_cloud.colors = o3d.utility.Vector3dVector(data_dict['current_point_cloud_point_colors'][:, 0:3])
         self.__update_geometry__('point_cloud', self.point_cloud)
+        
         self.__clear_bboxes__()
-
         if "current_label_list" not in data_dict: return
         for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl)
-
-    def update_colors(self, pcd_colors: np.ndarray):
-        self.point_cloud.colors = o3d.utility.Vector3dVector(pcd_colors)
-        self.__update_geometry__('point_cloud', self.point_cloud)
 
     def __add_bbox__(self, label_dict: dict):
         # bbox params

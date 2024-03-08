@@ -21,13 +21,12 @@ def colorize_point_cloud(data_dict: dict, cfg_dict: dict):
     R0_rect = data_dict['current_label_list'][0]['calib']['R0_rect']
     P2 = data_dict['current_label_list'][0]['calib']['P2']
     
-    if 'current_point_cloud_point_colors' not in data_dict: data_dict['current_point_cloud_point_colors'] = np.ones_like(data_dict['current_point_cloud_numpy'])
-    pixel_coords = P2 @ R0_rect @ Tr_velo_to_cam @ data_dict['current_point_cloud_numpy'].T
+    data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.uint8) # N X 3(RGB)
+    lidar_coords_Nx4 = np.hstack((data_dict['current_point_cloud_numpy'][:,:3], np.ones((data_dict['current_point_cloud_numpy'].shape[0], 1))))
+    pixel_coords = P2 @ R0_rect @ Tr_velo_to_cam @ lidar_coords_Nx4.T
     pixel_coords = pixel_coords[:2] / pixel_coords[2]
     pixel_coords = pixel_coords.T
     pixel_coords = pixel_coords.astype(int)
-    # Check if pixel coordinates are within image boundaries
-    valid_coords = np.logical_and.reduce((pixel_coords[:, 0] >= 0, pixel_coords[:, 0] < img_np.shape[1], pixel_coords[:, 1] >= 0, pixel_coords[:, 1] < img_np.shape[0]))
-    # Assign pixel colors to valid points
-    data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[pixel_coords[valid_coords][:, 1], pixel_coords[valid_coords][:, 0]]
     
+    valid_coords = np.logical_and.reduce((pixel_coords[:, 0] >= 0, pixel_coords[:, 0] < img_np.shape[1], pixel_coords[:, 1] >= 0, pixel_coords[:, 1] < img_np.shape[0]))
+    data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[pixel_coords[valid_coords][:, 1], pixel_coords[valid_coords][:, 0]] / 255.0
