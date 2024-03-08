@@ -44,13 +44,9 @@ proc: # liguard processing configurations
             max_xyz: [+5, +5, +5] # maximum x, y, z
         colorize_point_cloud:
             enabled: False # set True to paint point cloud with rgb
-            data_key: 'current_image_numpy' # key in LiGuard.data dict
-            Tr_velo_to_cam: 'current_label_list.calib.Tr_velo_to_cam' # key in LiGuard.data dict
-            R0_rect: 'current_label_list.calib.R0_rect' # key in LiGuard.data dict
-            P2: 'current_label_list.calib.P2' # key in LiGuard.data dict
     camera:
-        dummy:
-            enabled: False # set True to use dummy camera
+        project_point_cloud_points:
+            enabled: False
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: True # set True to crop labels
