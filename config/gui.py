@@ -176,7 +176,7 @@ class BaseConfiguration:
         except:
             self.issue_text = "Failed to save configuration file."
             self.__show_issue_dialog__()
-            time.sleep(2)
+            time.sleep(self.cfg['threads']['vis_sleep'])
             self.__close_issue_dialog__()
         for callback in self.callbacks['apply_and_save_config']: callback(self.cfg)
             

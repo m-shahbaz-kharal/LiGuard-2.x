@@ -121,7 +121,7 @@ class LiGuard:
                 self.img_visualizer.update(self.data)
                 self.img_visualizer.redraw()
             
-            time.sleep(cfg['debug']['asyncio_sleep'])
+            time.sleep(cfg['threads']['vis_sleep'])
             
     def quit(self, cfg):
         with self.lock: self.is_running = False
