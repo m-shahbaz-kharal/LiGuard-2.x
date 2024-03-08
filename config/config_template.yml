@@ -116,5 +116,7 @@ visualization: # visualization parameters
         bbox_line_width: 2 # bbox line width
         
 
-debug: # don't change unless debugging
-    asyncio_sleep: 0.01 # in seconds
+threads: # don't change unless debugging
+    io_sleep: 0.01 # input/output threads sleep time in seconds
+    proc_sleep: 0.01 # processing threads sleep time in seconds
+    vis_sleep: 0.01 # visualization threads sleep time in seconds

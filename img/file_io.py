@@ -1,10 +1,12 @@
 import cv2
 import os
 import glob
+import time
 import threading
 
 class FileIO:
     def __init__(self, cfg: dict):
+        self.cfg = cfg
         self.img_dir = os.path.join(cfg['data']['path'], cfg['data']['camera_subdir'])
         self.img_type = cfg['data']['camera']['img_type']
         self.img_count = cfg['data']['size']
@@ -32,6 +34,7 @@ class FileIO:
             file_abs_path = self.get_abs_path(idx)
             pcd_np = self.reader(file_abs_path)
             with self.data_lock: self.data.append(pcd_np)
+            time.sleep(self.cfg['threads']['io_sleep'])
         
     def __len__(self): return len(self.files_basenames)
     

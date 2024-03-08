@@ -1,11 +1,13 @@
 import os
 import glob
+import time
 import threading
 
 supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir('lbl') if 'handler' in lbl_handler]
 
 class FileIO:
     def __init__(self, cfg: dict):
+        self.cfg = cfg
         self.lbl_dir = os.path.join(cfg['data']['path'], cfg['data']['label_subdir'])
         self.clb_dir = os.path.join(cfg['data']['path'], cfg['data']['calib_subdir'])
         self.lbl_type = cfg['data']['label']['lbl_type']
@@ -36,6 +38,7 @@ class FileIO:
             lbl_abs_path, clb_abs_path = self.get_abs_path(idx)
             annotation = self.reader(lbl_abs_path, clb_abs_path)
             with self.data_lock: self.data.append(annotation)
+            time.sleep(self.cfg['threads']['io_sleep'])
         
     def __len__(self): return len(self.files_basenames)
     

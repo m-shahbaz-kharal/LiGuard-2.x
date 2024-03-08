@@ -2,12 +2,14 @@ import open3d as o3d
 import numpy as np
 import os
 import glob
+import time
 import threading
 
 supported_file_types = ['.bin', '.npy', '.ply', '.pcd']
 
 class FileIO:
-    def __init__(self, cfg: dict):        
+    def __init__(self, cfg: dict):
+        self.cfg = cfg     
         self.pcd_dir = os.path.join(cfg['data']['path'], cfg['data']['lidar_subdir'])
         self.pcd_type = cfg['data']['lidar']['pcd_type']
         self.pcd_count = cfg['data']['size']
@@ -49,6 +51,7 @@ class FileIO:
             file_abs_path = self.get_abs_path(idx)
             pcd_np = self.reader(file_abs_path)
             with self.data_lock: self.data.append(pcd_np)
+            time.sleep(self.cfg['threads']['io_sleep'])
         
     def __len__(self): return len(self.files_basenames)
     
