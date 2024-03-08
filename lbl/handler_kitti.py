@@ -1,8 +1,6 @@
 import os
 import numpy as np
 
-from calib.utils import inverse_3x4_transform
-
 colors = {
     'Car': [0, 1, 0],
     'Van': [0, 1, 0],
@@ -22,12 +20,20 @@ def Handler(label_path: str, calib_path: str):
     
     # read calib
     calib = __read_calib__(calib_path)
-    calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(3, 4)
-    calib['P2'] = calib['P2'].reshape(3, 4)
-    calib['R0_rect'] = calib['R0_rect'].reshape(3, 3)
+    
+    # must be P2[3x4] @ R0_rect[4x4] @ Tr_velo_to_cam[4x4] -> 3x4
+    calib['P2'] = calib['P2'].reshape(3, 4) # 3x4
+    
+    calib['R0_rect'] = calib['R0_rect'].reshape(3, 3) # 3x3
+    calib['R0_rect'] = np.pad(calib['R0_rect'], ((0, 1), (0, 1)), mode='constant', constant_values=0) # 4x4
+    calib['R0_rect'][3, 3] = 1
+    
+    calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(3, 4) # 3x4
+    calib['Tr_velo_to_cam'] = np.vstack((calib['Tr_velo_to_cam'], np.array([0,0,0,1], dtype=np.float32))) # 4x4
+    
     transform_from_lidar_to_image_0 = calib['Tr_velo_to_cam']
     transform_from_image_0_to_image_2 = calib['P2']
-    transform_from_image_0_to_lidar = inverse_3x4_transform(transform_from_lidar_to_image_0)
+    transform_from_image_0_to_lidar = np.linalg.inv(transform_from_lidar_to_image_0)
     
     # read label file
     if os.path.exists(label_path) == False: return output
@@ -58,6 +64,7 @@ def Handler(label_path: str, calib_path: str):
         
         lidar_xyz_center = transform_from_image_0_to_lidar @ np.append(image_0_xyz, 1).reshape(4, 1)
         lidar_xyz_center = lidar_xyz_center.T[0]
+        lidar_xyz_center = lidar_xyz_center[:3]
         lidar_xyz_center[2] += height / 2.0
         lidar_xyz_extent = np.array([width, length, height], dtype=np.float32)
         lidar_xyz_euler_angles = np.array([0, 0, -image_0_ry], dtype=np.float32)
@@ -80,5 +87,5 @@ def __read_calib__(calib_path: str):
             line = line.strip()
             if len(line) == 0: continue
             k, v = line.split(':')
-            calib[k] = np.array([float(x) for x in v.split()])
+            calib[k] = np.array([float(x) for x in v.split()], dtype=np.float32)
     return calib

@@ -30,8 +30,8 @@ def Handler(label_path: str, calib_path: str):
     calib_exists = os.path.exists(calib_path)
     if calib_exists:
         with open(calib_path, 'r') as f: calib = json.load(f)
-        extrinsic_matrix  = np.reshape(calib['extrinsic'], [4,4])
-        intrinsic_matrix  = np.reshape(calib['intrinsic'], [3,3])
+        extrinsic_matrix  = np.reshape(calib['extrinsic'], [4,4]) # Tr_velo_to_cam
+        intrinsic_matrix  = np.reshape(calib['intrinsic'], [3,3]) # P2
 
     # read label file
     if os.path.exists(label_path) == False: return output
@@ -41,19 +41,21 @@ def Handler(label_path: str, calib_path: str):
         obj_id = int(item['obj_id'])
         obj_type = item['obj_type']
         psr = item['psr']
-        psr_position_xyz = np.array([psr['position']['x'], psr['position']['y'], psr['position']['z']], dtype=np.float64)
-        psr_rotation_xyz = np.array([psr['rotation']['x'], psr['rotation']['y'], psr['rotation']['z']], dtype=np.float64)
-        psr_scale_xyz = np.array([psr['scale']['x'], psr['scale']['y'], psr['scale']['z']], dtype=np.float64)
+        psr_position_xyz = np.array([psr['position']['x'], psr['position']['y'], psr['position']['z']], dtype=np.float32)
+        psr_rotation_xyz = np.array([psr['rotation']['x'], psr['rotation']['y'], psr['rotation']['z']], dtype=np.float32)
+        psr_scale_xyz = np.array([psr['scale']['x'], psr['scale']['y'], psr['scale']['z']], dtype=np.float32)
         
         label = {}
         label['annotator'] = annotator
         label['obj_id'] = obj_id
         label['obj_type'] = obj_type
         label['psr'] = psr
+        
         if calib_exists:
             label['calib'] = calib
+            label['calib']['P2'] = intrinsic_matrix # 3x3
+            label['calib']['P2'] = np.hstack((label['calib']['P2'], np.array([[0], [0], [0]], dtype=np.float32))) # 3x4
             label['calib']['Tr_velo_to_cam'] = extrinsic_matrix
-            label['calib']['P2'] = intrinsic_matrix
         
         lidar_xyz_center = psr_position_xyz.copy()
         lidar_xyz_extent = psr_scale_xyz.copy()

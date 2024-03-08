@@ -50,22 +50,15 @@ class ImageVisualizer:
         color = camera_bbox_dict['rgb_bbox_color']
         
         # calib parameters
-        Tr_velo_to_cam = label_dict['calib']['Tr_velo_to_cam']
-        if Tr_velo_to_cam.shape[0] == 3: Tr_velo_to_cam = np.vstack((Tr_velo_to_cam, np.array([0,0,0,1])))
         P2 = label_dict['calib']['P2']
-        if P2.shape[1] == 3: P2 = np.hstack((P2, np.array([[0], [0], [0]])))
-        if 'R0_rect' in label_dict['calib']:
-            R0_rect = label_dict['calib']['R0_rect']
-            if R0_rect.shape == (3, 3):
-                R0_rect = np.pad(R0_rect, ((0, 1), (0, 1)), mode='constant', constant_values=0)
-                R0_rect[3, 3] = 1
-            label_dict['calib']['R0_rect'] = R0_rect
-            
+        if 'R0_rect' in label_dict['calib']: R0_rect = label_dict['calib']['R0_rect']
+        Tr_velo_to_cam = label_dict['calib']['Tr_velo_to_cam']
+        
         # transforms
         rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(lidar_xyz_euler_angles)
         translation_matrix = lidar_xyz_center.reshape([-1,1])
         Rt = np.concatenate([rotation_matrix,translation_matrix], axis=-1)
-        Rt_4x4 = np.concatenate([Rt, np.array([0,0,0,1]).reshape([1,-1])], axis=0)
+        Rt_4x4 = np.concatenate([Rt, np.array([0,0,0,1], dtype=np.float32).reshape([1,-1])], axis=0)
         
         # 3D bbox
         pt_x = lidar_xyz_extent[0]/2
@@ -82,7 +75,7 @@ class ImageVisualizer:
             #middle plane
             #0, y, -z, 1,   0, -y, -z, 1,  #rear-left-bottom, rear-right-bottom
             #0, -y, z, 1,   0, y, z, 1,    #rear-right-top,   rear-left-top
-        ]).reshape((-1,4))
+        ], dtype=np.float32).reshape((-1,4))
         
         # add rotation and translation
         bbox_in_world_coords = Rt_4x4 @ bbox_in_local_coords.T
@@ -108,7 +101,7 @@ class ImageVisualizer:
         cv2.line(img_np,tuple(pts[1]),tuple(pts[2]),color,self.cfg['visualization']['camera']['bbox_line_width'])
         cv2.line(img_np,tuple(pts[2]),tuple(pts[3]),color,self.cfg['visualization']['camera']['bbox_line_width'])
         cv2.line(img_np,tuple(pts[3]),tuple(pts[0]),color,self.cfg['visualization']['camera']['bbox_line_width'])
-        cv2.fillPoly(img_np, [pts[0:4].reshape((-1,1,2))],color)
+        # cv2.fillPoly(img_np, [pts[0:4].reshape((-1,1,2))],color)
         cv2.line(img_np,tuple(pts[4]),tuple(pts[5]),color,self.cfg['visualization']['camera']['bbox_line_width'])
         cv2.line(img_np,tuple(pts[5]),tuple(pts[6]),color,self.cfg['visualization']['camera']['bbox_line_width'])
         cv2.line(img_np,tuple(pts[6]),tuple(pts[7]),color,self.cfg['visualization']['camera']['bbox_line_width'])
