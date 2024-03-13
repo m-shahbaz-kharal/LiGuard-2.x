@@ -61,6 +61,8 @@ class LiGuard:
     def reset(self, cfg):
         keyboard.unhook_all()
         with self.lock: self.is_running = False
+
+        self.last_frame_index = -1
         
         if self.pcd_io != None: self.pcd_io.close()
         if cfg['data']['lidar']['enabled']: self.pcd_io = PCD_File_IO(cfg)
