@@ -89,7 +89,7 @@ class LiGuard:
         else: self.lbl_io = None
         self.data['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
         
-        self.data['max_frame_index'] = min(self.data['total_pcd_frames'], self.data['total_img_frames'], self.data['total_lbl_frames']) - 1
+        self.data['max_frame_index'] = max(self.data['total_pcd_frames'], self.data['total_img_frames'], self.data['total_lbl_frames']) - 1
         
         self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['lidar'] if cfg['proc']['lidar'][proc]['enabled']]
         self.camera_procs = [__import__('algo.camera', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['camera'] if cfg['proc']['camera'][proc]['enabled']]
@@ -108,6 +108,7 @@ class LiGuard:
             frame_changed = self.last_frame_index != self.frame_index
             
             if frame_changed:
+                print('Frame:', self.frame_index, '/', self.data['max_frame_index'])
                 self.last_frame_index = self.frame_index
                 if self.pcd_io: self.data['current_point_cloud_numpy'] = self.pcd_io[self.frame_index]
                 elif 'current_point_cloud_numpy' in self.data: self.data.pop('current_point_cloud_numpy')
