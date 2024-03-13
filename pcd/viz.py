@@ -56,6 +56,7 @@ class PointCloudVisualizer:
         if "current_point_cloud_numpy" not in data_dict: return
         self.point_cloud.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, 0:3])
         if 'current_point_cloud_point_colors' in data_dict: self.point_cloud.colors = o3d.utility.Vector3dVector(data_dict['current_point_cloud_point_colors'][:, 0:3])
+        else: self.point_cloud.paint_uniform_color([1,1,1])
         self.__update_geometry__('point_cloud', self.point_cloud)
         
         self.__clear_bboxes__()
