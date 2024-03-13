@@ -39,6 +39,7 @@ class LiGuard:
         self.is_running = False # if the app is running
         self.is_playing = False # if the frames are playing
         self.frame_index = 0
+        self.last_frame_index = -1
         self.data = dict()
         
         self.app.run()
@@ -48,10 +49,12 @@ class LiGuard:
             with self.lock:
                 if event.name == 'right':
                     self.is_playing = False
-                    if self.frame_index < self.data['max_frame_index']: self.frame_index += 1
+                    if self.frame_index < self.data['max_frame_index']:
+                        self.frame_index += 1
                 elif event.name == 'left':
                     self.is_playing = False
-                    if self.frame_index > 0: self.frame_index -= 1
+                    if self.frame_index > 0:
+                        self.frame_index -= 1
                 elif event.name == 'space':
                     self.is_playing = not self.is_playing
         
@@ -84,7 +87,7 @@ class LiGuard:
         else: self.lbl_io = None
         self.data['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
         
-        self.data['max_frame_index'] = max(self.data['total_pcd_frames'], self.data['total_img_frames'], self.data['total_lbl_frames']) - 1
+        self.data['max_frame_index'] = min(self.data['total_pcd_frames'], self.data['total_img_frames'], self.data['total_lbl_frames']) - 1
         
         self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['lidar'] if cfg['proc']['lidar'][proc]['enabled']]
         self.camera_procs = [__import__('algo.camera', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['camera'] if cfg['proc']['camera'][proc]['enabled']]
@@ -100,26 +103,34 @@ class LiGuard:
                 if not self.is_running: break
                 elif self.is_playing and self.frame_index < self.data['max_frame_index']: self.frame_index += 1
             
-            if self.pcd_io: self.data['current_point_cloud_numpy'] = self.pcd_io[self.frame_index]
-            elif 'current_point_cloud_numpy' in self.data: self.data.pop('current_point_cloud_numpy')
-            if self.img_io: self.data['current_image_numpy'] = self.img_io[self.frame_index]
-            elif 'current_image_numpy' in self.data: self.data.pop('current_image_numpy')
-            if self.lbl_io: self.data['current_label_list'] = self.lbl_io[self.frame_index]
-            elif 'current_label_list' in self.data: self.data.pop('current_label_list')
+            frame_changed = self.last_frame_index != self.frame_index
             
-            if self.pcd_io:
-                for proc in self.lidar_procs: proc(self.data, cfg)
-            if self.img_io:
-                for proc in self.camera_procs: proc(self.data, cfg)
-            if self.lbl_io:
-                for proc in self.label_procs: proc(self.data, cfg)
+            if frame_changed:
+                self.last_frame_index = self.frame_index
+                if self.pcd_io: self.data['current_point_cloud_numpy'] = self.pcd_io[self.frame_index]
+                elif 'current_point_cloud_numpy' in self.data: self.data.pop('current_point_cloud_numpy')
+                if self.img_io: self.data['current_image_numpy'] = self.img_io[self.frame_index]
+                elif 'current_image_numpy' in self.data: self.data.pop('current_image_numpy')
+                if self.lbl_io: self.data['current_label_list'] = self.lbl_io[self.frame_index]
+                elif 'current_label_list' in self.data: self.data.pop('current_label_list')
             
-            if self.pcd_io:
-                self.pcd_visualizer.update(self.data)
-                self.pcd_visualizer.redraw()
-            if self.img_io:
-                self.img_visualizer.update(self.data)
-                self.img_visualizer.redraw()
+                if self.pcd_io:
+                    for proc in self.lidar_procs: proc(self.data, cfg)
+                if self.img_io:
+                    for proc in self.camera_procs: proc(self.data, cfg)
+                if self.lbl_io:
+                    for proc in self.label_procs: proc(self.data, cfg)
+            
+                if self.pcd_io:
+                    self.pcd_visualizer.update(self.data)
+                    self.pcd_visualizer.redraw()
+                if self.img_io:
+                    self.img_visualizer.update(self.data)
+                    self.img_visualizer.redraw()
+
+            else:
+                if self.pcd_io: self.pcd_visualizer.redraw()
+                if self.img_io: self.img_visualizer.redraw()
             
             time.sleep(cfg['threads']['vis_sleep'])
             
