@@ -108,7 +108,6 @@ class LiGuard:
             frame_changed = self.last_frame_index != self.frame_index
             
             if frame_changed:
-                print('Frame:', self.frame_index, '/', self.data['max_frame_index'])
                 self.last_frame_index = self.frame_index
                 if self.pcd_io: self.data['current_point_cloud_numpy'] = self.pcd_io[self.frame_index]
                 elif 'current_point_cloud_numpy' in self.data: self.data.pop('current_point_cloud_numpy')
