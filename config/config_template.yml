@@ -44,6 +44,15 @@ proc: # liguard processing configurations
             max_xyz: [+5, +5, +5] # maximum x, y, z
         colorize_point_cloud:
             enabled: False # set True to paint point cloud with rgb
+        BGFilterDHistDPP:
+            enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
+            number_of_frame_gather_iters: 6 # number of iterations to gather frames
+            number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
+            number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
+            number_of_points_per_frame: 65536 # number of points in each point cloud
+            lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
+            bins_per_unit_length: 2 # number of bins per unit length
+            background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
     camera:
         project_point_cloud_points:
             enabled: False

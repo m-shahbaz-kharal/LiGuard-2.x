@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 def crop(data_dict: dict, cfg_dict: dict):
@@ -23,10 +24,41 @@ def colorize_point_cloud(data_dict: dict, cfg_dict: dict):
     
     data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.uint8) # N X 3(RGB)
     lidar_coords_Nx4 = np.hstack((data_dict['current_point_cloud_numpy'][:,:3], np.ones((data_dict['current_point_cloud_numpy'].shape[0], 1))))
-    pixel_coords = P2 @ R0_rect @ Tr_velo_to_cam @ lidar_coords_Nx4.T
-    pixel_coords = pixel_coords[:2] / (pixel_coords[2] + 1e-8)
-    pixel_coords = pixel_coords.T
-    pixel_coords = pixel_coords.astype(int)
     
-    valid_coords = np.logical_and.reduce((pixel_coords[:, 0] >= 0, pixel_coords[:, 0] < img_np.shape[1], pixel_coords[:, 1] >= 0, pixel_coords[:, 1] < img_np.shape[0]))
-    data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[pixel_coords[valid_coords][:, 1], pixel_coords[valid_coords][:, 0]] / 255.0
+    pixel_coords = P2 @ R0_rect @ Tr_velo_to_cam @ lidar_coords_Nx4.T
+    
+    normalized_pixel_coords_2d = pixel_coords[:2] / (pixel_coords[2] + 1e-8)
+    normalized_pixel_coords_2d = normalized_pixel_coords_2d.T
+    normalized_pixel_coords_2d = normalized_pixel_coords_2d.astype(int)
+    
+    valid_coords = np.logical_and.reduce((pixel_coords[2,:] > 0, normalized_pixel_coords_2d[:, 0] >= 0, normalized_pixel_coords_2d[:, 0] < img_np.shape[1], normalized_pixel_coords_2d[:, 1] >= 0, normalized_pixel_coords_2d[:, 1] < img_np.shape[0]))
+    data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[normalized_pixel_coords_2d[valid_coords][:, 1], normalized_pixel_coords_2d[valid_coords][:, 0]] / 255.0
+    
+def BGFilter_DHistDPP(data_dict: dict, cfg_dict: dict):
+    from utils import gather_point_clouds, skip_frames, combine_gathers
+    
+    algo_name = 'BGFilter_DHistDPP'
+    query_frames_key = f'{algo_name}_query_frames'
+    skip_frames_key = f'{algo_name}_skip_frames'
+    
+    number_of_frame_gather_iters = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_frame_gather_iters']
+    number_of_frames_in_each_gather_iter = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_frames_in_each_gather_iter']
+    number_of_skip_frames_after_each_iter = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_skip_frames_after_each_iter']
+    number_of_points_per_frame = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_points_per_frame']
+    lidar_range_in_unit_length = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['lidar_range_in_unit_length']
+    bins_per_unit_length = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['bins_per_unit_length']
+    background_density_threshold = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['background_density_threshold']
+    
+    for i in range(number_of_frame_gather_iters):
+        gathering_done = gather_point_clouds(data_dict, cfg_dict, f'{query_frames_key}_{i}', number_of_frames_in_each_gather_iter)
+        if not gathering_done: return
+        skipping_done = skip_frames(data_dict, cfg_dict, f'{skip_frames_key}_{i}', number_of_skip_frames_after_each_iter)
+        if not skipping_done: return
+    
+    gather_keys = [f'{query_frames_key}_{i}' for i in range(number_of_frame_gather_iters)]
+    combine_gathers(data_dict, cfg_dict, query_frames_key, gather_keys)
+    assert len(data_dict[query_frames_key]) == number_of_frame_gather_iters * number_of_frames_in_each_gather_iter
+    
+    from algo.custom_lidar_algo_DHistDPP import D_HistDPP
+    filter = D_HistDPP(data_dict[query_frames_key], number_of_points_per_frame, lidar_range_in_unit_length, bins_per_unit_length, background_density_threshold)
+    data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][filter(data_dict['current_point_cloud_numpy'])]
