@@ -21,9 +21,7 @@ class LiGuard:
         
         self.config = BaseConfigurationGUI(self.app)
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
-        config_call_backs['apply_and_save_config'] = [self.reset, self.start]
-        config_call_backs['apply_and_save_as_config'] = [self.reset, self.start]
-        config_call_backs['apply_only_config'] = [self.reset, self.start]
+        config_call_backs['apply_config'] = [self.reset, self.start]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         

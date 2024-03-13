@@ -9,9 +9,9 @@ class BaseConfiguration:
     def get_callbacks_dict():
         return {'new_config': [],
                 'open_config': [],
-                'apply_and_save_config': [],
-                'apply_and_save_as_config': [],
-                'apply_only_config': [],
+                'save_config': [],
+                'save_as_config': [],
+                'apply_config': [],
                 'quit_config': []}
         
     def __init__(self, app: gui.Application, callbacks = get_callbacks_dict()):
@@ -41,22 +41,22 @@ class BaseConfiguration:
         button_container = gui.Horiz(self.em * 0.2)
         self.new_config_button = gui.Button("New")
         self.open_config_button = gui.Button("Open")
-        self.apply_and_save_config_button = gui.Button("Apply & Save")
-        self.apply_and_save_as_config_button = gui.Button("Apply & Save As")
-        self.apply_only_config_button = gui.Button("Apply Only")
+        self.save_config_button = gui.Button("Save")
+        self.save_as_config_button = gui.Button("Save As")
+        self.apply_config_button = gui.Button("Apply")
         # -- set callbacks
         self.new_config_button.set_on_clicked(self.__new_config__)
         self.open_config_button.set_on_clicked(self.__open_config__)
-        self.apply_and_save_config_button.set_on_clicked(self.__apply_and_save_config__)
-        self.apply_and_save_as_config_button.set_on_clicked(self.__apply_and_save_as_config__)
-        self.apply_only_config_button.set_on_clicked(self.__apply_only_config__)
+        self.save_config_button.set_on_clicked(self.__save_config__)
+        self.save_as_config_button.set_on_clicked(self.__save_as_config__)
+        self.apply_config_button.set_on_clicked(self.__apply_config__)
         # -- add to button container
         button_container.add_stretch()
         button_container.add_child(self.new_config_button)
         button_container.add_child(self.open_config_button)
-        button_container.add_child(self.apply_and_save_config_button)
-        button_container.add_child(self.apply_and_save_as_config_button)
-        button_container.add_child(self.apply_only_config_button)
+        button_container.add_child(self.save_config_button)
+        button_container.add_child(self.save_as_config_button)
+        button_container.add_child(self.apply_config_button)
         # add to base container
         self.base_container.add_child(button_container)
         
@@ -75,7 +75,7 @@ class BaseConfiguration:
         with open(cfg_path) as f: cfg = yaml.safe_load(f)
         return cfg
     
-    def apply_and_save_config(self, cfg, cfg_path):    
+    def save_config(self, cfg, cfg_path):
         with open(cfg_path, 'w') as f: yaml.dump(cfg, f, default_flow_style=False)
             
     def generate_config_gui_from_cfg(self, item, container, parent_keys=[], margin = 0.2):
@@ -169,36 +169,36 @@ class BaseConfiguration:
         
         for callback in self.callbacks['open_config']: callback(self.cfg)
     
-    def __apply_and_save_config__(self):
+    def __save_config__(self):
         try:
             self.update_cfg_from_gui(self.cfg, ['cfg'])
-            self.apply_and_save_config(self.cfg, self.config_file_path_textedit.text_value)
+            self.save_config(self.cfg, self.config_file_path_textedit.text_value)
         except:
             self.issue_text = "Failed to save configuration file."
             self.__show_issue_dialog__()
             time.sleep(self.cfg['threads']['vis_sleep'])
             self.__close_issue_dialog__()
-        for callback in self.callbacks['apply_and_save_config']: callback(self.cfg)
+        for callback in self.callbacks['save_config']: callback(self.cfg)
             
-    def __apply_and_save_as_config__(self):
+    def __save_as_config__(self):
         def save_cfg_and_close_dialog(cfg, cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
             self.update_cfg_from_gui(self.cfg, ['cfg'])
-            self.apply_and_save_config(cfg, cfg_path)
+            self.save_config(cfg, cfg_path)
             self.mwin.close_dialog()
             
         if hasattr(self, 'cfg'):
-            apply_and_save_config_file_dialog = gui.FileDialog(gui.FileDialog.SAVE, "Save Configuration", self.mwin.theme)
-            apply_and_save_config_file_dialog.add_filter(".yml", "LiGuard Configuration (.yml)")
-            apply_and_save_config_file_dialog.set_on_cancel(lambda: self.mwin.close_dialog())
-            apply_and_save_config_file_dialog.set_on_done(lambda path: save_cfg_and_close_dialog(self.cfg, path))
-            self.mwin.show_dialog(apply_and_save_config_file_dialog)
+            save_as_config_file_dialog = gui.FileDialog(gui.FileDialog.SAVE, "Save Configuration", self.mwin.theme)
+            save_as_config_file_dialog.add_filter(".yml", "LiGuard Configuration (.yml)")
+            save_as_config_file_dialog.set_on_cancel(lambda: self.mwin.close_dialog())
+            save_as_config_file_dialog.set_on_done(lambda path: save_cfg_and_close_dialog(self.cfg, path))
+            self.mwin.show_dialog(save_as_config_file_dialog)
         
-        for callback in self.callbacks['apply_and_save_as_config']: callback(self.cfg)
+        for callback in self.callbacks['save_as_config']: callback(self.cfg)
             
-    def __apply_only_config__(self):
+    def __apply_config__(self):
         self.update_cfg_from_gui(self.cfg, ['cfg'])
-        for callback in self.callbacks['apply_only_config']: callback(self.cfg)
+        for callback in self.callbacks['apply_config']: callback(self.cfg)
         
     def __quit_config__(self):
         print("Quitting...")
