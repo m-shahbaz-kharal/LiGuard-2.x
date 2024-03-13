@@ -50,6 +50,8 @@ proc: # liguard processing configurations
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: True # set True to crop labels
+        remove_empty_labels: # remove labels with no points
+            enabled: True # set True to remove labels
 
     # background: # background detection configurations
     #     selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
