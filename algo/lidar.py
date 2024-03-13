@@ -24,7 +24,7 @@ def colorize_point_cloud(data_dict: dict, cfg_dict: dict):
     data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.uint8) # N X 3(RGB)
     lidar_coords_Nx4 = np.hstack((data_dict['current_point_cloud_numpy'][:,:3], np.ones((data_dict['current_point_cloud_numpy'].shape[0], 1))))
     pixel_coords = P2 @ R0_rect @ Tr_velo_to_cam @ lidar_coords_Nx4.T
-    pixel_coords = pixel_coords[:2] / pixel_coords[2]
+    pixel_coords = pixel_coords[:2] / (pixel_coords[2] + 1e-8)
     pixel_coords = pixel_coords.T
     pixel_coords = pixel_coords.astype(int)
     
