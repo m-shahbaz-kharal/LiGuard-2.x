@@ -55,6 +55,7 @@ def Handler(label_path: str, calib_path: str):
             label['calib'] = calib
             label['calib']['P2'] = intrinsic_matrix # 3x3
             label['calib']['P2'] = np.hstack((label['calib']['P2'], np.array([[0], [0], [0]], dtype=np.float32))) # 3x4
+            label['calib']['R0_rect'] = np.eye(4, dtype=np.float32)
             label['calib']['Tr_velo_to_cam'] = extrinsic_matrix
         
         lidar_xyz_center = psr_position_xyz.copy()
