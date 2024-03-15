@@ -36,9 +36,10 @@ class LiGuard:
         self.lock = threading.Lock()
         self.is_running = False # if the app is running
         self.is_playing = False # if the frames are playing
-        self.frame_index = 0
-        self.last_frame_index = -1
-        self.data = dict()
+        self.data_dict = dict()
+        self.data_dict['current_frame_index'] = 0
+        self.data_dict['previous_frame_index'] = -1
+        self.data_dict['maximum_frame_index'] = 0
         
         self.app.run()
         
@@ -47,12 +48,12 @@ class LiGuard:
             with self.lock:
                 if event.name == 'right':
                     self.is_playing = False
-                    if self.frame_index < self.data['max_frame_index']:
-                        self.frame_index += 1
+                    if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
+                        self.data_dict['current_frame_index'] += 1
                 elif event.name == 'left':
                     self.is_playing = False
-                    if self.frame_index > 0:
-                        self.frame_index -= 1
+                    if self.data_dict['current_frame_index'] > 0:
+                        self.data_dict['current_frame_index'] -= 1
                 elif event.name == 'space':
                     self.is_playing = not self.is_playing
         
@@ -60,13 +61,13 @@ class LiGuard:
         keyboard.unhook_all()
         with self.lock: self.is_running = False
 
-        self.last_frame_index = -1
+        self.data_dict['previous_frame_index'] = -1
         
         if self.pcd_io != None: self.pcd_io.close()
         if cfg['data']['lidar']['enabled']: self.pcd_io = PCD_File_IO(cfg)
         elif cfg['sensors']['lidar']['enabled']: self.pcd_io = PCD_Sensor_IO(cfg)
         else: self.pcd_io = None
-        self.data['total_pcd_frames'] = len(self.pcd_io) if self.pcd_io else 0
+        self.data_dict['total_pcd_frames'] = len(self.pcd_io) if self.pcd_io else 0
         
         if self.pcd_io and cfg['visualization']['enabled']:
             if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
@@ -76,7 +77,7 @@ class LiGuard:
         if cfg['data']['camera']['enabled']: self.img_io = IMG_File_IO(cfg)
         elif cfg['sensors']['camera']['enabled']: self.img_io = IMG_Sensor_IO(cfg)
         else: self.img_io = None
-        self.data['total_img_frames'] = len(self.img_io) if self.img_io else 0
+        self.data_dict['total_img_frames'] = len(self.img_io) if self.img_io else 0
         
         if self.img_io and cfg['visualization']['enabled']:
             if self.img_visualizer != None: self.img_visualizer.reset(cfg)
@@ -85,13 +86,36 @@ class LiGuard:
         if self.lbl_io != None: self.lbl_io.close()
         if cfg['data']['label']['enabled']: self.lbl_io = LBL_File_IO(cfg)
         else: self.lbl_io = None
-        self.data['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
+        self.data_dict['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
         
-        self.data['max_frame_index'] = max(self.data['total_pcd_frames'], self.data['total_img_frames'], self.data['total_lbl_frames']) - 1
+        self.data_dict['maximum_frame_index'] = max(self.data_dict['total_pcd_frames'], self.data_dict['total_img_frames'], self.data_dict['total_lbl_frames']) - 1
         
-        self.lidar_procs = [__import__('algo.lidar', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['lidar'] if cfg['proc']['lidar'][proc]['enabled']]
-        self.camera_procs = [__import__('algo.camera', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['camera'] if cfg['proc']['camera'][proc]['enabled']]
-        self.label_procs = [__import__('algo.label', fromlist=[proc]).__dict__[proc] for proc in cfg['proc']['label'] if cfg['proc']['label'][proc]['enabled']]
+        self.lidar_processes = dict()
+        for proc in cfg['proc']['lidar']:
+            enabled = cfg['proc']['lidar'][proc]['enabled']
+            if enabled:
+                priority = cfg['proc']['lidar'][proc]['priority']
+                process = __import__('algo.lidar', fromlist=[proc]).__dict__[proc]
+                self.lidar_processes[priority] = process
+        self.lidar_processes = [self.lidar_processes[priority] for priority in sorted(self.lidar_processes.keys())]
+        
+        self.camera_processes = dict()
+        for proc in cfg['proc']['camera']:
+            enabled = cfg['proc']['camera'][proc]['enabled']
+            if enabled:
+                priority = cfg['proc']['camera'][proc]['priority']
+                process = __import__('algo.camera', fromlist=[proc]).__dict__[proc]
+                self.camera_processes[priority] = process
+        self.camera_processes = [self.camera_processes[priority] for priority in sorted(self.camera_processes.keys())]
+            
+        self.label_processes = dict()
+        for proc in cfg['proc']['label']:
+            enabled = cfg['proc']['label'][proc]['enabled']
+            if enabled:
+                priority = cfg['proc']['label'][proc]['priority']
+                process = __import__('algo.label', fromlist=[proc]).__dict__[proc]
+                self.label_processes[priority] = process
+        self.label_processes = [self.label_processes[priority] for priority in sorted(self.label_processes.keys())]
         
     def start(self, cfg):
         with self.lock: self.is_running = True
@@ -101,33 +125,34 @@ class LiGuard:
         while True:
             with self.lock:
                 if not self.is_running: break
-                elif self.is_playing and self.frame_index < self.data['max_frame_index']: self.frame_index += 1
+                elif self.is_playing and self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']: self.data_dict['current_frame_index'] += 1
             
-            frame_changed = self.last_frame_index != self.frame_index
+            frame_changed = self.data_dict['previous_frame_index'] != self.data_dict['current_frame_index']
             
             if frame_changed:
-                self.last_frame_index = self.frame_index
-                if self.pcd_io: self.data['current_point_cloud_numpy'] = self.pcd_io[self.frame_index]
-                elif 'current_point_cloud_numpy' in self.data: self.data.pop('current_point_cloud_numpy')
-                if self.img_io: self.data['current_image_numpy'] = self.img_io[self.frame_index]
-                elif 'current_image_numpy' in self.data: self.data.pop('current_image_numpy')
-                if self.lbl_io: self.data['current_label_list'] = self.lbl_io[self.frame_index]
-                elif 'current_label_list' in self.data: self.data.pop('current_label_list')
+                self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
+                
+                if self.pcd_io: self.data_dict['current_point_cloud_numpy'] = self.pcd_io[self.data_dict['current_frame_index']]
+                elif 'current_point_cloud_numpy' in self.data_dict: self.data_dict.pop('current_point_cloud_numpy')
+                if self.img_io: self.data_dict['current_image_numpy'] = self.img_io[self.data_dict['current_frame_index']]
+                elif 'current_image_numpy' in self.data_dict: self.data_dict.pop('current_image_numpy')
+                if self.lbl_io: self.data_dict['current_label_list'] = self.lbl_io[self.data_dict['current_frame_index']]
+                elif 'current_label_list' in self.data_dict: self.data_dict.pop('current_label_list')
             
                 if self.pcd_io:
-                    for proc in self.lidar_procs: proc(self.data, cfg)
+                    for proc in self.lidar_processes: proc(self.data_dict, cfg)
                 if self.img_io:
-                    for proc in self.camera_procs: proc(self.data, cfg)
+                    for proc in self.camera_processes: proc(self.data_dict, cfg)
                 if self.lbl_io:
-                    for proc in self.label_procs: proc(self.data, cfg)
+                    for proc in self.label_processes: proc(self.data_dict, cfg)
             
                 if self.pcd_io:
-                    self.pcd_visualizer.update(self.data)
+                    self.pcd_visualizer.update(self.data_dict)
                     self.pcd_visualizer.redraw()
                 if self.img_io:
-                    self.img_visualizer.update(self.data)
+                    self.img_visualizer.update(self.data_dict)
                     self.img_visualizer.redraw()
-
+                    
             else:
                 if self.pcd_io: self.pcd_visualizer.redraw()
                 if self.img_io: self.img_visualizer.redraw()

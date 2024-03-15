@@ -39,13 +39,16 @@ sensors: # lidar and camera configurations
 proc: # liguard processing configurations
     lidar:
         crop:
+            priority: 2 # priority of process - lower is higher
             enabled: True # set True to crop point cloud
             min_xyz: [-5, -5, -5] # minimum x, y, z
             max_xyz: [+5, +5, +5] # maximum x, y, z
         colorize_point_cloud:
             enabled: False # set True to paint point cloud with rgb
+            priority: 3 # priority of process - lower is higher
         BGFilterDHistDPP:
             enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
+            priority: 1 # priority of process - lower is higher
             number_of_frame_gather_iters: 6 # number of iterations to gather frames
             number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
             number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
@@ -54,13 +57,17 @@ proc: # liguard processing configurations
             bins_per_unit_length: 2 # number of bins per unit length
             background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
     camera:
-        project_point_cloud_points:
-            enabled: False
+        project_point_cloud_points: # project point cloud points to camera image
+            enabled: False # set True to project point cloud points to camera image
+            priority: 1 # priority of process - lower is higher
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: True # set True to crop labels
+            priority: 1 # priority of process - lower is higher
+
         remove_empty_labels: # remove labels with no points
             enabled: True # set True to remove labels
+            priority: 2 # priority of process - lower is higher
 
     # background: # background detection configurations
     #     selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
