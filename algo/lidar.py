@@ -1,6 +1,9 @@
 import os
 import numpy as np
 
+from algo.utils import gather_point_clouds, skip_frames, combine_gathers
+from pcd.utils import fix_number_of_points_in_pcd
+
 def crop(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     pcd = data_dict['current_point_cloud_numpy']
@@ -34,12 +37,11 @@ def colorize_point_cloud(data_dict: dict, cfg_dict: dict):
     valid_coords = np.logical_and.reduce((pixel_coords[2,:] > 0, normalized_pixel_coords_2d[:, 0] >= 0, normalized_pixel_coords_2d[:, 0] < img_np.shape[1], normalized_pixel_coords_2d[:, 1] >= 0, normalized_pixel_coords_2d[:, 1] < img_np.shape[0]))
     data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[normalized_pixel_coords_2d[valid_coords][:, 1], normalized_pixel_coords_2d[valid_coords][:, 0]] / 255.0
     
-def BGFilter_DHistDPP(data_dict: dict, cfg_dict: dict):
-    from utils import gather_point_clouds, skip_frames, combine_gathers
-    
-    algo_name = 'BGFilter_DHistDPP'
+def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
+    algo_name = 'BGFilterDHistDPP'
     query_frames_key = f'{algo_name}_query_frames'
     skip_frames_key = f'{algo_name}_skip_frames'
+    filter_name = f'{algo_name}_filter'
     
     number_of_frame_gather_iters = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_frame_gather_iters']
     number_of_frames_in_each_gather_iter = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_frames_in_each_gather_iter']
@@ -49,16 +51,41 @@ def BGFilter_DHistDPP(data_dict: dict, cfg_dict: dict):
     bins_per_unit_length = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['bins_per_unit_length']
     background_density_threshold = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['background_density_threshold']
     
-    for i in range(number_of_frame_gather_iters):
-        gathering_done = gather_point_clouds(data_dict, cfg_dict, f'{query_frames_key}_{i}', number_of_frames_in_each_gather_iter)
-        if not gathering_done: return
-        skipping_done = skip_frames(data_dict, cfg_dict, f'{skip_frames_key}_{i}', number_of_skip_frames_after_each_iter)
-        if not skipping_done: return
+    if filter_name not in data_dict:
+        data_dict[f'{algo_name}_number_of_frame_gather_iters'] = number_of_frame_gather_iters
+        data_dict[f'{algo_name}_number_of_frames_in_each_gather_iter'] = number_of_frames_in_each_gather_iter
+        data_dict[f'{algo_name}_number_of_skip_frames_after_each_iter'] = number_of_skip_frames_after_each_iter
+        data_dict[f'{algo_name}_number_of_points_per_frame'] = number_of_points_per_frame
+        data_dict[f'{algo_name}_lidar_range_in_unit_length'] = lidar_range_in_unit_length
+        data_dict[f'{algo_name}_bins_per_unit_length'] = bins_per_unit_length
+        
+        for i in range(number_of_frame_gather_iters):
+            gathering_done = gather_point_clouds(data_dict, cfg_dict, f'{query_frames_key}_{i}', number_of_frames_in_each_gather_iter)
+            if not gathering_done: return
+            skipping_done = skip_frames(data_dict, cfg_dict, f'{skip_frames_key}_{i}', number_of_skip_frames_after_each_iter)
+            if not skipping_done: return
+        
+        gather_keys = [f'{query_frames_key}_{i}' for i in range(number_of_frame_gather_iters)]
+        combine_gathers(data_dict, cfg_dict, query_frames_key, gather_keys)
+        assert len(data_dict[query_frames_key]) == number_of_frame_gather_iters * number_of_frames_in_each_gather_iter
+        
+        from algo.background_filters.DHistDPP import DHistDPP
+        data_dict[query_frames_key] = [fix_number_of_points_in_pcd(frame, number_of_points_per_frame) for frame in data_dict[query_frames_key]]
+        data_dict[filter_name] = DHistDPP(data_dict[query_frames_key], number_of_points_per_frame, lidar_range_in_unit_length, bins_per_unit_length)
+    else:
+        condition = False
+        condition = condition or data_dict[f'{algo_name}_number_of_frame_gather_iters'] != number_of_frame_gather_iters
+        condition = condition or data_dict[f'{algo_name}_number_of_frames_in_each_gather_iter'] != number_of_frames_in_each_gather_iter
+        condition = condition or data_dict[f'{algo_name}_number_of_skip_frames_after_each_iter'] != number_of_skip_frames_after_each_iter
+        condition = condition or data_dict[f'{algo_name}_number_of_points_per_frame'] != number_of_points_per_frame
+        condition = condition or data_dict[f'{algo_name}_lidar_range_in_unit_length'] != lidar_range_in_unit_length
+        condition = condition or data_dict[f'{algo_name}_bins_per_unit_length'] != bins_per_unit_length
+        
+        if condition:
+            keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
+            for key in keys_to_remove: data_dict.pop(key)
+            return
     
-    gather_keys = [f'{query_frames_key}_{i}' for i in range(number_of_frame_gather_iters)]
-    combine_gathers(data_dict, cfg_dict, query_frames_key, gather_keys)
-    assert len(data_dict[query_frames_key]) == number_of_frame_gather_iters * number_of_frames_in_each_gather_iter
-    
-    from algo.custom_lidar_algo_DHistDPP import D_HistDPP
-    filter = D_HistDPP(data_dict[query_frames_key], number_of_points_per_frame, lidar_range_in_unit_length, bins_per_unit_length, background_density_threshold)
-    data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][filter(data_dict['current_point_cloud_numpy'])]
+    if filter_name in data_dict:
+        data_dict['current_point_cloud_numpy'] = fix_number_of_points_in_pcd(data_dict['current_point_cloud_numpy'], number_of_points_per_frame)
+        data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_name](data_dict['current_point_cloud_numpy'], background_density_threshold)]
