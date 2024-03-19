@@ -4,18 +4,38 @@ import numpy as np
 Author: Muhammad Shahbaz (m.shahbaz.kharal@outlook.com)
 Github: github.com/m-shahbaz-kharal
 
-Discrete Histogram of Distances-Per-Point (D_HistDPP) is a background filter for roadside LIDAR (sequential) structured point cloud data, that means, the point cloud is represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix.
+Discrete Histograms of Distances-Per-Point (D_HistDPP)
+
+It is a background filter for roadside LIDAR "structured" point cloud data.
+This (that is the term structured) essentially means that the point cloud can be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix.
+
+For example:
+    - If a LiDAR has a 1024 horizontal and 64 vertical resolution,
+    - and outputs a point cloud containing 1024x64 points where each point is from a fixed azimuth and elevation ray.
+    - Then the point cloud is structured.
+The algorithm is designed to work with such structured point clouds.
+
+The algorithm is summmarized in the following steps:
+Since the point cloud is structured, each point index represents a unique ray in the LIDAR's field of view.
+1. So, for each ray, a histogram of distance is calculated across all frames, resulting in N histograms, where N is the number of points in the point cloud.
+2. The histograms are then normalized by the number of frames.
+3. The normalized histograms are then used to filter out the background points as follows:
+    a. For each point index in the query point cloud, the distance of the point is calculated.
+    b. The distance is then used to find the bin index in the corresponding histogram (indexed by the same point index).
+    c. The density of the bin is then compared with a threshold:
+        - If the density is less than the threshold, the point is considered as foreground,
+        - otherwise background.
 """
 
-def DHistDPP(point_cloud_sequence: list, # a list of sequentially captrued point clouds, points in each frame must be equal
+def DHistDPP(point_cloud_set: list, # a list of point clouds, points in each frame must be equal
              number_of_points_per_frame: int, # number of points in each point cloud
              lidar_range_in_unit_length: float, # maximum range of lidar in lidar unit length
              bins_per_unit_length: int, # number of bins per unit length
 ):
-    number_of_frames = len(point_cloud_sequence)
-    point_cloud_sequence = np.array(point_cloud_sequence, dtype=np.float32)
+    number_of_frames = len(point_cloud_set)
+    point_cloud_set = np.array(point_cloud_set, dtype=np.float32)
     # calculate euclidean distances of all points from origin
-    distances_per_point = np.linalg.norm(point_cloud_sequence[:, :,:3], ord=2, axis=2).transpose()
+    distances_per_point = np.linalg.norm(point_cloud_set[:, :,:3], ord=2, axis=2).transpose()
     # get the most abundant distances
     bins_per_point = int(lidar_range_in_unit_length * bins_per_unit_length)
     bins = np.linspace(0, lidar_range_in_unit_length, bins_per_point+1)
