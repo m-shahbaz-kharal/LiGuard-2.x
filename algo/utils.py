@@ -13,6 +13,7 @@ def gather_point_clouds(data_dict: dict, cfg_dict: dict, key: str, count: int, g
         data_dict[key].append(data_dict['current_point_cloud_numpy'])
         data_dict[global_index_key].append(data_dict['current_frame_index'])
     
+    gathering_completed = len(data_dict[key]) >= count
     return gathering_completed
 
 def combine_gathers(data_dict: dict, cfg_dict: dict, key:str, gather_keys: list):
@@ -36,4 +37,5 @@ def skip_frames(data_dict: dict, cfg_dict: dict, key: str, skip: int, global_ind
         data_dict[key] += 1
         data_dict[global_index_key].append(data_dict['current_frame_index'])
         
+    skipping_completed = data_dict[key] >= skip 
     return skipping_completed
