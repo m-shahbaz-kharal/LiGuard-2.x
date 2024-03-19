@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 from algo.utils import gather_point_clouds, skip_frames, combine_gathers
-from pcd.utils import fix_number_of_points_in_pcd
+from pcd.utils import get_fixed_sized_point_cloud
 
 def crop(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
@@ -38,107 +38,111 @@ def colorize_point_cloud(data_dict: dict, cfg_dict: dict):
     data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[normalized_pixel_coords_2d[valid_coords][:, 1], normalized_pixel_coords_2d[valid_coords][:, 0]] / 255.0
     
 def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
+    # algo name
     algo_name = 'BGFilterDHistDPP'
+
+    # dict keys
     query_frames_key = f'{algo_name}_query_frames'
     skip_frames_key = f'{algo_name}_skip_frames'
-    filter_name = f'{algo_name}_filter'
+    params_key = f'{algo_name}_params'
+    filter_key = f'{algo_name}_filter'
+
+    # get params
+    params = cfg_dict['proc']['lidar']['BGFilterDHistDPP'].copy()
+    live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
     
-    number_of_frame_gather_iters = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_frame_gather_iters']
-    number_of_frames_in_each_gather_iter = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_frames_in_each_gather_iter']
-    number_of_skip_frames_after_each_iter = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_skip_frames_after_each_iter']
-    number_of_points_per_frame = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['number_of_points_per_frame']
-    lidar_range_in_unit_length = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['lidar_range_in_unit_length']
-    bins_per_unit_length = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['bins_per_unit_length']
-    background_density_threshold = cfg_dict['proc']['lidar']['BGFilterDHistDPP']['background_density_threshold']
-    
-    if filter_name not in data_dict:
-        data_dict[f'{algo_name}_number_of_frame_gather_iters'] = number_of_frame_gather_iters
-        data_dict[f'{algo_name}_number_of_frames_in_each_gather_iter'] = number_of_frames_in_each_gather_iter
-        data_dict[f'{algo_name}_number_of_skip_frames_after_each_iter'] = number_of_skip_frames_after_each_iter
-        data_dict[f'{algo_name}_number_of_points_per_frame'] = number_of_points_per_frame
-        data_dict[f'{algo_name}_lidar_range_in_unit_length'] = lidar_range_in_unit_length
-        data_dict[f'{algo_name}_bins_per_unit_length'] = bins_per_unit_length
+    # generate keys for query and skip frames
+    all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(params['number_of_frame_gather_iters'])]
+    all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(params['number_of_skip_frames_after_each_iter'])]
+
+    # generate filter if not exists
+    if filter_key not in data_dict:
+        data_dict[params_key] = params
         
-        for i in range(number_of_frame_gather_iters):
-            gathering_done = gather_point_clouds(data_dict, cfg_dict, f'{query_frames_key}_{i}', number_of_frames_in_each_gather_iter)
+        # gather frames
+        for i in range(params['number_of_frame_gather_iters']):
+            gathering_done = gather_point_clouds(data_dict, cfg_dict, all_query_frames_keys[i], params['number_of_frames_in_each_gather_iter'])
             if not gathering_done: return
-            skipping_done = skip_frames(data_dict, cfg_dict, f'{skip_frames_key}_{i}', number_of_skip_frames_after_each_iter)
+            skipping_done = skip_frames(data_dict, cfg_dict, all_skip_frames_keys[i], params['number_of_skip_frames_after_each_iter'])
             if not skipping_done: return
+            
+        # combine gathered frames
+        combine_gathers(data_dict, cfg_dict, query_frames_key, all_query_frames_keys)
+        assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
-        gather_keys = [f'{query_frames_key}_{i}' for i in range(number_of_frame_gather_iters)]
-        combine_gathers(data_dict, cfg_dict, query_frames_key, gather_keys)
-        assert len(data_dict[query_frames_key]) == number_of_frame_gather_iters * number_of_frames_in_each_gather_iter
-        
+        # generate filter
         from algo.background_filters.DHistDPP import DHistDPP
-        data_dict[query_frames_key] = [fix_number_of_points_in_pcd(frame, number_of_points_per_frame) for frame in data_dict[query_frames_key]]
-        data_dict[filter_name] = DHistDPP(data_dict[query_frames_key], number_of_points_per_frame, lidar_range_in_unit_length, bins_per_unit_length)
+        data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
+        data_dict[filter_key] = DHistDPP(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
+    
     else:
+        # recompute filter if non-live-editable params are changed
         condition = False
-        condition = condition or data_dict[f'{algo_name}_number_of_frame_gather_iters'] != number_of_frame_gather_iters
-        condition = condition or data_dict[f'{algo_name}_number_of_frames_in_each_gather_iter'] != number_of_frames_in_each_gather_iter
-        condition = condition or data_dict[f'{algo_name}_number_of_skip_frames_after_each_iter'] != number_of_skip_frames_after_each_iter
-        condition = condition or data_dict[f'{algo_name}_number_of_points_per_frame'] != number_of_points_per_frame
-        condition = condition or data_dict[f'{algo_name}_lidar_range_in_unit_length'] != lidar_range_in_unit_length
-        condition = condition or data_dict[f'{algo_name}_bins_per_unit_length'] != bins_per_unit_length
-        
+        for key in params:
+            if key in live_editable_params: continue
+            condition = condition or data_dict[params_key][key] != params[key]
+        # remove all algo keys if params are changed so that filter is re-computed on next call
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
             return
     
-    if filter_name in data_dict:
-        data_dict['current_point_cloud_numpy'] = fix_number_of_points_in_pcd(data_dict['current_point_cloud_numpy'], number_of_points_per_frame)
-        data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_name](data_dict['current_point_cloud_numpy'], background_density_threshold)]
+    # if filter exists, apply it
+    if filter_key in data_dict:
+        data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
+        data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
 def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
+    # algo name
     algo_name = 'BGFilterSTDF'
+
+    # dict keys
     query_frames_key = f'{algo_name}_query_frames'
     skip_frames_key = f'{algo_name}_skip_frames'
-    filter_name = f'{algo_name}_filter'
+    params_key = f'{algo_name}_params'
+    filter_key = f'{algo_name}_filter'
+
+    # get params
+    params = cfg_dict['proc']['lidar']['BGFilterSTDF'].copy()
+    live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
     
-    number_of_frame_gather_iters = cfg_dict['proc']['lidar']['BGFilterSTDF']['number_of_frame_gather_iters']
-    number_of_frames_in_each_gather_iter = cfg_dict['proc']['lidar']['BGFilterSTDF']['number_of_frames_in_each_gather_iter']
-    number_of_skip_frames_after_each_iter = cfg_dict['proc']['lidar']['BGFilterSTDF']['number_of_skip_frames_after_each_iter']
-    number_of_points_per_frame = cfg_dict['proc']['lidar']['BGFilterSTDF']['number_of_points_per_frame']
-    lidar_range_in_unit_length = cfg_dict['proc']['lidar']['BGFilterSTDF']['lidar_range_in_unit_length']
-    bins_per_unit_length = cfg_dict['proc']['lidar']['BGFilterSTDF']['bins_per_unit_length']
-    background_density_threshold = cfg_dict['proc']['lidar']['BGFilterSTDF']['background_density_threshold']
-    
-    if filter_name not in data_dict:
-        data_dict[f'{algo_name}_number_of_frame_gather_iters'] = number_of_frame_gather_iters
-        data_dict[f'{algo_name}_number_of_frames_in_each_gather_iter'] = number_of_frames_in_each_gather_iter
-        data_dict[f'{algo_name}_number_of_skip_frames_after_each_iter'] = number_of_skip_frames_after_each_iter
-        data_dict[f'{algo_name}_number_of_points_per_frame'] = number_of_points_per_frame
-        data_dict[f'{algo_name}_lidar_range_in_unit_length'] = lidar_range_in_unit_length
-        data_dict[f'{algo_name}_bins_per_unit_length'] = bins_per_unit_length
+    # generate keys for query and skip frames
+    all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(params['number_of_frame_gather_iters'])]
+    all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(params['number_of_skip_frames_after_each_iter'])]
+
+    # generate filter if not exists
+    if filter_key not in data_dict:
+        data_dict[params_key] = params
         
-        for i in range(number_of_frame_gather_iters):
-            gathering_done = gather_point_clouds(data_dict, cfg_dict, f'{query_frames_key}_{i}', number_of_frames_in_each_gather_iter)
+        # gather frames
+        for i in range(params['number_of_frame_gather_iters']):
+            gathering_done = gather_point_clouds(data_dict, cfg_dict, all_query_frames_keys[i], params['number_of_frames_in_each_gather_iter'])
             if not gathering_done: return
-            skipping_done = skip_frames(data_dict, cfg_dict, f'{skip_frames_key}_{i}', number_of_skip_frames_after_each_iter)
+            skipping_done = skip_frames(data_dict, cfg_dict, all_skip_frames_keys[i], params['number_of_skip_frames_after_each_iter'])
             if not skipping_done: return
+            
+        # combine gathered frames
+        combine_gathers(data_dict, cfg_dict, query_frames_key, all_query_frames_keys)
+        assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
-        gather_keys = [f'{query_frames_key}_{i}' for i in range(number_of_frame_gather_iters)]
-        combine_gathers(data_dict, cfg_dict, query_frames_key, gather_keys)
-        assert len(data_dict[query_frames_key]) == number_of_frame_gather_iters * number_of_frames_in_each_gather_iter
-        
+        # generate filter
         from algo.background_filters.STDF import STDF
-        data_dict[query_frames_key] = [fix_number_of_points_in_pcd(frame, number_of_points_per_frame) for frame in data_dict[query_frames_key]]
-        data_dict[filter_name] = STDF(data_dict[query_frames_key], lidar_range_in_unit_length, bins_per_unit_length)
+        data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
+        data_dict[filter_key] = STDF(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
+    
     else:
+        # recompute filter if non-live-editable params are changed
         condition = False
-        condition = condition or data_dict[f'{algo_name}_number_of_frame_gather_iters'] != number_of_frame_gather_iters
-        condition = condition or data_dict[f'{algo_name}_number_of_frames_in_each_gather_iter'] != number_of_frames_in_each_gather_iter
-        condition = condition or data_dict[f'{algo_name}_number_of_skip_frames_after_each_iter'] != number_of_skip_frames_after_each_iter
-        condition = condition or data_dict[f'{algo_name}_number_of_points_per_frame'] != number_of_points_per_frame
-        condition = condition or data_dict[f'{algo_name}_lidar_range_in_unit_length'] != lidar_range_in_unit_length
-        condition = condition or data_dict[f'{algo_name}_bins_per_unit_length'] != bins_per_unit_length
-        
+        for key in params:
+            if key in live_editable_params: continue
+            condition = condition or data_dict[params_key][key] != params[key]
+        # remove all algo keys if params are changed so that filter is re-computed on next call
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
             return
     
-    if filter_name in data_dict:
-        data_dict['current_point_cloud_numpy'] = fix_number_of_points_in_pcd(data_dict['current_point_cloud_numpy'], number_of_points_per_frame)
-        data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_name](data_dict['current_point_cloud_numpy'], background_density_threshold)]
+    # if filter exists, apply it
+    if filter_key in data_dict:
+        data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
+        data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
