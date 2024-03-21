@@ -156,7 +156,8 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     if cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']['activate_on_key_set'] not in data_dict: return
     
-    from dbscan import DBSCAN
+    try: DBSCAN = __import__('dbscan', fromlist=['DBSCAN']).DBSCAN
+    except: raise ImportError("Please install the `dbscan` package using `pip install dbscan`.")
     
     params = cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']
 
