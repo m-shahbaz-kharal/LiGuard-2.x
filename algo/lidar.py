@@ -14,7 +14,7 @@ def crop(data_dict: dict, cfg_dict: dict):
     z_condition = np.logical_and(min_xyz[2] <= pcd[:, 2], pcd[:, 2] <= max_xyz[2])
     data_dict['current_point_cloud_numpy'] = pcd[x_condition & y_condition & z_condition]
     
-def colorize_point_cloud(data_dict: dict, cfg_dict: dict):
+def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     if "current_image_numpy" not in data_dict: return
     if 'current_label_list' not in data_dict: return

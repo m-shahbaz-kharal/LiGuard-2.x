@@ -43,7 +43,7 @@ proc: # liguard processing configurations
             enabled: True # set True to crop point cloud
             min_xyz: [-5, -5, -5] # minimum x, y, z
             max_xyz: [+5, +5, +5] # maximum x, y, z
-        colorize_point_cloud:
+        project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
             priority: 3 # priority of process - lower is higher
         BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
