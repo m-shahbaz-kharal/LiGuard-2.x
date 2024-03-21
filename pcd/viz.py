@@ -64,6 +64,7 @@ class PointCloudVisualizer:
         for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl)
 
     def __add_bbox__(self, label_dict: dict):
+        if 'lidar_bbox' not in label_dict: return
         # bbox params
         lidar_bbox_dict = label_dict['lidar_bbox']
         lidar_xyz_center = lidar_bbox_dict['lidar_xyz_center']
