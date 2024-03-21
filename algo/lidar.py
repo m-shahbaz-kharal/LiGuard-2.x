@@ -146,3 +146,23 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
     if filter_key in data_dict:
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
+
+def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
+    """
+        Theoretically Efficient and Practical Parallel DBSCAN
+        https://dl.acm.org/doi/10.1145/3318464.3380582
+        """
+    
+    if "current_point_cloud_numpy" not in data_dict: return
+    if cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']['activate_on_key_set'] not in data_dict: return
+    
+    from dbscan import DBSCAN
+    
+    params = cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']
+
+    cluster_label_for_each_point_index, _ = DBSCAN(data_dict['current_point_cloud_numpy'], params['eps'], params['min_samples'])
+    point_indices_for_each_cluster_label = [label == cluster_label_for_each_point_index for label in np.unique(cluster_label_for_each_point_index)]
+
+    if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
+    for point_indices in point_indices_for_each_cluster_label:
+        data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})

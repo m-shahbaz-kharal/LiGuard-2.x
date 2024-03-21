@@ -61,7 +61,9 @@ class PointCloudVisualizer:
         
         self.__clear_bboxes__()
         if "current_label_list" not in data_dict: return
-        for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl)
+        for lbl in data_dict['current_label_list']:
+            self.__add_bbox__(lbl)
+            self.__add_cluster__(lbl)
 
     def __add_bbox__(self, label_dict: dict):
         if 'lidar_bbox' not in label_dict: return
@@ -83,6 +85,16 @@ class PointCloudVisualizer:
     def __clear_bboxes__(self):
         for bbox in self.bboxes: self.viz.remove_geometry(bbox, False)
         self.bboxes.clear()
+
+    def __add_cluster__(self, label_dict: dict):
+        if 'lidar_cluster' not in label_dict: return
+        # cluster params
+        lidar_cluster_dict = label_dict['lidar_cluster']
+        point_indices = lidar_cluster_dict['point_indices']
+        colors = np.asarray(self.point_cloud.colors)
+        if colors.shape[0] != point_indices.shape[0]: colors = np.zeros_like(self.point_cloud.points)
+        colors[point_indices] = np.random.rand(3) # ToDO: use consistent color if tracking is enabled
+        self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
         
     def redraw(self):
         self.viz.poll_events()
