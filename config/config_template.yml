@@ -10,12 +10,12 @@ data: # dataset configurations
 
     lidar:
         enabled: True # set True to read point clouds from disk
-        pcd_type: '.npy' # can be .bin or .npy
+        pcd_type: '.bin' # can be .bin or .npy
     camera:
-        enabled: True # set True to read images from disk
+        enabled: False # set True to read images from disk
         img_type: '.png' # most image types are supported
     label:
-        enabled: True # set True to read labels from disk
+        enabled: False # set True to read labels from disk
         lbl_type: 'kitti' # can be kitti, ips, lumpi
         extra_args: None # can be measurement csv path for lumpi
 
@@ -40,9 +40,9 @@ proc: # liguard processing configurations
     lidar:
         crop:
             priority: 2 # priority of process - lower is higher
-            enabled: True # set True to crop point cloud
-            min_xyz: [-5, -5, -5] # minimum x, y, z
-            max_xyz: [+5, +5, +5] # maximum x, y, z
+            enabled: False # set True to crop point cloud
+            min_xyz: [-40, -40, -4] # minimum x, y, z
+            max_xyz: [+40, +40, +2] # maximum x, y, z
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
             priority: 3 # priority of process - lower is higher
@@ -78,63 +78,12 @@ proc: # liguard processing configurations
             priority: 1 # priority of process - lower is higher
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
-            enabled: True # set True to crop labels
+            enabled: False # set True to crop labels
             priority: 1 # priority of process - lower is higher
 
         remove_empty_labels: # remove labels with no points
             enabled: False # set True to remove labels
             priority: 2 # priority of process - lower is higher
-
-    # background: # background detection configurations
-    #     selected: ['SimplePlaneModelBasedFilter', 'SimpleVoxelDensityFilter'] # chain of background filters
-    #     SimplePlaneModelBasedFilter: # it uses plane model to filter ground points
-    #         query_size: 1 # only a placeholder, don't change
-    #         model: [0.0, 0.0, 1.0, 0.0] # ground plane model in form of [a, b, c, d] where ax + by + cz + d = 0
-    #         threshold: 0.1 # threshold for distance from point to plane
-    #     SimpleVoxelDensityFilter: # it uses threshold on normalized density over multiple point clouds to filter background voxels
-    #         query_size: 100 # number of point clouds used for generating filter
-    #         voxel_size: [0.1, 0.1, 0.1] # voxel size - take care to not set strange sizes
-    #         threshold: 0.1 # voxels having more density than threshold are considered background voxels
-    #     D_HistDPPFilter: # Discrete Histogram of Distances-Per-Point
-    #         pcd_size: 1000 # number of points in point cloud
-    #         query_size: 10 # number of point clouds used for generating filter
-    #         total_bins: 100 # number of bins in histogram
-    #         background_bins: 10 # number of bins in background histogram
-    #         bin_height_threshold: 0.1 # threshold for background bin height
-    #         distance_threshold: 0.1 # threshold for distance from point to background bin
-    
-    # cluster: # clustering configurations
-    #     selected: 'DBSCANClusteringAlgo'
-    #     DBSCANClusteringAlgo: # famous DBSCAN algorithm
-    #         eps: 0.6 # maximum radius to search
-    #         min_pts: 4 # minimum number of points to consider a cluster valid
-    
-    # bbox: # bbox generation configurations
-    #     regressor: # regressor configurations
-    #         selected: 'SimpleBBoxRegressor'
-    #         SimpleBBoxRegressor: # uses Open3D's AxisAligned or OrientedBoundingBox to regress bboxes from objects' point clouds
-    #             type: 'Oriented'
-    #     validator: # bbox validator configurations
-    #         selected: 'SimpleBBoxValidator'
-    #         SimpleBBoxValidator: # uses some hardcoded heuristics to filter noisy bboxes
-    #             min_b: 0.2 # minimum possible bbox base length (lenghtier side is considered base)
-    #             max_b: 6.0 # maximum possible bbox base length (lenghtier side is considered base)
-    #             min_h: 0.6 # minimum possible bbox height
-    #             max_h: 1.8 # maximum possible bbox height
-    #             max_z_location: -4.0 # maximum location of bbox in z direction
-
-    # classifier: # classification method configuration
-    #     selected: 'SimpleVolumeBasedClassifier'
-    #     SimpleSizeBasedClassifier: # a two class classifier that only uses base length and height of the bbox to classify
-    #         Targets: ['Car', 'Pedestrian'] # classes to be annotated
-    #         Car: ['base_length', 'height'] # assumption 01: car's base length is more than its height
-    #         Pedestrian: ['height', 'base_length'] # assumption 02: pedestrian's height is more than its base length
-    #     SimpleVolumeBasedClassifier: # a mult class classifier that uses volume of the bbox to classify
-    #         Targets: ['Car', 'Pedestrian', 'Cyclist'] # classes to be annotated
-    #         Car: [10, 20] # volume range of car bbox
-    #         Pedestrian: [0.25, 1.5] # volume range of pedestrian bbox
-    #         Cyclist: [1.75, 4.0] # volume range of cyclist bbox
-
 
 visualization: # visualization parameters
     enabled: True # set True to visualize
@@ -145,7 +94,6 @@ visualization: # visualization parameters
     camera:
         bbox_line_width: 2 # bbox line width
         
-
 threads: # don't change unless debugging
     io_sleep: 0.01 # input/output threads sleep time in seconds
     proc_sleep: 0.01 # processing threads sleep time in seconds
