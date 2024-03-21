@@ -29,10 +29,17 @@ class PointCloudVisualizer:
         coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
         self.__add_geometry__('coordinate_frame', coordinate_frame, reset_bounding_box)
 
-        # add range bounds
-        bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg['proc']['lidar']['crop']['min_xyz'], self.cfg['proc']['lidar']['crop']['max_xyz'])
-        bound.color = self.cfg['visualization']['lidar']['bound_color']
-        self.__add_geometry__('bound', bound, reset_bounding_box)
+        # add default range bound
+        default_bound = o3d.geometry.AxisAlignedBoundingBox([-50, -50, -5], [+50, +50, +5])
+        default_bound.color = self.cfg['visualization']['lidar']['bound_color']
+        self.__add_geometry__('bound', default_bound, reset_bounding_box)
+
+        # if crop enabled, remove default bound and add bound according to crop params
+        if self.cfg['proc']['lidar']['crop']['enabled']:
+            crop_bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg['proc']['lidar']['crop']['min_xyz'], self.cfg['proc']['lidar']['crop']['max_xyz'])
+            crop_bound.color = self.cfg['visualization']['lidar']['bound_color']
+            self.__add_geometry__('bound', crop_bound, reset_bounding_box)
+        else: self.viz.remove_geometry(default_bound, False)
         
         # global point cloud
         self.point_cloud = create_pcd(np.zeros((1000, 4)))
