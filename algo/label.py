@@ -15,7 +15,7 @@ def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict):
         if x_condition and y_condition and z_condition: output.append(lbl_dict)
     data_dict['current_label_list'] = output
 
-def remove_empty_labels(data_dict: dict, cfg_dict: dict):
+def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
     if "current_label_list" not in data_dict: return
     if 'current_point_cloud_numpy' not in data_dict: return
 
@@ -31,6 +31,6 @@ def remove_empty_labels(data_dict: dict, cfg_dict: dict):
         R = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(bbox_euler_angles)
         rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
         inside_points = rotated_bbox.get_point_indices_within_bounding_box(o3d.utility.Vector3dVector(point_cloud[:, 0:3]))
-        if len(inside_points) > 0: output.append(lbl_dict)
+        if len(inside_points) >= cfg_dict['proc']['label']['remove_less_point_labels']['min_points']: output.append(lbl_dict)
 
     data_dict['current_label_list'] = output
