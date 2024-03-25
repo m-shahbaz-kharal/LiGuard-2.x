@@ -117,6 +117,15 @@ class LiGuard:
                 self.label_processes[priority] = process
         self.label_processes = [self.label_processes[priority] for priority in sorted(self.label_processes.keys())]
         
+        self.post_processes = dict()
+        for proc in cfg['proc']['post']:
+            enabled = cfg['proc']['post'][proc]['enabled']
+            if enabled:
+                priority = cfg['proc']['post'][proc]['priority']
+                process = __import__('algo.post', fromlist=[proc]).__dict__[proc]
+                self.post_processes[priority] = process
+        self.post_processes = [self.post_processes[priority] for priority in sorted(self.post_processes.keys())]
+        
     def start(self, cfg):
         with self.lock: self.is_running = True
         
@@ -132,11 +141,22 @@ class LiGuard:
             if frame_changed:
                 self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
                 
-                if self.pcd_io: self.data_dict['current_point_cloud_numpy'] = self.pcd_io[self.data_dict['current_frame_index']]
+                if self.pcd_io:
+                    current_point_cloud_path, current_point_cloud_numpy = self.pcd_io[self.data_dict['current_frame_index']]
+                    self.data_dict['current_point_cloud_path'] = current_point_cloud_path
+                    self.data_dict['current_point_cloud_numpy'] = current_point_cloud_numpy
                 elif 'current_point_cloud_numpy' in self.data_dict: self.data_dict.pop('current_point_cloud_numpy')
-                if self.img_io: self.data_dict['current_image_numpy'] = self.img_io[self.data_dict['current_frame_index']]
+                
+                if self.img_io:
+                    current_image_path, current_image_numpy = self.img_io[self.data_dict['current_frame_index']]
+                    self.data_dict['current_image_path'] = current_image_path
+                    self.data_dict['current_image_numpy'] = current_image_numpy
                 elif 'current_image_numpy' in self.data_dict: self.data_dict.pop('current_image_numpy')
-                if self.lbl_io: self.data_dict['current_label_list'] = self.lbl_io[self.data_dict['current_frame_index']]
+                
+                if self.lbl_io:
+                    current_label_path, current_label_list = self.lbl_io[self.data_dict['current_frame_index']]
+                    self.data_dict['current_label_path'] = current_label_path
+                    self.data_dict['current_label_list'] = current_label_list
                 elif 'current_label_list' in self.data_dict: self.data_dict.pop('current_label_list')
             
                 if self.pcd_io:
@@ -145,6 +165,8 @@ class LiGuard:
                     for proc in self.camera_processes: proc(self.data_dict, cfg)
                 if self.lbl_io:
                     for proc in self.label_processes: proc(self.data_dict, cfg)
+                
+                for proc in self.post_processes: proc(self.data_dict, cfg)
             
                 if self.pcd_io:
                     self.pcd_visualizer.update(self.data_dict)

@@ -84,6 +84,10 @@ proc: # liguard processing configurations
         remove_empty_labels: # remove labels with no points
             enabled: False # set True to remove labels
             priority: 2 # priority of process - lower is higher
+    post:
+        create_per_object_pcdet_dataset: # create per object dataset in pcdet format
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
 
 visualization: # visualization parameters
     enabled: True # set True to visualize
