@@ -50,7 +50,7 @@ class FileIO:
             if self.stop.is_set(): break
             file_abs_path = self.get_abs_path(idx)
             pcd_np = self.reader(file_abs_path)
-            with self.data_lock: self.data.append(pcd_np)
+            with self.data_lock: self.data.append((file_abs_path, pcd_np))
             time.sleep(self.cfg['threads']['io_sleep'])
         
     def __len__(self): return len(self.files_basenames)
@@ -60,7 +60,7 @@ class FileIO:
             with self.data_lock: return self.data[idx]
         except:
             file_abs_path = self.get_abs_path(idx)
-            return self.reader(file_abs_path)
+            return (file_abs_path, self.reader(file_abs_path))
         
     def close(self):
         self.stop.set()
