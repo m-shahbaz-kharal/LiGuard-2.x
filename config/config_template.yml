@@ -41,8 +41,8 @@ proc: # liguard processing configurations
         crop:
             priority: 2 # priority of process - lower is higher
             enabled: False # set True to crop point cloud
-            min_xyz: [-40, -40, -4] # minimum x, y, z
-            max_xyz: [+40, +40, +2] # maximum x, y, z
+            min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
+            max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
             priority: 3 # priority of process - lower is higher
@@ -130,6 +130,9 @@ proc: # liguard processing configurations
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher
+        create_pcdet_dataset: # create dataset in pcdet format
+            enabled: False # set True to enable
+            priority: 2 # priority of process - lower is higher
 
 visualization: # visualization parameters
     enabled: True # set True to visualize
