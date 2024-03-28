@@ -167,3 +167,66 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
     for point_indices in point_indices_for_each_cluster_label:
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})
+
+def NNCluster2Object(data_dict: dict, cfg_dict: dict):
+    algo_name = 'NNCluster2Object'
+    model_key = f'{algo_name}_model'
+    class_ids_key = f'{algo_name}_class_ids'
+    
+    if "current_point_cloud_numpy" not in data_dict: return
+    if 'current_label_list' not in data_dict: return
+    if cfg_dict['proc']['lidar']['NNCluster2Object']['activate_on_key_set'] not in data_dict: return
+    
+    checkpoint_path = cfg_dict['proc']['lidar']['NNCluster2Object']['point_nn_bbox_est_checkpoint_path']
+    assert os.path.exists(checkpoint_path), f"The checkpoint path: {checkpoint_path} doesn't exist."
+    num_points = cfg_dict['proc']['lidar']['NNCluster2Object']['point_nn_bbox_est_num_points']
+    
+    try: torch = __import__('torch')
+    except: raise ImportError("Please install the `pytorch` package using `pip install torch`.")
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    
+    if model_key not in data_dict:
+        from algo.nn.PointNN.models.bbox_est import BBoxEst
+        model = BBoxEst(num_points, 512).to(device)
+        model.load_state_dict(torch.load(checkpoint_path))
+        model.eval()
+        data_dict[model_key] = model
+        from algo.nn.PointNN.ds_loaders.pcdet import PerObjectDataLoader
+        data_dict[class_ids_key] = PerObjectDataLoader.class_id_to_key
+    
+    with torch.no_grad():
+        for label_dict in data_dict['current_label_list']:
+            if 'lidar_cluster' not in label_dict: continue
+            
+            lidar_cluster_dict = label_dict['lidar_cluster']
+            point_indices = lidar_cluster_dict['point_indices']
+            cluster = data_dict['current_point_cloud_numpy'][point_indices][:, :3]
+            
+            cluster_mean = np.mean(cluster, axis=0)
+            cluster -= cluster_mean
+            
+            if cluster.shape[0] < num_points: cluster = np.pad(cluster, ((0, num_points-cluster.shape[0]), (0,0)), mode='constant', constant_values=0)
+            elif cluster.shape[0] > num_points: cluster = cluster[:num_points]
+            
+            cluster = cluster[np.newaxis, ...]
+            cluster = torch.tensor(cluster, dtype=torch.float32).transpose(2,1).to(device)
+            
+            lidar_xyz_center, lidar_xyz_extent, ry, obj_class, crit_idxs, A_feat = data_dict[model_key](cluster)
+            lidar_xyz_center = lidar_xyz_center.detach().cpu().numpy()[0]
+            lidar_xyz_extent = lidar_xyz_extent.detach().cpu().numpy()[0]
+            ry = ry.detach().cpu().numpy()[0][0]
+            obj_class = torch.argmax(obj_class[0]).detach().cpu().numpy()
+            obj_class = data_dict[class_ids_key][obj_class.item()]
+            
+            lidar_xyz_center += cluster_mean
+            lidar_xyz_euler_angles = [0, 0, ry]
+            if obj_class in cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors']:
+                lidar_bbox_color = cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class]
+            else:
+                lidar_bbox_color = [0, 0, 0]
+            
+            label = dict()
+            label['class'] = obj_class
+            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
+            
+            data_dict['current_label_list'].append(label)

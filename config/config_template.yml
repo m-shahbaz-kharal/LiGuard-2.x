@@ -72,6 +72,15 @@ proc: # liguard processing configurations
             priority: 3 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
+        NNCluster2Object:
+            enabled: False
+            activate_on_key_set: 'current_point_cloud_numpy'
+            priority: 4
+            point_nn_bbox_est_checkpoint_path: 'point_nn_bbox_est.pth'
+            point_nn_bbox_est_num_points: 128
+            class_colors:
+                Car: [0,1,0]
+                Pedestrian: [1, 0, 0]
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
