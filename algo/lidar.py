@@ -168,6 +168,57 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     for point_indices in point_indices_for_each_cluster_label:
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})
 
+def Cluster2Object(data_dict: dict, cfg_dict: dict):
+    if "current_point_cloud_numpy" not in data_dict: return
+    if 'current_label_list' not in data_dict: return
+    if cfg_dict['proc']['lidar']['Cluster2Object']['activate_on_key_set'] not in data_dict: return
+    
+    params = cfg_dict['proc']['lidar']['Cluster2Object']
+
+    import open3d as o3d
+    
+    for label_dict in data_dict['current_label_list']:
+        if 'lidar_cluster' not in label_dict: continue
+        
+        lidar_cluster_dict = label_dict['lidar_cluster']
+        point_indices = lidar_cluster_dict['point_indices']
+        cluster = data_dict['current_point_cloud_numpy'][point_indices][:, :3]
+        
+        if params['oriented']:
+            try: bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
+            except: continue
+            lidar_xyz_center = bbox.get_center()
+            lidar_xyz_extent = bbox.extent
+            rotation_matrix = bbox.R
+            lidar_xyz_euler_angles = [0.0, # np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]),
+                                      0.0, # np.arctan2(-rotation_matrix[2,0], np.sqrt(rotation_matrix[2,1]**2 + rotation_matrix[2,2]**2)),
+                                      np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])]
+        else:
+            try: bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
+            except: continue
+            lidar_xyz_center = bbox.get_center()
+            lidar_xyz_extent = bbox.get_max_bound() - bbox.get_min_bound()
+            lidar_xyz_euler_angles = [0, 0, 0]
+        
+        base_length = lidar_xyz_extent[0] if lidar_xyz_extent[0] > lidar_xyz_extent[1] else lidar_xyz_extent[1]
+        height = lidar_xyz_extent[2]
+
+        selected_obj_class = None
+        for obj_class, size_constraint in params['size_constraints'].items():
+            base_length_range = size_constraint['base_length']
+            height_range = size_constraint['height']
+            if base_length_range[0] <= base_length < base_length_range[1]: # and height_range[0] <= height < height_range[1]:
+                selected_obj_class = obj_class
+                break
+        
+        if selected_obj_class != None:
+            lidar_bbox_color = params['class_colors'][selected_obj_class]
+            label = dict()
+            label['class'] = selected_obj_class
+            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
+            
+            data_dict['current_label_list'].append(label)
+
 def NNCluster2Object(data_dict: dict, cfg_dict: dict):
     algo_name = 'NNCluster2Object'
     model_key = f'{algo_name}_model'

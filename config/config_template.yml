@@ -72,6 +72,38 @@ proc: # liguard processing configurations
             priority: 3 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
+        Cluster2Object:
+            enabled: False
+            activate_on_key_set: 'current_point_cloud_numpy'
+            priority: 4
+            oriented: False
+            size_constraints: # in increasing order of base lengths, units in meters, left inclusive, right exclusive
+                Pedestrian:
+                    base_length: [0.35, 1.5]
+                    height: [1.0, 1.8]
+                Cyclist:
+                    base_length: [1.5, 1.75]
+                    height: [0.8, 1.6]
+                Car:
+                    base_length: [4.0, 4.8]
+                    height: [1.6, 1.8]
+                Van:
+                    base_length: [5.0, 5.4]
+                    height: [2.0, 2.2]
+                Truck:
+                    base_length: [4.8, 5.2]
+                    height: [2.2, 2.4]
+                Bus:
+                    base_length: [10.0, 12.0]
+                    height: [3.0, 3.5]
+            class_colors: # in RGB format 
+                Pedestrian: [1, 0, 0]
+                Cyclist: [0, 1, 0]
+                Car: [0, 0, 1]
+                Van: [1, 1, 0]
+                Truck: [1, 0, 1]
+                Bus: [0, 1, 1]
+                
         NNCluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
