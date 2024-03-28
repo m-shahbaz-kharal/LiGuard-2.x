@@ -71,7 +71,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
         # generate filter
-        from algo.background_filters.DHistDPP import DHistDPP
+        from algo.non_nn.DHistDPP import DHistDPP
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         data_dict[filter_key] = DHistDPP(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
     
@@ -126,7 +126,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
         # generate filter
-        from algo.background_filters.STDF import STDF
+        from algo.non_nn.STDF import STDF
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         data_dict[filter_key] = STDF(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
     
