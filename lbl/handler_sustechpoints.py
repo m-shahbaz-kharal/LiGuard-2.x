@@ -27,7 +27,6 @@ def Handler(label_path: str, calib_path: str):
     # read calib
     calib = __read_calib__(calib_path)
         
-
     # read label file
     if os.path.exists(label_path) == False: return output
     with open(label_path, 'r') as f: lbls = json.load(f)
@@ -61,7 +60,7 @@ def Handler(label_path: str, calib_path: str):
         
         output.append(label)
     
-    return output
+    return output, calib
 
 def __read_calib__(calib_path: str):
     if os.path.exists(calib_path) == False: return None
