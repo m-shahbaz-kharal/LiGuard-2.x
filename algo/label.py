@@ -8,6 +8,7 @@ def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict):
     max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
     output = []
     for lbl_dict in lbl_list:
+        if 'lidar_bbox' not in lbl_dict: continue
         bbox_center = lbl_dict['lidar_bbox']['lidar_xyz_center']
         x_condition = np.logical_and(min_xyz[0] <= bbox_center[0], bbox_center[0] <= max_xyz[0])
         y_condition = np.logical_and(min_xyz[1] <= bbox_center[1], bbox_center[1] <= max_xyz[1])
@@ -25,6 +26,7 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
     output = []
 
     for lbl_dict in lbl_list:
+        if 'lidar_bbox' not in lbl_dict: continue
         bbox_center = lbl_dict['lidar_bbox']['lidar_xyz_center']
         bbox_extent = lbl_dict['lidar_bbox']['lidar_xyz_extent']
         bbox_euler_angles = lbl_dict['lidar_bbox']['lidar_xyz_euler_angles']
