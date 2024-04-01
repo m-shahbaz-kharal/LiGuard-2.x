@@ -35,4 +35,4 @@ def Handler(label_path: str, calib_path: str):
         
         output.append(label)
     
-    return output
+    return output, None

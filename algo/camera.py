@@ -4,12 +4,12 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     if "current_image_numpy" not in data_dict: return
     if 'current_label_list' not in data_dict: return
-    if 'calib' not in data_dict['current_label_list'][0]: return
+    if 'current_calib_data' not in data_dict: return
     
-    Tr_velo_to_cam = data_dict['current_label_list'][0]['calib']['Tr_velo_to_cam']
-    if 'R0_rect' in data_dict['current_label_list'][0]['calib']: R0_rect = data_dict['current_label_list'][0]['calib']['R0_rect']
+    Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
+    if 'R0_rect' in data_dict['current_calib_data']: R0_rect = data_dict['current_calib_data']['R0_rect']
     else: R0_rect = np.eye(4,4)
-    P2 = data_dict['current_label_list'][0]['calib']['P2']
+    P2 = data_dict['current_calib_data']['P2']
     
     lidar_coords_Nx4 = np.hstack((data_dict['current_point_cloud_numpy'][:,:3], np.ones((data_dict['current_point_cloud_numpy'].shape[0], 1))))
     

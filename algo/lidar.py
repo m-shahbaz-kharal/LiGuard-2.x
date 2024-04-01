@@ -18,12 +18,12 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     if "current_image_numpy" not in data_dict: return
     if 'current_label_list' not in data_dict: return
-    if 'calib' not in data_dict['current_label_list'][0]: return
+    if 'current_calib_data' not in data_dict: return
     
     img_np = data_dict['current_image_numpy']
-    Tr_velo_to_cam = data_dict['current_label_list'][0]['calib']['Tr_velo_to_cam']
-    R0_rect = data_dict['current_label_list'][0]['calib']['R0_rect']
-    P2 = data_dict['current_label_list'][0]['calib']['P2']
+    Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
+    R0_rect = data_dict['current_calib_data']['R0_rect']
+    P2 = data_dict['current_calib_data']['P2']
     
     data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.uint8) # N X 3(RGB)
     lidar_coords_Nx4 = np.hstack((data_dict['current_point_cloud_numpy'][:,:3], np.ones((data_dict['current_point_cloud_numpy'].shape[0], 1))))
@@ -175,12 +175,6 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
     
     params = cfg_dict['proc']['lidar']['Cluster2Object']
 
-    calib_exists_for_current_label_list = None
-    for label_dict in data_dict['current_label_list']:
-        if 'calib' in label_dict:
-            calib_exists_for_current_label_list = label_dict['calib']
-            break
-
     import open3d as o3d
     
     for label_dict in data_dict['current_label_list']:
@@ -229,10 +223,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
             label = dict()
             label['class'] = selected_obj_class
             label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
-            
-            if calib_exists_for_current_label_list != None:
-                label['calib'] = calib_exists_for_current_label_list
-                label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
+            label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
             
             data_dict['current_label_list'].append(label)
 
@@ -250,12 +241,6 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
     assert os.path.exists(checkpoint_path), f"The checkpoint path: {checkpoint_path} doesn't exist."
     num_points = params['point_nn_bbox_est_num_points']
     
-    calib_exists_for_current_label_list = None
-    for label_dict in data_dict['current_label_list']:
-        if 'calib' in label_dict:
-            calib_exists_for_current_label_list = label_dict['calib']
-            break
-
     try: torch = __import__('torch')
     except: raise ImportError("Please install the `pytorch` package using `pip install torch`.")
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -317,9 +302,6 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             label = dict()
             label['class'] = obj_class
             label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
-            
-            if calib_exists_for_current_label_list != None:
-                label['calib'] = calib_exists_for_current_label_list
-                label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
+            label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
             
             data_dict['current_label_list'].append(label)

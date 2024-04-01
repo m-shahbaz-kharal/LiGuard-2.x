@@ -154,9 +154,10 @@ class LiGuard:
                 elif 'current_image_numpy' in self.data_dict: self.data_dict.pop('current_image_numpy')
                 
                 if self.lbl_io:
-                    current_label_path, current_label_list = self.lbl_io[self.data_dict['current_frame_index']]
+                    current_label_path, current_label_list, current_calib_data = self.lbl_io[self.data_dict['current_frame_index']]
                     self.data_dict['current_label_path'] = current_label_path
                     self.data_dict['current_label_list'] = current_label_list
+                    if current_calib_data != None: self.data_dict['current_calib_data'] = current_calib_data
                 elif 'current_label_list' in self.data_dict: self.data_dict.pop('current_label_list')
             
                 if self.pcd_io:

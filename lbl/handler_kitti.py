@@ -60,7 +60,6 @@ def Handler(label_path: str, calib_path: str):
         label['obj_length'] = length
         label['image_0_xyz'] = image_0_xyz
         label['image_0_ry'] = image_0_ry
-        label['calib'] = calib
         
         lidar_xyz_center = transform_from_image_0_to_lidar @ np.append(image_0_xyz, 1).reshape(4, 1)
         lidar_xyz_center = lidar_xyz_center.T[0]
@@ -78,7 +77,7 @@ def Handler(label_path: str, calib_path: str):
         
         output.append(label)
     
-    return output
+    return output, calib
 
 def __read_calib__(calib_path: str):
     calib = {}

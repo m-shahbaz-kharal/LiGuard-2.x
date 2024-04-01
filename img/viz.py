@@ -38,9 +38,11 @@ class ImageVisualizer:
         self.__add_geometry__('image', self.img, False)
         
         if "current_label_list" not in data_dict: return
-        for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl)
+        if "current_calib_data" not in data_dict: return
+        clb = data_dict['current_calib_data']
+        for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl, clb)
         
-    def __add_bbox__(self, label_dict):
+    def __add_bbox__(self, label_dict, calib_dict):
         if 'camera_bbox' not in label_dict: return
         # bbox parameters
         camera_bbox_dict = label_dict['camera_bbox']
@@ -51,9 +53,9 @@ class ImageVisualizer:
         else: color = camera_bbox_dict['rgb_bbox_color'] * 0.5 # darker color for ground truth
         
         # calib parameters
-        P2 = label_dict['calib']['P2']
-        if 'R0_rect' in label_dict['calib']: R0_rect = label_dict['calib']['R0_rect']
-        Tr_velo_to_cam = label_dict['calib']['Tr_velo_to_cam']
+        P2 = calib_dict['P2']
+        if 'R0_rect' in calib_dict: R0_rect = calib_dict['R0_rect']
+        Tr_velo_to_cam = calib_dict['Tr_velo_to_cam']
         
         # transforms
         rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(lidar_xyz_euler_angles)
@@ -83,7 +85,7 @@ class ImageVisualizer:
         # project to camera coordinates
         bbox_pts_in_camera_coords = Tr_velo_to_cam @ bbox_in_world_coords
         # rect matrix shall be applied here, for kitti
-        if 'R0_rect' in label_dict['calib']: bbox_pts_in_camera_coords = R0_rect @ bbox_pts_in_camera_coords
+        if 'R0_rect' in calib_dict: bbox_pts_in_camera_coords = R0_rect @ bbox_pts_in_camera_coords
         # if any point is behind camera, return
         if np.any(bbox_pts_in_camera_coords[2] < 0): return None
         # project to image pixel coordinates

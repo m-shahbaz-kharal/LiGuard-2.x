@@ -36,8 +36,8 @@ class FileIO:
         for idx in range(len(self.files_basenames)):
             if self.stop.is_set(): break
             lbl_abs_path, clb_abs_path = self.get_abs_path(idx)
-            annotation = self.reader(lbl_abs_path, clb_abs_path)
-            with self.data_lock: self.data.append((lbl_abs_path, annotation))
+            annotation, calib = self.reader(lbl_abs_path, clb_abs_path)
+            with self.data_lock: self.data.append((lbl_abs_path, annotation, calib))
             time.sleep(self.cfg['threads']['io_sleep'])
         
     def __len__(self): return len(self.files_basenames)
@@ -47,7 +47,8 @@ class FileIO:
             with self.data_lock: return self.data[idx]
         except:
             lbl_abs_path, clb_abs_path = self.get_abs_path(idx)
-            return (lbl_abs_path, self.reader(lbl_abs_path, clb_abs_path))
+            annotation, calib = self.reader(lbl_abs_path, clb_abs_path)
+            return (lbl_abs_path, annotation, calib)
         
     def close(self):
         self.stop.set()
