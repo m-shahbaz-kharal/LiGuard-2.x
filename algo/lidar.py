@@ -17,8 +17,7 @@ def crop(data_dict: dict, cfg_dict: dict):
 def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     if "current_image_numpy" not in data_dict: return
-    if 'current_label_list' not in data_dict: return
-    if 'current_calib_data' not in data_dict: return
+    if "current_calib_data" not in data_dict: return
     
     img_np = data_dict['current_image_numpy']
     Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']

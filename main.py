@@ -10,6 +10,7 @@ from img.file_io import FileIO as IMG_File_IO
 from img.sensor_io import SensorIO as IMG_Sensor_IO
 from img.viz import ImageVisualizer
 
+from calib.file_io import FileIO as CLB_File_IO
 from lbl.file_io import FileIO as LBL_File_IO
 
 import keyboard, threading, time
@@ -30,6 +31,8 @@ class LiGuard:
         
         self.img_io = None
         self.img_visualizer = None
+
+        self.clb_io = None
         
         self.lbl_io = None
         
@@ -82,9 +85,14 @@ class LiGuard:
         if self.img_io and cfg['visualization']['enabled']:
             if self.img_visualizer != None: self.img_visualizer.reset(cfg)
             else: self.img_visualizer = ImageVisualizer(self.app, cfg)
+
+        if self.clb_io != None: self.clb_io.close()
+        if cfg['data']['calib']['enabled']: self.clb_io = CLB_File_IO(cfg)
+        else: self.clb_io = None
+        self.data_dict['total_clb_frames'] = len(self.clb_io) if self.clb_io else 0
         
         if self.lbl_io != None: self.lbl_io.close()
-        if cfg['data']['label']['enabled']: self.lbl_io = LBL_File_IO(cfg)
+        if cfg['data']['label']['enabled']: self.lbl_io = LBL_File_IO(cfg, self.clb_io.__getitem__ if self.clb_io else None)
         else: self.lbl_io = None
         self.data_dict['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
         
@@ -107,7 +115,16 @@ class LiGuard:
                 process = __import__('algo.camera', fromlist=[proc]).__dict__[proc]
                 self.camera_processes[priority] = process
         self.camera_processes = [self.camera_processes[priority] for priority in sorted(self.camera_processes.keys())]
-            
+
+        self.calib_processes = dict()
+        for proc in cfg['proc']['calib']:
+            enabled = cfg['proc']['calib'][proc]['enabled']
+            if enabled:
+                priority = cfg['proc']['calib'][proc]['priority']
+                process = __import__('algo.calib', fromlist=[proc]).__dict__[proc]
+                self.calib_processes[priority] = process
+        self.calib_processes = [self.calib_processes[priority] for priority in sorted(self.calib_processes.keys())]
+        
         self.label_processes = dict()
         for proc in cfg['proc']['label']:
             enabled = cfg['proc']['label'][proc]['enabled']
@@ -152,18 +169,25 @@ class LiGuard:
                     self.data_dict['current_image_path'] = current_image_path
                     self.data_dict['current_image_numpy'] = current_image_numpy
                 elif 'current_image_numpy' in self.data_dict: self.data_dict.pop('current_image_numpy')
+
+                if self.clb_io:
+                    current_calib_path, current_calib_data = self.clb_io[self.data_dict['current_frame_index']]
+                    self.data_dict['current_calib_path'] = current_calib_path
+                    self.data_dict['current_calib_data'] = current_calib_data
+                elif 'current_calib_data' in self.data_dict: self.data_dict.pop('current_calib_data')
                 
                 if self.lbl_io:
-                    current_label_path, current_label_list, current_calib_data = self.lbl_io[self.data_dict['current_frame_index']]
+                    current_label_path, current_label_list = self.lbl_io[self.data_dict['current_frame_index']]
                     self.data_dict['current_label_path'] = current_label_path
                     self.data_dict['current_label_list'] = current_label_list
-                    if current_calib_data != None: self.data_dict['current_calib_data'] = current_calib_data
                 elif 'current_label_list' in self.data_dict: self.data_dict.pop('current_label_list')
             
                 if self.pcd_io:
                     for proc in self.lidar_processes: proc(self.data_dict, cfg)
                 if self.img_io:
                     for proc in self.camera_processes: proc(self.data_dict, cfg)
+                if self.clb_io:
+                    for proc in self.calib_processes: proc(self.data_dict, cfg)
                 if self.lbl_io:
                     for proc in self.label_processes: proc(self.data_dict, cfg)
                 

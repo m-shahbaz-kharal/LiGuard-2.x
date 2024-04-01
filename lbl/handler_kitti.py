@@ -13,16 +13,13 @@ colors = {
     'DontCare': [1, 1, 1]
 }
 label_file_extension = '.txt'
-calib_file_extension = '.txt'
 
-def Handler(label_path: str, calib_path: str):
+def Handler(label_path: str, calib_data: dict):
     output = []
-    
-    # read calib
-    calib = __read_calib__(calib_path)
-    if calib == None: return output, None
-    
-    transform_from_lidar_to_image_0 = calib['Tr_velo_to_cam']
+
+    if calib_data == None: return output
+
+    transform_from_lidar_to_image_0 = calib_data['Tr_velo_to_cam']
     transform_from_image_0_to_lidar = np.linalg.inv(transform_from_lidar_to_image_0)
     
     # read label file
@@ -67,26 +64,4 @@ def Handler(label_path: str, calib_path: str):
         
         output.append(label)
     
-    return output, calib
-
-def __read_calib__(calib_path: str):
-    if os.path.exists(calib_path) == False: return None
-    calib = {}
-    
-    with open(calib_path) as f:
-        for line in f.readlines():
-            line = line.strip()
-            if len(line) == 0: continue
-            k, v = line.split(':')
-            calib[k] = np.array([float(x) for x in v.split()], dtype=np.float32)
-
-    calib['P2'] = calib['P2'].reshape(3, 4) # 3x4
-    
-    calib['R0_rect'] = calib['R0_rect'].reshape(3, 3) # 3x3
-    calib['R0_rect'] = np.pad(calib['R0_rect'], ((0, 1), (0, 1)), mode='constant', constant_values=0) # 4x4
-    calib['R0_rect'][3, 3] = 1
-    
-    calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(3, 4) # 3x4
-    calib['Tr_velo_to_cam'] = np.vstack((calib['Tr_velo_to_cam'], np.array([0,0,0,1], dtype=np.float32))) # 4x4
-
-    return calib
+    return output

@@ -14,6 +14,9 @@ data: # dataset configurations
     camera:
         enabled: False # set True to read images from disk
         img_type: '.png' # most image types are supported
+    calib:
+        enabled: True # set True to read calibration files from disk
+        clb_type: 'kitti' # can be kitti or sustechpoints
     label:
         enabled: False # set True to read labels from disk
         lbl_type: 'kitti' # can be kitti, ips, lumpi
@@ -38,17 +41,12 @@ sensors: # lidar and camera configurations
 
 proc: # liguard processing configurations
     lidar:
-        crop:
-            priority: 2 # priority of process - lower is higher
-            enabled: False # set True to crop point cloud
-            min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
-            max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
-            priority: 3 # priority of process - lower is higher
+            priority: 1 # priority of process - lower is higher
         BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
             enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
-            priority: 1 # priority of process - lower is higher
+            priority: 2 # priority of process - lower is higher
             number_of_frame_gather_iters: 6 # number of iterations to gather frames
             number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
             number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
@@ -56,9 +54,14 @@ proc: # liguard processing configurations
             lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
             bins_per_unit_length: 2 # number of bins per unit length
             background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
+        crop:
+            priority: 3 # priority of process - lower is higher
+            enabled: False # set True to crop point cloud
+            min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
+            max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
         BGFilterSTDF: # Spatio-Temporal Density Filter
             enabled: False # set True to filter background using Simple Density Filter Filter
-            priority: 1 # priority of process - lower is higher
+            priority: 4 # priority of process - lower is higher
             number_of_frame_gather_iters: 6 # number of iterations to gather frames
             number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
             number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
@@ -69,13 +72,13 @@ proc: # liguard processing configurations
         Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
             enabled: False # set True to cluster point cloud using TEPP DBSCAN
             activate_on_key_set: 'current_point_cloud_numpy' # activates as soon as this key is available in data_dict, it can be set by any other process to activate this process
-            priority: 3 # priority of process - lower is higher
+            priority: 5 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
         Cluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
-            priority: 4
+            priority: 6
             oriented: False
             size_constraints: # in increasing order of base lengths, units in meters, left inclusive, right exclusive
                 Pedestrian:
@@ -107,7 +110,7 @@ proc: # liguard processing configurations
         NNCluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
-            priority: 4
+            priority: 6
             point_nn_bbox_est_checkpoint_path: 'point_nn_bbox_est.pth'
             point_nn_bbox_est_num_points: 128
             class_colors:
@@ -116,6 +119,10 @@ proc: # liguard processing configurations
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
+            priority: 1 # priority of process - lower is higher
+    calib:
+        dummy: # dummy calibration process
+            enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
@@ -132,14 +139,14 @@ proc: # liguard processing configurations
             priority: 1 # priority of process - lower is higher
         create_pcdet_dataset: # create dataset in pcdet format
             enabled: False # set True to enable
-            priority: 2 # priority of process - lower is higher
+            priority: 1 # priority of process - lower is higher
 
 visualization: # visualization parameters
     enabled: True # set True to visualize
     lidar:
         space_color: [0, 0, 0] # color of non-point-cloud
         bound_color: [0, 0, 1] # point cloud range bound bbox color
-        point_size: 1.0 # rendered point size
+        point_size: 2.0 # rendered point size
     camera:
         bbox_line_width: 2 # bbox line width
         

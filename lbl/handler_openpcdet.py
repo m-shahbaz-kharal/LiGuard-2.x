@@ -3,9 +3,8 @@ import numpy as np
 
 colors = {'Green': [0, 1, 0]}
 label_file_extension = '.txt'
-calib_file_extension = '.txt' # not used
 
-def Handler(label_path: str, calib_path: str):
+def Handler(label_path: str, calib_data: dict):
     output = []
     
     # read label file
@@ -35,4 +34,4 @@ def Handler(label_path: str, calib_path: str):
         
         output.append(label)
     
-    return output, None
+    return output
