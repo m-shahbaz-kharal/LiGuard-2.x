@@ -70,11 +70,11 @@ def Handler(label_path: str, calib_path: str):
         lidar_xyz_euler_angles = np.array([0, 0, -image_0_ry], dtype=np.float32)
         lidar_bbox_color = np.array(colors[obj_class], dtype=np.uint8)
         
-        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
+        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': False}
         
-        camera_bbox_color = np.array([i * 255 for i in colors[obj_class]], dtype=np.uint8)
+        camera_bbox_color = np.array([i * 255.0 for i in colors[obj_class]], dtype=np.uint8)
         
-        label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color}
+        label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': False}
         
         output.append(label)
     

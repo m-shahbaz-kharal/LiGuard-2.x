@@ -79,7 +79,8 @@ class PointCloudVisualizer:
         lidar_xyz_center = lidar_bbox_dict['lidar_xyz_center']
         lidar_xyz_extent = lidar_bbox_dict['lidar_xyz_extent']
         lidar_xyz_euler_angles = lidar_bbox_dict['lidar_xyz_euler_angles']
-        color = lidar_bbox_dict['rgb_bbox_color']
+        if lidar_bbox_dict['predicted']: color = lidar_bbox_dict['rgb_bbox_color']
+        else: color = lidar_bbox_dict['rgb_bbox_color'] * 0.5 # darken the color for ground truth
 
         # calculating bbox
         rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(lidar_xyz_euler_angles)

@@ -47,7 +47,8 @@ class ImageVisualizer:
         lidar_xyz_center = camera_bbox_dict['lidar_xyz_center']
         lidar_xyz_extent = camera_bbox_dict['lidar_xyz_extent']
         lidar_xyz_euler_angles = camera_bbox_dict['lidar_xyz_euler_angles']
-        color = camera_bbox_dict['rgb_bbox_color']
+        if camera_bbox_dict['predicted']: color = camera_bbox_dict['rgb_bbox_color']
+        else: color = camera_bbox_dict['rgb_bbox_color'] * 0.5 # darker color for ground truth
         
         # calib parameters
         P2 = label_dict['calib']['P2']
