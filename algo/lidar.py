@@ -175,6 +175,12 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
     
     params = cfg_dict['proc']['lidar']['Cluster2Object']
 
+    calib_exists_for_current_label_list = None
+    for label_dict in data_dict['current_label_list']:
+        if 'calib' in label_dict:
+            calib_exists_for_current_label_list = label_dict['calib']
+            break
+
     import open3d as o3d
     
     for label_dict in data_dict['current_label_list']:
@@ -187,18 +193,19 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         if params['oriented']:
             try: bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
             except: continue
-            lidar_xyz_center = bbox.get_center()
-            lidar_xyz_extent = bbox.extent
-            rotation_matrix = bbox.R
-            lidar_xyz_euler_angles = [0.0, # np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]),
-                                      0.0, # np.arctan2(-rotation_matrix[2,0], np.sqrt(rotation_matrix[2,1]**2 + rotation_matrix[2,2]**2)),
-                                      np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])]
+            lidar_xyz_center = bbox.get_center().astype(np.float32)
+            lidar_xyz_extent = bbox.extent.astype(np.float32)
+            rotation_matrix = bbox.R.astype(np.float32)
+            lidar_xyz_euler_angles = np.array(
+                [0.0, # np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]),
+                 0.0, # np.arctan2(-rotation_matrix[2,0], np.sqrt(rotation_matrix[2,1]**2 + rotation_matrix[2,2]**2)),
+                 np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])], dtype=np.float32)
         else:
             try: bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
             except: continue
-            lidar_xyz_center = bbox.get_center()
-            lidar_xyz_extent = bbox.get_max_bound() - bbox.get_min_bound()
-            lidar_xyz_euler_angles = [0, 0, 0]
+            lidar_xyz_center = bbox.get_center().astype(np.float32)
+            lidar_xyz_extent = (bbox.get_max_bound() - bbox.get_min_bound()).astype(np.float32)
+            lidar_xyz_euler_angles = np.array([0, 0, 0], dtype=np.float32)
         
         base_length = lidar_xyz_extent[0] if lidar_xyz_extent[0] > lidar_xyz_extent[1] else lidar_xyz_extent[1]
         height = lidar_xyz_extent[2]
@@ -212,10 +219,20 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
                 break
         
         if selected_obj_class != None:
-            lidar_bbox_color = params['class_colors'][selected_obj_class]
+            if selected_obj_class in params['class_colors']:
+                lidar_bbox_color = np.array(params['class_colors'][selected_obj_class], dtype=np.uint8)
+                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
+            else:
+                lidar_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
+                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
+            
             label = dict()
             label['class'] = selected_obj_class
-            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
+            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
+            
+            if calib_exists_for_current_label_list != None:
+                label['calib'] = calib_exists_for_current_label_list
+                label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
             
             data_dict['current_label_list'].append(label)
 
@@ -228,13 +245,21 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
     if 'current_label_list' not in data_dict: return
     if cfg_dict['proc']['lidar']['NNCluster2Object']['activate_on_key_set'] not in data_dict: return
     
-    checkpoint_path = cfg_dict['proc']['lidar']['NNCluster2Object']['point_nn_bbox_est_checkpoint_path']
+    params = cfg_dict['proc']['lidar']['NNCluster2Object']
+    checkpoint_path = params['point_nn_bbox_est_checkpoint_path']
     assert os.path.exists(checkpoint_path), f"The checkpoint path: {checkpoint_path} doesn't exist."
-    num_points = cfg_dict['proc']['lidar']['NNCluster2Object']['point_nn_bbox_est_num_points']
+    num_points = params['point_nn_bbox_est_num_points']
     
+    calib_exists_for_current_label_list = None
+    for label_dict in data_dict['current_label_list']:
+        if 'calib' in label_dict:
+            calib_exists_for_current_label_list = label_dict['calib']
+            break
+
     try: torch = __import__('torch')
     except: raise ImportError("Please install the `pytorch` package using `pip install torch`.")
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    import open3d as o3d
     
     if model_key not in data_dict:
         from algo.nn.PointNN.models.bbox_est import BBoxEst
@@ -252,6 +277,10 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             lidar_cluster_dict = label_dict['lidar_cluster']
             point_indices = lidar_cluster_dict['point_indices']
             cluster = data_dict['current_point_cloud_numpy'][point_indices][:, :3]
+
+            orienter_box = None
+            try: orienter_box = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
+            except: continue
             
             cluster_mean = np.mean(cluster, axis=0)
             cluster -= cluster_mean
@@ -270,14 +299,27 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             obj_class = data_dict[class_ids_key][obj_class.item()]
             
             lidar_xyz_center += cluster_mean
-            lidar_xyz_euler_angles = [0, 0, ry]
+            
+            if orienter_box != None:
+                lidar_xyz_euler_angles = np.array(
+                    [0.0,
+                     0.0,
+                     np.arctan2(orienter_box.R[1,0], orienter_box.R[0,0])], dtype=np.float32)
+            else: lidar_xyz_euler_angles = np.array([0, 0, ry], dtype=np.float32)
+            
             if obj_class in cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors']:
-                lidar_bbox_color = cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class]
+                lidar_bbox_color = np.array(cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class], dtype=np.uint8)
+                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             else:
-                lidar_bbox_color = [0, 0, 0]
+                lidar_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
+                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             
             label = dict()
             label['class'] = obj_class
-            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color}
+            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
+            
+            if calib_exists_for_current_label_list != None:
+                label['calib'] = calib_exists_for_current_label_list
+                label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
             
             data_dict['current_label_list'].append(label)
