@@ -6,3 +6,4 @@ The LiGuard Software Suite requires:
 - OpenCV (`pip install opencv-python`)
 - Ouster-SDK (`pip install ouster-sdk`)
 - Spinnaker-SDK (`https://www.flir.com/support-center/iis/machine-vision/downloads/spinnaker-sdk-download/spinnaker-sdk--download-files/`)
+- DBSCAN (`pip install dbscan`)
