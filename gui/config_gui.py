@@ -16,7 +16,6 @@ class BaseConfiguration:
         
     def __init__(self, app: gui.Application, callbacks = get_callbacks_dict()):
         self.app = app
-        self.app_path = os.path.dirname(os.path.realpath(__file__))
         
         self.mwin = app.create_window("Configuration", 480, 1080, x=0, y=30)
         self.em = self.mwin.theme.font_size
@@ -143,8 +142,8 @@ class BaseConfiguration:
         self.mwin.close_dialog()
         
     def __new_config__(self):
-        self.cfg = self.load_config(os.path.join(self.app_path, 'config_template.yml'))
-        self.config_file_path_textedit.text_value = os.path.join(self.app_path, time.strftime("%Y%m%d-%H%M%S") + ".yml")
+        self.cfg = self.load_config(os.path.join('configs', 'config_template.yml'))
+        self.config_file_path_textedit.text_value = os.path.join('configs', time.strftime("%Y%m%d-%H%M%S") + ".yml")
         cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.generate_config_gui_from_cfg(self.cfg, cfg_gui, ['cfg'])
         self.generated_config.set_widget(cfg_gui)

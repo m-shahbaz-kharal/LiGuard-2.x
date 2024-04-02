@@ -1,6 +1,6 @@
 import open3d.visualization.gui as gui
 
-from config.gui import BaseConfiguration as BaseConfigurationGUI
+from gui.config_gui import BaseConfiguration as BaseConfigurationGUI
 
 from pcd.file_io import FileIO as PCD_File_IO
 from pcd.sensor_io import SensorIO as PCD_Sensor_IO
