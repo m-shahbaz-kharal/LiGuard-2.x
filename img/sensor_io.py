@@ -13,6 +13,7 @@ class SensorIO:
         if self.model not in supported_models: raise NotImplementedError("Model not supported. Supported models: " + ', '.join(supported_models) + ".")
         
         self.cfg = cfg
+        self.img_count = cfg['data']['size']
         
         handler = __import__('img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         self.handle = handler(self.cfg)
@@ -24,9 +25,9 @@ class SensorIO:
             img_bgr = next(self.reader)
             self.img_rgb = img_bgr[:,:,::-1].copy()
             self.idx = idx
-        return self.img_rgb
+        return None, self.img_rgb
         
-    def __len__(self): return float('inf')
+    def __len__(self): return self.img_count
     
     def close(self): self.handle.close()
     

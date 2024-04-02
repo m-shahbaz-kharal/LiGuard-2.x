@@ -3,7 +3,6 @@ import numpy as np
 def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
     if "current_point_cloud_numpy" not in data_dict: return
     if "current_image_numpy" not in data_dict: return
-    if 'current_label_list' not in data_dict: return
     if 'current_calib_data' not in data_dict: return
     
     Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
