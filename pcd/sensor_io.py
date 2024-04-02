@@ -13,6 +13,7 @@ class SensorIO:
         if self.model not in supported_models: raise NotImplementedError("Model not supported. Supported models: " + ', '.join(supported_models) + ".")
         
         self.cfg = cfg
+        self.pcd_count = cfg['data']['size']
         
         handler = __import__('pcd.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         
@@ -24,8 +25,8 @@ class SensorIO:
         if idx > self.idx:
             self.pcd_intensity_np = next(self.reader)
             self.idx = idx
-        return self.pcd_intensity_np
+        return None, self.pcd_intensity_np
         
-    def __len__(self): return float('inf')
+    def __len__(self): return self.pcd_count
     
     def close(self): self.handle.close()
