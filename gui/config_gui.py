@@ -75,7 +75,7 @@ class BaseConfiguration:
         return cfg
     
     def save_config(self, cfg, cfg_path):
-        with open(cfg_path, 'w') as f: yaml.dump(cfg, f, default_flow_style=False)
+        with open(cfg_path, 'w') as f: yaml.safe_dump(cfg, f, sort_keys=False)
             
     def generate_config_gui_from_cfg(self, item, container, parent_keys=[], margin = 0.2):
         G = self.generated_config_gui_dict
