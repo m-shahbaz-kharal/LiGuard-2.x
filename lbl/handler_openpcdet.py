@@ -28,7 +28,7 @@ def Handler(label_path: str, calib_data: dict):
         lidar_xyz_center = xyz_dxdydz_rz[0:3]
         lidar_xyz_extent = xyz_dxdydz_rz[3:6]
         lidar_xyz_euler_angles = np.array([0, 0, xyz_dxdydz_rz[6]], dtype=np.float32)
-        lidar_bbox_color = np.array(colors['Green'], dtype=np.uint8)
+        lidar_bbox_color = np.array(colors['Green'], dtype=np.float32)
         
         label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': False}
         

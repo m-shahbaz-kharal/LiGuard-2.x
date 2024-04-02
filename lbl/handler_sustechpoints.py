@@ -45,8 +45,8 @@ def Handler(label_path: str, calib_data: dict):
         lidar_xyz_extent = psr_scale_xyz.copy()
         lidar_xyz_euler_angles = psr_rotation_xyz.copy()
 
-        if obj_type in colors: lidar_bbox_color = np.array([i / 255.0 for i in colors[obj_type]], dtype=np.uint8)
-        else: lidar_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
+        if obj_type in colors: lidar_bbox_color = np.array([i / 255.0 for i in colors[obj_type]], dtype=np.float32)
+        else: lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
         
         label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': False}
         

@@ -24,7 +24,7 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
     R0_rect = data_dict['current_calib_data']['R0_rect']
     P2 = data_dict['current_calib_data']['P2']
     
-    data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.uint8) # N X 3(RGB)
+    data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.float32) # N X 3(RGB)
     lidar_coords_Nx4 = np.hstack((data_dict['current_point_cloud_numpy'][:,:3], np.ones((data_dict['current_point_cloud_numpy'].shape[0], 1))))
     
     pixel_coords = P2 @ R0_rect @ Tr_velo_to_cam @ lidar_coords_Nx4.T
@@ -213,10 +213,10 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         
         if selected_obj_class != None:
             if selected_obj_class in params['class_colors']:
-                lidar_bbox_color = np.array(params['class_colors'][selected_obj_class], dtype=np.uint8)
+                lidar_bbox_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             else:
-                lidar_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
+                lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             
             label = dict()
@@ -292,10 +292,10 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             else: lidar_xyz_euler_angles = np.array([0, 0, ry], dtype=np.float32)
             
             if obj_class in cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors']:
-                lidar_bbox_color = np.array(cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class], dtype=np.uint8)
+                lidar_bbox_color = np.array(cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             else:
-                lidar_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
+                lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             
             label = dict()
