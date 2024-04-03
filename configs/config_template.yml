@@ -56,12 +56,9 @@ proc: # liguard processing configurations
             enabled: False # set True to crop point cloud
             min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
             max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
-        project_image_pixel_colors:
-            enabled: False # set True to paint point cloud with rgb
-            priority: 3 # priority of process - lower is higher
         BGFilterSTDF: # Spatio-Temporal Density Filter
             enabled: False # set True to filter background using Simple Density Filter Filter
-            priority: 4 # priority of process - lower is higher
+            priority: 3 # priority of process - lower is higher
             number_of_frame_gather_iters: 6 # number of iterations to gather frames
             number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
             number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
@@ -72,13 +69,13 @@ proc: # liguard processing configurations
         Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
             enabled: False # set True to cluster point cloud using TEPP DBSCAN
             activate_on_key_set: 'current_point_cloud_numpy' # activates as soon as this key is available in data_dict, it can be set by any other process to activate this process
-            priority: 5 # priority of process - lower is higher
+            priority: 4 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
         Cluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
-            priority: 6
+            priority: 4
             oriented: False
             size_constraints: # in increasing order of base lengths, units in meters, left inclusive, right exclusive
                 Pedestrian:
@@ -106,16 +103,18 @@ proc: # liguard processing configurations
                 Van: [1, 1, 0]
                 Truck: [1, 0, 1]
                 Bus: [0, 1, 1]
-                
         NNCluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
-            priority: 6
+            priority: 5
             point_nn_bbox_est_checkpoint_path: 'checkpoints/point_nn_bbox_est.pth'
             point_nn_bbox_est_num_points: 128
             class_colors:
                 Car: [0,1,0]
                 Pedestrian: [1, 0, 0]
+        project_image_pixel_colors:
+            enabled: False # set True to paint point cloud with rgb
+            priority: 6 # priority of process - lower is higher
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
