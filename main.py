@@ -224,6 +224,11 @@ class LiGuard:
                 elif 'current_label_list' in self.data_dict:
                     self.logger.log(f'[main.py->LiGuard->start]: current_label_list found in data_dict while lbl_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_label_list')
+
+                if not any([self.pcd_io, self.img_io, self.clb_io, self.lbl_io]):
+                    self.logger.log(f'[main.py->LiGuard->start]: no data source is enabled, exiting in 5 seconds...', Logger.CRITICAL)
+                    time.sleep(5)
+                    break
             
                 if self.pcd_io:
                     for proc in self.lidar_processes: proc(self.data_dict, cfg)
@@ -265,5 +270,5 @@ class LiGuard:
         
 def main():
     LiGuard()
-    
+
 main()
