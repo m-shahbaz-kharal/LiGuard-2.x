@@ -79,48 +79,81 @@ class LiGuard:
         
         if self.pcd_io != None: self.pcd_io.close()
         if cfg['data']['lidar']['enabled']:
-            self.pcd_io = PCD_File_IO(cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: PCD_File_IO created', Logger.DEBUG)
+            try:
+                self.pcd_io = PCD_File_IO(cfg)
+                self.logger.log(f'[main.py->LiGuard->reset]: PCD_File_IO created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: PCD_File_IO creation failed:\n{e}', Logger.CRITICAL)
+                self.pcd_io = None
         elif cfg['sensors']['lidar']['enabled']:
-            self.pcd_io = PCD_Sensor_IO(cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: PCD_Sensor_IO created', Logger.DEBUG)
+            try:
+                self.pcd_io = PCD_Sensor_IO(cfg)
+                self.logger.log(f'[main.py->LiGuard->reset]: PCD_Sensor_IO created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: PCD_Sensor_IO creation failed:\n{e}', Logger.CRITICAL)
+                self.pcd_io = None
         else: self.pcd_io = None
         self.data_dict['total_pcd_frames'] = len(self.pcd_io) if self.pcd_io else 0
         self.logger.log(f'[main.py->LiGuard->reset]: total_pcd_frames: {self.data_dict["total_pcd_frames"]}', Logger.DEBUG)
         
         if self.pcd_io and cfg['visualization']['enabled']:
             if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
-            else: self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer created', Logger.DEBUG)
+            else:
+                try:
+                    self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
+                    self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer created', Logger.DEBUG)
+                except Exception as e:
+                    self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer creation failed:\n{e}', Logger.CRITICAL)
+                    self.pcd_visualizer = None
         
         if self.img_io != None: self.img_io.close()
         if cfg['data']['camera']['enabled']:
-            self.img_io = IMG_File_IO(cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: IMG_File_IO created', Logger.DEBUG)
+            try:
+                self.img_io = IMG_File_IO(cfg)
+                self.logger.log(f'[main.py->LiGuard->reset]: IMG_File_IO created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: IMG_File_IO creation failed:\n{e}', Logger.CRITICAL)
+                self.img_io = None
         elif cfg['sensors']['camera']['enabled']:
-            self.img_io = IMG_Sensor_IO(cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: IMG_Sensor_IO created', Logger.DEBUG)
+            try:
+                self.img_io = IMG_Sensor_IO(cfg)
+                self.logger.log(f'[main.py->LiGuard->reset]: IMG_Sensor_IO created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: IMG_Sensor_IO creation failed:\n{e}', Logger.CRITICAL)
+                self.img_io = None
         else: self.img_io = None
         self.data_dict['total_img_frames'] = len(self.img_io) if self.img_io else 0
         self.logger.log(f'[main.py->LiGuard->reset]: total_img_frames: {self.data_dict["total_img_frames"]}', Logger.DEBUG)
         
         if self.img_io and cfg['visualization']['enabled']:
-            if self.img_visualizer != None: self.img_visualizer.reset(cfg)
-            else: self.img_visualizer = ImageVisualizer(self.app, cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: ImageVisualizer created', Logger.DEBUG)
+            try:
+                if self.img_visualizer != None: self.img_visualizer.reset(cfg)
+                else: self.img_visualizer = ImageVisualizer(self.app, cfg)
+                self.logger.log(f'[main.py->LiGuard->reset]: ImageVisualizer created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: ImageVisualizer creation failed:\n{e}', Logger.CRITICAL)
+                self.img_visualizer = None
 
         if self.clb_io != None: self.clb_io.close()
         if cfg['data']['calib']['enabled']:
-            self.clb_io = CLB_File_IO(cfg)
-            self.logger.log(f'[main.py->LiGuard->reset]: CLB_File_IO created', Logger.DEBUG)
+            try:
+                self.clb_io = CLB_File_IO(cfg)
+                self.logger.log(f'[main.py->LiGuard->reset]: CLB_File_IO created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: CLB_File_IO creation failed:\n{e}', Logger.CRITICAL)
+                self.clb_io = None
         else: self.clb_io = None
         self.data_dict['total_clb_frames'] = len(self.clb_io) if self.clb_io else 0
         self.logger.log(f'[main.py->LiGuard->reset]: total_clb_frames: {self.data_dict["total_clb_frames"]}', Logger.DEBUG)
         
         if self.lbl_io != None: self.lbl_io.close()
         if cfg['data']['label']['enabled']:
-            self.lbl_io = LBL_File_IO(cfg, self.clb_io.__getitem__ if self.clb_io else None)
-            self.logger.log(f'[main.py->LiGuard->reset]: LBL_File_IO created', Logger.DEBUG)
+            try:
+                self.lbl_io = LBL_File_IO(cfg, self.clb_io.__getitem__ if self.clb_io else None)
+                self.logger.log(f'[main.py->LiGuard->reset]: LBL_File_IO created', Logger.DEBUG)
+            except Exception as e:
+                self.logger.log(f'[main.py->LiGuard->reset]: LBL_File_IO creation failed:\n{e}', Logger.CRITICAL)
+                self.lbl_io = None
         else: self.lbl_io = None
         self.data_dict['total_lbl_frames'] = len(self.lbl_io) if self.lbl_io else 0
         self.logger.log(f'[main.py->LiGuard->reset]: total_lbl_frames: {self.data_dict["total_lbl_frames"]}', Logger.DEBUG)
