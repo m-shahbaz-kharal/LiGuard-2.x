@@ -12,19 +12,20 @@ class Logger:
     __level_string__ = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     __level_color__ = [gui.Color(255,255,255,255), gui.Color(0,255,0,255), gui.Color(255,255,0,255), gui.Color(255,0,0,255), gui.Color(255,0,255,255)]
     
-    def __init__(self, app: gui.Application, cfg: dict, level:int = INFO):
-        if level < Logger.DEBUG or level > Logger.CRITICAL: raise ValueError("Invalid log level")
-
+    def __init__(self, app: gui.Application):
         self.app = app
+
+        self.mwin = app.create_window("Log", 440, 1080, x=1480, y=30)
+        self.em = self.mwin.theme.font_size
+
+        self.__init__layout__()
+        self.mwin.post_redraw()
+        
+    def reset(self, cfg: dict, level:int = INFO):
+        if level < Logger.DEBUG or level > Logger.CRITICAL: raise ValueError("Invalid log level")
         self.level = level
         
         self.log_file_path = time.strftime("log_%Y%m%d-%H%M%S") + ".txt"
-        
-        self.mwin = app.create_window("Log", 440, 1080, x=1480, y=30)
-        self.em = self.mwin.theme.font_size
-        
-        self.__init__layout__()
-        self.mwin.post_redraw()
 
         self.log('\n\nConfiguartion:\n\n' + yaml.dump(cfg) + '\n\nLog:\n\n', Logger.CRITICAL)
         self.__clear_log__()
@@ -66,7 +67,7 @@ class Logger:
     def __clear_log__(self):
         scroll_vert = gui.ScrollableVert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.log_container.set_widget(scroll_vert)
-    
+
 if __name__ == "__main__":
     app = gui.Application.instance
     app.initialize()

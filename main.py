@@ -23,6 +23,7 @@ class LiGuard:
         self.app.initialize()
         
         self.config = BaseConfigurationGUI(self.app)
+        self.logger = Logger(self.app)
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
         config_call_backs['apply_config'] = [self.reset, self.start]
         config_call_backs['quit_config'] = [self.quit]
@@ -43,6 +44,7 @@ class LiGuard:
         self.is_playing = False # if the frames are playing
         self.data_dict = dict()
         self.data_dict['root_path'] = os.path.abspath(os.path.curdir)
+        self.data_dict['logger'] = self.logger
         self.data_dict['current_frame_index'] = 0
         self.data_dict['previous_frame_index'] = -1
         self.data_dict['maximum_frame_index'] = 0
@@ -64,8 +66,8 @@ class LiGuard:
                     self.is_playing = not self.is_playing
         
     def reset(self, cfg):
-        self.logger = Logger(self.app, cfg)
-        self.data_dict['logger'] = self.logger
+        logger:Logger = self.data_dict['logger']
+        logger.reset(cfg)
 
         keyboard.unhook_all()
         with self.lock: self.is_running = False
