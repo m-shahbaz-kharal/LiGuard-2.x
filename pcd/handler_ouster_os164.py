@@ -22,8 +22,12 @@ class Handler:
         if self.hostname == 'localhost': self.hostname = 'os-'+self.serial_no+'.local'
         self.client.set_config(self.hostname, config, udp_dest_auto=True)
         
-        self.stream = self.client.Scans.stream(hostname=self.hostname, lidar_port=config.udp_port_lidar)
-        self.xyz_lut = self.client.XYZLut(self.stream.metadata)
+        try:
+            self.stream = self.client.Scans.stream(hostname=self.hostname, lidar_port=config.udp_port_lidar)
+            self.xyz_lut = self.client.XYZLut(self.stream.metadata)
+        except Exception as e:
+            raise Exception(f"Error connecting to Ouster OS1-64: {e}")
+            
         self.reader = self.__get_reader__()
 
     def __get_reader__(self):
