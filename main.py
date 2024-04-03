@@ -67,7 +67,10 @@ class LiGuard:
         
     def reset(self, cfg):
         logger:Logger = self.data_dict['logger']
-        logger.reset(cfg)
+        if not hasattr(self, 'last_data_path'):
+            self.last_data_path = cfg['data']['path']
+            logger.reset(cfg)
+        if self.last_data_path != cfg['data']['path']: logger.reset(cfg)
 
         keyboard.unhook_all()
         with self.lock: self.is_running = False
