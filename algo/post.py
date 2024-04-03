@@ -1,7 +1,17 @@
+from gui.logger_gui import Logger
+
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
-    if 'current_point_cloud_numpy' not in data_dict: return
-    if "current_label_list" not in data_dict: return
-    if "current_label_path" not in data_dict: return
+    logger:Logger = data_dict['logger']
+
+    if 'current_point_cloud_numpy' not in data_dict:
+        logger.log('[algo->post.py->create_per_object_pcdet_dataset]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if "current_label_list" not in data_dict:
+        logger.log('[algo->post.py->create_per_object_pcdet_dataset]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+    if "current_label_path" not in data_dict:
+        logger.log('[algo->post.py->create_per_object_pcdet_dataset]: current_label_path not found in data_dict', Logger.ERROR)
+        return
     
     import os
     import numpy as np
@@ -26,7 +36,10 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
         bbox_euler_angles = label_dict['lidar_bbox']['lidar_xyz_euler_angles']
         R = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(bbox_euler_angles)
         
-        rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
+        try: rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
+        except:
+            logger.log(f'[algo->post.py->create_per_object_pcdet_dataset]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
+            continue
         inside_points = rotated_bbox.get_point_indices_within_bounding_box(o3d.utility.Vector3dVector(current_point_cloud_numpy[:, :3]))
         object_point_cloud = current_point_cloud_numpy[inside_points]
         
@@ -48,9 +61,17 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
             f.write(lbl_str)
 
 def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
-    if 'current_point_cloud_numpy' not in data_dict: return
-    if "current_label_list" not in data_dict: return
-    if "current_label_path" not in data_dict: return
+    logger:Logger = data_dict['logger']
+
+    if 'current_point_cloud_numpy' not in data_dict:
+        logger.log('[algo->post.py->create_pcdet_dataset]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if "current_label_list" not in data_dict:
+        logger.log('[algo->post.py->create_pcdet_dataset]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+    if "current_label_path" not in data_dict:
+        logger.log('[algo->post.py->create_pcdet_dataset]: current_label_path not found in data_dict', Logger.ERROR)
+        return
     
     import os
     import numpy as np

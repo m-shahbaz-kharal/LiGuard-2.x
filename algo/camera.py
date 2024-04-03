@@ -1,9 +1,17 @@
 import numpy as np
+from gui.logger_gui import Logger
 
 def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
-    if "current_point_cloud_numpy" not in data_dict: return
-    if "current_image_numpy" not in data_dict: return
-    if 'current_calib_data' not in data_dict: return
+    logger:Logger = data_dict['logger']
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->camera.py->project_point_cloud_points]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if "current_image_numpy" not in data_dict:
+        logger.log('[alog->camera.py->project_point_cloud_points]: current_image_numpy not found in data_dict', Logger.ERROR)
+        return
+    if 'current_calib_data' not in data_dict:
+        logger.log('[algo->camera.pyproject_point_cloud_points]: current_calib_data not found in data_dict', Logger.ERROR)
+        return
     
     Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
     if 'R0_rect' in data_dict['current_calib_data']: R0_rect = data_dict['current_calib_data']['R0_rect']

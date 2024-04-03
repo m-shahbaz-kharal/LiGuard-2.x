@@ -4,8 +4,14 @@ import numpy as np
 from algo.utils import gather_point_clouds, skip_frames, combine_gathers
 from pcd.utils import get_fixed_sized_point_cloud
 
+from gui.logger_gui import Logger
+
 def crop(data_dict: dict, cfg_dict: dict):
-    if "current_point_cloud_numpy" not in data_dict: return
+    logger:Logger = data_dict['logger']
+
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->crop]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
     pcd = data_dict['current_point_cloud_numpy']
     min_xyz = cfg_dict['proc']['lidar']['crop']['min_xyz']
     max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
@@ -13,11 +19,19 @@ def crop(data_dict: dict, cfg_dict: dict):
     y_condition = np.logical_and(min_xyz[1] <= pcd[:, 1], pcd[:, 1] <= max_xyz[1])
     z_condition = np.logical_and(min_xyz[2] <= pcd[:, 2], pcd[:, 2] <= max_xyz[2])
     data_dict['current_point_cloud_numpy'] = pcd[x_condition & y_condition & z_condition]
+    data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.float32)
     
 def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
-    if "current_point_cloud_numpy" not in data_dict: return
-    if "current_image_numpy" not in data_dict: return
-    if "current_calib_data" not in data_dict: return
+    logger:Logger = data_dict['logger']
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->project_image_pixel_colors]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if "current_image_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->project_image_pixel_colors]: current_image_numpy not found in data_dict', Logger.ERROR)
+        return
+    if "current_calib_data" not in data_dict:
+        logger.log('[algo->lidar.py->project_image_pixel_colors]: current_calib_data not found in data_dict', Logger.ERROR)
+        return
     
     img_np = data_dict['current_image_numpy']
     Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
@@ -37,6 +51,8 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
     data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[normalized_pixel_coords_2d[valid_coords][:, 1], normalized_pixel_coords_2d[valid_coords][:, 0]] / 255.0
     
 def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
+    logger:Logger = data_dict['logger']
+
     # algo name
     algo_name = 'BGFilterDHistDPP'
 
@@ -70,10 +86,11 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
         # generate filter
+        logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Generating filter', Logger.INFO)
         from algo.non_nn.DHistDPP import DHistDPP
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         data_dict[filter_key] = DHistDPP(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
-    
+        logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter generated', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -92,6 +109,8 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
 def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
+    logger:Logger = data_dict['logger']
+
     # algo name
     algo_name = 'BGFilterSTDF'
 
@@ -125,10 +144,11 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
         # generate filter
+        logger.log(f'[algo->lidar.py->BGFilterSTDF]: Generating filter', Logger.INFO)
         from algo.non_nn.STDF import STDF
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         data_dict[filter_key] = STDF(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
-    
+        logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter generated', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -151,25 +171,38 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
         Theoretically Efficient and Practical Parallel DBSCAN
         https://dl.acm.org/doi/10.1145/3318464.3380582
         """
-    
-    if "current_point_cloud_numpy" not in data_dict: return
+    logger:Logger = data_dict['logger']
+
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
     if cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']['activate_on_key_set'] not in data_dict: return
     
     try: DBSCAN = __import__('dbscan', fromlist=['DBSCAN']).DBSCAN
-    except: raise ImportError("Please install the `dbscan` package using `pip install dbscan`.")
-    
+    except:
+        logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: dbscan package not found, please install the `dbscan` package using `pip install dbscan`.', Logger.ERROR)
+        return
+
     params = cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']
 
     cluster_label_for_each_point_index, _ = DBSCAN(data_dict['current_point_cloud_numpy'], params['eps'], params['min_samples'])
     point_indices_for_each_cluster_label = [label == cluster_label_for_each_point_index for label in np.unique(cluster_label_for_each_point_index)]
 
-    if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
+    if 'current_label_list' not in data_dict:
+        data_dict['current_label_list'] = []
+        logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
     for point_indices in point_indices_for_each_cluster_label:
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})
 
 def Cluster2Object(data_dict: dict, cfg_dict: dict):
-    if "current_point_cloud_numpy" not in data_dict: return
-    if 'current_label_list' not in data_dict: return
+    logger:Logger = data_dict['logger']
+
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->Cluster2Object]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->lidar.py->Cluster2Object]: current_label_list not found in data_dict', Logger.ERROR)
+        return
     if cfg_dict['proc']['lidar']['Cluster2Object']['activate_on_key_set'] not in data_dict: return
     
     params = cfg_dict['proc']['lidar']['Cluster2Object']
@@ -185,7 +218,9 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         
         if params['oriented']:
             try: bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
-            except: continue
+            except:
+                logger.log('[algo->lidar.py->Cluster2Object]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
+                continue
             lidar_xyz_center = bbox.get_center().astype(np.float32)
             lidar_xyz_extent = bbox.extent.astype(np.float32)
             rotation_matrix = bbox.R.astype(np.float32)
@@ -211,11 +246,15 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
                 selected_obj_class = obj_class
                 break
         
-        if selected_obj_class != None:
+        if selected_obj_class == None:
+            logger.log(f'[algo->lidar.py->Cluster2Object]: class could not be determined for cluster with base_length: {base_length} and height: {height}, skipping ...', Logger.WARNING)
+            continue
+        else:
             if selected_obj_class in params['class_colors']:
                 lidar_bbox_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             else:
+                logger.log(f'[algo->lidar.py->Cluster2Object]: class color not found for class: {selected_obj_class}, using default color', Logger.WARNING)
                 lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             
@@ -227,32 +266,46 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
             data_dict['current_label_list'].append(label)
 
 def NNCluster2Object(data_dict: dict, cfg_dict: dict):
+    logger:Logger = data_dict['logger']
+
     algo_name = 'NNCluster2Object'
     model_key = f'{algo_name}_model'
     class_ids_key = f'{algo_name}_class_ids'
     
-    if "current_point_cloud_numpy" not in data_dict: return
-    if 'current_label_list' not in data_dict: return
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->NNCluster2Object]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->lidar.py->NNCluster2Object]: current_label_list not found in data_dict', Logger.ERROR)
+        return
     if cfg_dict['proc']['lidar']['NNCluster2Object']['activate_on_key_set'] not in data_dict: return
     
     params = cfg_dict['proc']['lidar']['NNCluster2Object']
     checkpoint_path = os.path.join(data_dict['root_path'], params['point_nn_bbox_est_checkpoint_path'])
-    assert os.path.exists(checkpoint_path), f"The checkpoint path: {checkpoint_path} doesn't exist."
+    if os.path.exists(checkpoint_path) == False:
+        logger.log(f'[algo->lidar.py->NNCluster2Object]: checkpoint path {checkpoint_path} does not exist', Logger.ERROR)
+        return
     num_points = params['point_nn_bbox_est_num_points']
     
     try: torch = __import__('torch')
-    except: raise ImportError("Please install the `pytorch` package using `pip install torch`.")
+    except:
+        logger.log('[algo->lidar.py->NNCluster2Object]: torch package not found, please install the `torch` package using `pip install torch`.', Logger.ERROR)
+        return
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     import open3d as o3d
     
     if model_key not in data_dict:
-        from algo.nn.PointNN.models.bbox_est import BBoxEst
-        model = BBoxEst(num_points, 512).to(device)
-        model.load_state_dict(torch.load(checkpoint_path))
-        model.eval()
-        data_dict[model_key] = model
-        from algo.nn.PointNN.ds_loaders.pcdet import PerObjectDataLoader
-        data_dict[class_ids_key] = PerObjectDataLoader.class_id_to_key
+        try:
+            from algo.nn.PointNN.models.bbox_est import BBoxEst
+            model = BBoxEst(num_points, 512).to(device)
+            model.load_state_dict(torch.load(checkpoint_path))
+            model.eval()
+            data_dict[model_key] = model
+            from algo.nn.PointNN.ds_loaders.pcdet import PerObjectDataLoader
+            data_dict[class_ids_key] = PerObjectDataLoader.class_id_to_key
+        except:
+            logger.log('[algo->lidar.py->NNCluster2Object]: failed to load model', Logger.ERROR)
+            return
     
     with torch.no_grad():
         for label_dict in data_dict['current_label_list']:
@@ -264,7 +317,9 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
 
             orienter_box = None
             try: orienter_box = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
-            except: continue
+            except:
+                logger.log('[algo->lidar.py->NNCluster2Object]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
+                continue
             
             cluster_mean = np.mean(cluster, axis=0)
             cluster -= cluster_mean
@@ -295,6 +350,7 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
                 lidar_bbox_color = np.array(cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             else:
+                logger.log(f'[algo->lidar.py->NNCluster2Object]: class color not found for class {obj_class}, using default color', Logger.WARNING)
                 lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
                 camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
             

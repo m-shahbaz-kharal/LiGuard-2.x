@@ -2,6 +2,8 @@ import open3d as o3d
 import cv2
 import numpy as np
 
+from gui.logger_gui import Logger
+
 class ImageVisualizer:
     def __init__(self, app, cfg: dict):
         self.app = app
@@ -33,7 +35,11 @@ class ImageVisualizer:
         if name in self.geometries: self.viz.update_geometry(geometry)
         
     def update(self, data_dict):
-        if "current_image_numpy" not in data_dict: return
+        logger:Logger = data_dict['logger']
+
+        if "current_image_numpy" not in data_dict:
+            logger.log(f'[img->viz.py->ImageVisualizer->update]: current_image_numpy not found in data_dict', Logger.DEBUG)
+            return
         self.img = o3d.geometry.Image(data_dict['current_image_numpy'])
         self.__add_geometry__('image', self.img, False)
         

@@ -3,12 +3,14 @@ import numpy as np
 
 from pcd.utils import create_pcd
 
+from gui.logger_gui import Logger
+
 class PointCloudVisualizer:
     def __init__(self, app, cfg: dict):
         self.app = app
         # create visualizer
         self.viz = o3d.visualization.Visualizer()
-        self.viz.create_window("PointCloud Feed", width=1440, height=1080, left=480, top=30)
+        self.viz.create_window("PointCloud Feed", width=1000, height=1080, left=480, top=30)
         # init
         self.reset(cfg, True)
         
@@ -60,7 +62,10 @@ class PointCloudVisualizer:
         return False
         
     def update(self, data_dict):
-        if "current_point_cloud_numpy" not in data_dict: return
+        logger:Logger = data_dict['logger']
+        if "current_point_cloud_numpy" not in data_dict:
+            logger.log(f'[pcd->viz.py->PointCloudVisualizer->update]: current_point_cloud_numpy not found in data_dict', Logger.DEBUG)
+            return
         self.point_cloud.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, 0:3])
         if 'current_point_cloud_point_colors' in data_dict: self.point_cloud.colors = o3d.utility.Vector3dVector(data_dict['current_point_cloud_point_colors'][:, 0:3])
         else: self.point_cloud.paint_uniform_color([1,1,1])

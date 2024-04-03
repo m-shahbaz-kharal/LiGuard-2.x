@@ -1,6 +1,11 @@
+from gui.logger_gui import Logger
 def gather_point_clouds(data_dict: dict, cfg_dict: dict, key: str, count: int, global_index_key: str = None):
+    logger:Logger = data_dict['logger']
+    
     gathering_not_started = key not in data_dict
-    if gathering_not_started: data_dict[key] = []
+    if gathering_not_started:
+        data_dict[key] = []
+        logger.log(f'[algo->utils.py->gather_point_clouds[{key}]]: Gathering {count} point clouds', Logger.INFO)
     
     if global_index_key == None: global_index_key = f'{key}_gathered_frames_indices'
     if global_index_key not in data_dict: data_dict[global_index_key] = []
@@ -17,14 +22,21 @@ def gather_point_clouds(data_dict: dict, cfg_dict: dict, key: str, count: int, g
     return gathering_completed
 
 def combine_gathers(data_dict: dict, cfg_dict: dict, key:str, gather_keys: list):
+    logger:Logger = data_dict['logger']
+
     combining_not_started = key not in data_dict
     if combining_not_started:
         data_dict[key] = []
+        logger.log(f'[algo->utils.py->combine_gathers[{key}]]: Combining {len(gather_keys)} gathers', Logger.INFO)
         for gather_key in gather_keys: data_dict[key].extend(data_dict[gather_key])
     
 def skip_frames(data_dict: dict, cfg_dict: dict, key: str, skip: int, global_index_key: str = None):
+    logger:Logger = data_dict['logger']
+
     skipping_not_started = key not in data_dict
-    if skipping_not_started: data_dict[key] = 0
+    if skipping_not_started:
+        data_dict[key] = 0
+        logger.log(f'[algo->utils.py->skip_frames[{key}]]: Skipping {skip} frames', Logger.INFO)
     
     if global_index_key == None: global_index_key = f'{key}_skipped_frames_indices'
     if global_index_key not in data_dict: data_dict[global_index_key] = []
@@ -37,5 +49,5 @@ def skip_frames(data_dict: dict, cfg_dict: dict, key: str, skip: int, global_ind
         data_dict[key] += 1
         data_dict[global_index_key].append(data_dict['current_frame_index'])
         
-    skipping_completed = data_dict[key] >= skip 
+    skipping_completed = data_dict[key] >= skip
     return skipping_completed
