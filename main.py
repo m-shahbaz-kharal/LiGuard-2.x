@@ -259,7 +259,7 @@ class LiGuard:
                     self.data_dict.pop('current_label_list')
 
                 if not any([self.pcd_io, self.img_io, self.clb_io, self.lbl_io]):
-                    self.logger.log(f'[main.py->LiGuard->start]: no data source is enabled, exiting in 5 seconds...', Logger.CRITICAL)
+                    self.logger.log(f'[main.py->LiGuard->start]: no data source is available, exiting in 5 seconds...', Logger.CRITICAL)
                     time.sleep(5)
                     break
             
