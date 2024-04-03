@@ -111,7 +111,7 @@ proc: # liguard processing configurations
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
             priority: 6
-            point_nn_bbox_est_checkpoint_path: 'point_nn_bbox_est.pth'
+            point_nn_bbox_est_checkpoint_path: 'checkpoints/point_nn_bbox_est.pth'
             point_nn_bbox_est_num_points: 128
             class_colors:
                 Car: [0,1,0]

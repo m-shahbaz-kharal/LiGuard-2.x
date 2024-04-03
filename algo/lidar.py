@@ -236,7 +236,7 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
     if cfg_dict['proc']['lidar']['NNCluster2Object']['activate_on_key_set'] not in data_dict: return
     
     params = cfg_dict['proc']['lidar']['NNCluster2Object']
-    checkpoint_path = params['point_nn_bbox_est_checkpoint_path']
+    checkpoint_path = os.path.join(data_dict['root_path'], params['point_nn_bbox_est_checkpoint_path'])
     assert os.path.exists(checkpoint_path), f"The checkpoint path: {checkpoint_path} doesn't exist."
     num_points = params['point_nn_bbox_est_num_points']
     

@@ -1,3 +1,4 @@
+import os
 import open3d.visualization.gui as gui
 
 from gui.config_gui import BaseConfiguration as BaseConfigurationGUI
@@ -40,6 +41,7 @@ class LiGuard:
         self.is_running = False # if the app is running
         self.is_playing = False # if the frames are playing
         self.data_dict = dict()
+        self.data_dict['root_path'] = os.path.abspath(os.path.curdir)
         self.data_dict['current_frame_index'] = 0
         self.data_dict['previous_frame_index'] = -1
         self.data_dict['maximum_frame_index'] = 0
