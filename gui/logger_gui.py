@@ -18,6 +18,8 @@ class Logger:
         self.mwin = app.create_window("Log", 440, 1080, x=1480, y=30)
         self.em = self.mwin.theme.font_size
 
+        self.mwin.set_on_close(lambda: False)
+
         self.__init__layout__()
         self.mwin.post_redraw()
         
