@@ -67,10 +67,28 @@ class LiGuard:
         
     def reset(self, cfg):
         logger:Logger = self.data_dict['logger']
+        need_reset = False
+        need_level_change = False
         if not hasattr(self, 'last_data_path'):
             self.last_data_path = cfg['data']['path']
+            need_reset = True
+        if self.last_data_path != cfg['data']['path']: need_reset = True
+        if not hasattr(self, 'last_logging_level'):
+            self.last_logging_level = cfg['logging']['level']
+            need_level_change = True
+        if self.last_logging_level != cfg['logging']['level']: need_level_change = True
+        if not hasattr(self, 'last_logging_path'):
+            self.last_logging_path = cfg['logging']['path']
+            need_reset = True
+        if self.last_logging_path != cfg['logging']['path']: need_reset = True
+        
+        if need_reset:
+            self.last_data_path = cfg['data']['path']
+            self.last_logging_path = cfg['logging']['path']
             logger.reset(cfg)
-        if self.last_data_path != cfg['data']['path']: logger.reset(cfg)
+        if need_level_change:
+            self.last_logging_level = cfg['logging']['level']
+            logger.change_level(cfg['logging']['level'])
 
         keyboard.unhook_all()
         with self.lock: self.is_running = False
@@ -161,6 +179,16 @@ class LiGuard:
         self.data_dict['maximum_frame_index'] = max(self.data_dict['total_pcd_frames'], self.data_dict['total_img_frames'], self.data_dict['total_lbl_frames']) - 1
         self.logger.log(f'[main.py->LiGuard->reset]: maximum_frame_index: {self.data_dict["maximum_frame_index"]}', Logger.DEBUG)
 
+        self.pre_processes = dict()
+        for proc in cfg['proc']['pre']:
+            enabled = cfg['proc']['pre'][proc]['enabled']
+            if enabled:
+                priority = cfg['proc']['pre'][proc]['priority']
+                process = __import__('algo.pre', fromlist=[proc]).__dict__[proc]
+                self.pre_processes[priority] = process
+        self.pre_processes = [self.pre_processes[priority] for priority in sorted(self.pre_processes.keys())]
+        self.logger.log(f'[main.py->LiGuard->reset]: enabled pre_processes: {self.pre_processes}', Logger.DEBUG)
+        
         self.lidar_processes = dict()
         for proc in cfg['proc']['lidar']:
             enabled = cfg['proc']['lidar'][proc]['enabled']
@@ -262,6 +290,8 @@ class LiGuard:
                     self.logger.log(f'[main.py->LiGuard->start]: no data source is available, exiting in 5 seconds...', Logger.CRITICAL)
                     time.sleep(5)
                     break
+
+                for proc in self.pre_processes: proc(self.data_dict, cfg)
             
                 if self.pcd_io:
                     for proc in self.lidar_processes: proc(self.data_dict, cfg)

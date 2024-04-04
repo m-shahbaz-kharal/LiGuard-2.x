@@ -40,6 +40,10 @@ sensors: # lidar and camera configurations
         T_lidar_camera: [[-0.00315, 0.00319, 0.99999, -0.17392], [-0.99985, -0.01715, -0.00309, 0.00474], [0.01714, -0.99985, 0.00324, -0.05174], [0.00000, 0.00000, 0.00000, 1.00000]] # 4x4 transformation matrix from camera to lidar
 
 proc: # liguard processing configurations
+    pre:
+        dummy: # dummy pre-process
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
     lidar:
         BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
             enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
@@ -148,6 +152,10 @@ visualization: # visualization parameters
         point_size: 2.0 # rendered point size
     camera:
         bbox_line_width: 2 # bbox line width
+
+logging: # parameters for logger
+    level: 0 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL
+    path: 'logs' # path to save logs
         
 threads: # don't change unless debugging
     io_sleep: 0.01 # input/output threads sleep time in seconds

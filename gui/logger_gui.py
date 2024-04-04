@@ -1,5 +1,6 @@
 import open3d.visualization.gui as gui
 
+import os
 import time
 import yaml
 
@@ -23,14 +24,28 @@ class Logger:
         self.__init__layout__()
         self.mwin.post_redraw()
         
-    def reset(self, cfg: dict, level:int = INFO):
-        if level < Logger.DEBUG or level > Logger.CRITICAL: raise ValueError("Invalid log level")
-        self.level = level
+    def reset(self, cfg: dict):
+        level = cfg['logging']['level']
+        path = cfg['logging']['path']
         
-        self.log_file_path = time.strftime("log_%Y%m%d-%H%M%S") + ".txt"
+        if not os.path.exists(path):
+            if '.txt' in path: os.makedirs(os.path.dirname(path), exist_ok=True)
+            else: os.makedirs(path, exist_ok=True)
+        
+        if os.path.isdir(path): self.log_file_path = os.path.join(path, time.strftime("log_%Y%m%d-%H%M%S") + ".txt")
+        else: self.log_file_path = path
 
-        self.log('\n\nConfiguartion:\n\n' + yaml.dump(cfg) + '\n\nLog:\n\n', Logger.CRITICAL)
+        if level < Logger.DEBUG or level > Logger.CRITICAL:
+            level = Logger.DEBUG
+            self.log(f'[gui->logger_gui.py->Logger]: Invalid logging level. Setting to default level: {Logger.__level_string__[level]}', Logger.INFO)
+        self.level = level
+
+        self.log('\n\nConfiguartion:\n\n' + yaml.dump(cfg) + '\n\nLog:\n\n', Logger.DEBUG)
         self.__clear_log__()
+
+    def change_level(self, level:int):
+        self.level = level
+        self.log(f'[gui->logger_gui.py->Logger]: Logging level changed to {Logger.__level_string__[level]}', Logger.INFO)
 
     def log(self, message:str, level:int):
         txt = f'{time.strftime("%Y-%m-%d %H:%M:%S")} [{Logger.__level_string__[level]}] {message}\n'
@@ -69,28 +84,3 @@ class Logger:
     def __clear_log__(self):
         scroll_vert = gui.ScrollableVert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.log_container.set_widget(scroll_vert)
-
-if __name__ == "__main__":
-    app = gui.Application.instance
-    app.initialize()
-    
-    logger = Logger(app)
-    
-    logger.log("This is a debug message", Logger.DEBUG)
-    logger.log("This is an info message", Logger.INFO)
-    logger.log("This is a warning message", Logger.WARNING)
-    logger.log("This is an error message", Logger.ERROR)
-    logger.log("This is a critical message", Logger.CRITICAL)
-
-    import keyboard
-    def clear_and_test_again():
-        logger.log("Clearing log", Logger.INFO)
-        logger.log("This is a debug message", Logger.DEBUG)
-        logger.log("This is an info message", Logger.INFO)
-        logger.log("This is a warning message", Logger.WARNING)
-        logger.log("This is an error message", Logger.ERROR)
-        logger.log("This is a critical message", Logger.CRITICAL)
-
-    keyboard.add_hotkey('c', clear_and_test_again)
-    
-    app.run()
