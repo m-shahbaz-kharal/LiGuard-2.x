@@ -1,16 +1,14 @@
+# contains algorithms that are used to manipulate/transform the calibration parameters
+
 from gui.logger_gui import Logger
 
 def dummy(data_dict: dict, cfg_dict: dict):
-    logger:Logger = data_dict['logger']
+    # get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->calib.py->dummy][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
-    if 'current_calib_path' not in data_dict:
-        logger.log('[algo->calib.py->dummy]: current_calib_path not found in data_dict', Logger.DEBUG)
-    
-    if 'current_calib_data' not in data_dict:
-        logger.log('[algo->calib.py->dummy]: current_calib_data not found in data_dict', Logger.ERROR)
-        return
-    
-    current_calib_path = data_dict['current_calib_path']
-    current_calib_data = data_dict['current_calib_data']
+    # do stuff
+    # ...
 
-    # do ops on current_calib_data as per requirement
+    # logging operation
+    logger.log('[algo->pre.py->dummy]: A dummy function is called.', Logger.DEBUG)

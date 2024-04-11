@@ -1,12 +1,12 @@
-# This configuration file can be used across entire LiGuard suite.
+# This is a LiGuard pipeline configuration file.
 
 data: # dataset configurations
-    path: D:\datasets\shahbaz\datasets\pedsafe_human_labeled # base path, path/points => point clouds, path/output => output labels
+    path: 'data' # root directory containing dataset
     lidar_subdir: 'lidar' # subdirectory containing point clouds
     camera_subdir: 'camera' # subdirectory containing images
     label_subdir: 'label' # subdirectory containing labels
     calib_subdir: 'calib' # subdirectory containing calibration files
-    size: 10 # number of frames to annotate - set 0 to annotate full
+    size: 10 # number of frames to annotate
 
     lidar:
         enabled: True # set True to read point clouds from disk
@@ -19,22 +19,21 @@ data: # dataset configurations
         clb_type: 'kitti' # can be kitti or sustechpoints
     label:
         enabled: False # set True to read labels from disk
-        lbl_type: 'kitti' # can be kitti, ips, lumpi
-        extra_args: None # can be measurement csv path for lumpi
+        lbl_type: 'kitti' # can be kitti, openpcdet, or sustechpoints
 
 sensors: # lidar and camera configurations
-    lidar:
-        enabled: False # set True to stream point clouds from sensor
-        hostname: '192.168.1.12' # sensor ip address or hostname
+    lidar: # lidar sensor configurations, at this point only Ouster lidars are supported, support for other lidars is coming soon
+        enabled: False # set True to stream point clouds from sensor, please set False if reading from disk
+        hostname: '192.168.1.2' # sensor ip address or hostname
         manufacturer: 'Ouster' # sensor manufacturer
         model: 'OS1-64' # sensor model
-        serial_number: '122204001078' # sensor serial number
-    camera:
-        enabled: False # set True to stream point clouds from sensor
-        hostname: '192.168.1.21' # sensor ip address or hostname
+        serial_number: '000000000000' # sensor serial number
+    camera: # camera sensor configurations, at this point only Flir cameras are supported, support for other cameras is coming soon
+        enabled: False # set True to stream point clouds from sensor, please set False if reading from disk
+        hostname: '192.168.1.3' # sensor ip address or hostname
         manufacturer: 'Flir' # sensor manufacturer
         model: 'BFS-PGE-16S2C-CS' # sensor model
-        serial_number: '23422874' # sensor serial number
+        serial_number: '00000000' # sensor serial number
         camera_matrix: [2552.449042506032, 0.0, 766.5504021841039, 0.0, 2554.320087252825, 553.0299764355634, 0.0, 0.0, 1.0] # camera matrix (K)
         distortion_coeffs: [-0.368698, 0.042837, -0.002189, -0.000758, 0.000000] # distortion coefficients (D)
         T_lidar_camera: [[-0.00315, 0.00319, 0.99999, -0.17392], [-0.99985, -0.01715, -0.00309, 0.00474], [0.01714, -0.99985, 0.00324, -0.05174], [0.00000, 0.00000, 0.00000, 1.00000]] # 4x4 transformation matrix from camera to lidar
@@ -79,7 +78,7 @@ proc: # liguard processing configurations
         Cluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'
-            priority: 4
+            priority: 5
             oriented: False
             size_constraints: # in increasing order of base lengths, units in meters, left inclusive, right exclusive
                 Pedestrian:
@@ -131,8 +130,7 @@ proc: # liguard processing configurations
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: False # set True to crop labels
             priority: 1 # priority of process - lower is higher
-
-        remove_less_point_labels: # remove labels with no points
+    remove_less_point_labels: # remove labels with no points
             enabled: False # set True to remove labels
             priority: 2 # priority of process - lower is higher
             min_points: 6 # minimum number of points to consider a label valid
@@ -147,7 +145,7 @@ proc: # liguard processing configurations
 visualization: # visualization parameters
     enabled: True # set True to visualize
     lidar:
-        space_color: [0, 0, 0] # color of non-point-cloud
+        space_color: [0, 0, 0] # color of non-point-cloud space
         bound_color: [0, 0, 1] # point cloud range bound bbox color
         point_size: 2.0 # rendered point size
     camera:

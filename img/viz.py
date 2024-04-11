@@ -5,6 +5,26 @@ import numpy as np
 from gui.logger_gui import Logger
 
 class ImageVisualizer:
+    """
+    A class for visualizing images and bounding boxes using Open3D.
+
+    Args:
+        app: The application object.
+        cfg (dict): A dictionary containing configuration parameters.
+
+    Attributes:
+        app: The application object.
+        viz: The Open3D visualizer object.
+        img: The image to be visualized.
+        geometries (dict): A dictionary to store the geometries added to the visualizer.
+
+    Methods:
+        reset: Resets the visualizer and clears all geometries.
+        update: Updates the visualizer with new data.
+        redraw: Redraws the visualizer.
+        quit: Destroys the visualizer window.
+    """
+
     def __init__(self, app, cfg: dict):
         self.app = app
         # create visualizer
@@ -14,6 +34,13 @@ class ImageVisualizer:
         self.reset(cfg, True)
         
     def reset(self, cfg, reset_bounding_box=False):
+        """
+        Resets the visualizer and clears all geometries.
+
+        Args:
+            cfg: The configuration parameters.
+            reset_bounding_box (bool): Whether to reset the bounding box or not.
+        """
         self.cfg = cfg
         # clear geometries
         self.geometries = dict()
@@ -22,20 +49,51 @@ class ImageVisualizer:
         self.__add_default_geometries__(reset_bounding_box)
         
     def __add_default_geometries__(self, reset_bounding_box):
+        """
+        Adds default geometries to the visualizer.
+
+        Args:
+            reset_bounding_box (bool): Whether to reset the bounding box or not.
+        """
         # global image
         self.img = o3d.geometry.Image(np.zeros((1080, 1440, 3), dtype=np.uint8))
         self.__add_geometry__('image', self.img, reset_bounding_box)
         
     def __add_geometry__(self, name, geometry, reset_bounding_box):
-        if name in self.geometries: self.viz.remove_geometry(self.geometries[name], reset_bounding_box=False)
-        else: self.geometries[name] = geometry
+        """
+        Adds a geometry to the visualizer.
+
+        Args:
+            name (str): The name of the geometry.
+            geometry: The geometry object.
+            reset_bounding_box (bool): Whether to reset the bounding box or not.
+        """
+        if name in self.geometries:
+            self.viz.remove_geometry(self.geometries[name], reset_bounding_box=False)
+        else:
+            self.geometries[name] = geometry
         self.viz.add_geometry(geometry, reset_bounding_box=reset_bounding_box)
         
     def __update_geometry__(self, name, geometry):
-        if name in self.geometries: self.viz.update_geometry(geometry)
+        """
+        Updates a geometry in the visualizer.
+
+        Args:
+            name (str): The name of the geometry.
+            geometry: The updated geometry object.
+        """
+        if name in self.geometries:
+            self.viz.update_geometry(geometry)
         
     def update(self, data_dict):
-        logger:Logger = data_dict['logger']
+        """
+        Updates the visualizer with new data.
+
+        Args:
+            data_dict (dict): A dictionary containing the data to be visualized.
+        """
+        if 'logger' in data_dict: logger:Logger = data_dict['logger']
+        else: print('[CRITICAL ERROR]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
         if "current_image_numpy" not in data_dict:
             logger.log(f'[img->viz.py->ImageVisualizer->update]: current_image_numpy not found in data_dict', Logger.DEBUG)
@@ -46,17 +104,27 @@ class ImageVisualizer:
         if "current_label_list" not in data_dict: return
         if "current_calib_data" not in data_dict: return
         clb = data_dict['current_calib_data']
-        for lbl in data_dict['current_label_list']: self.__add_bbox__(lbl, clb)
+        for lbl in data_dict['current_label_list']:
+            self.__add_bbox__(lbl, clb)
         
     def __add_bbox__(self, label_dict, calib_dict):
+        """
+        Adds a bounding box to the visualizer.
+
+        Args:
+            label_dict (dict): A dictionary containing the label information.
+            calib_dict (dict): A dictionary containing the calibration information.
+        """
         if 'camera_bbox' not in label_dict: return
         # bbox parameters
         camera_bbox_dict = label_dict['camera_bbox']
         lidar_xyz_center = camera_bbox_dict['lidar_xyz_center']
         lidar_xyz_extent = camera_bbox_dict['lidar_xyz_extent']
         lidar_xyz_euler_angles = camera_bbox_dict['lidar_xyz_euler_angles']
-        if camera_bbox_dict['predicted']: color = camera_bbox_dict['rgb_bbox_color']
-        else: color = camera_bbox_dict['rgb_bbox_color'] * 0.5 # darker color for ground truth
+        if camera_bbox_dict['predicted']:
+            color = camera_bbox_dict['rgb_bbox_color']
+        else:
+            color = camera_bbox_dict['rgb_bbox_color'] * 0.5 # darker color for ground truth
         
         # calib parameters
         P2 = calib_dict['P2']
@@ -125,8 +193,14 @@ class ImageVisualizer:
         self.__add_geometry__('image', self.img, False)
         
     def redraw(self):
+        """
+        Redraws the visualizer.
+        """
         self.viz.poll_events()
         self.viz.update_renderer()
         
     def quit(self):
+        """
+        Destroys the visualizer window.
+        """
         self.viz.destroy_window()
