@@ -1,5 +1,8 @@
 # contains point-cloud processing algorithms
 
+import os
+import sys
+
 import numpy as np
 
 from gui.logger_gui import Logger
@@ -505,3 +508,96 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             
             # add label to the label list
             data_dict['current_label_list'].append(label)
+
+def PointPillarDetection(data_dict: dict, cfg_dict: dict):
+    """
+    Perform object detection using the PointPillar algorithm.
+
+    Original Paper:
+    Lang, Alex H., et al. "Pointpillars: Fast encoders for object detection from point clouds."
+    Proceedings of the IEEE/CVF conference on computer vision and pattern recognition. 2019.
+
+    The implementation used here is from "https://github.com/zhulf0804/PointPillars".
+    
+    Args:
+        data_dict (dict): A dictionary containing the required data for processing.
+        cfg_dict (dict): A dictionary containing the configuration parameters.
+
+    Returns:
+        None
+    """
+    # get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->lidar.py->PointPillarDetection]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    
+    # check if required data is present in data_dict
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->PointPillarDetection]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    
+    if cfg_dict['proc']['lidar']['PointPillarDetection']['activate_on_key_set'] not in data_dict: return
+    
+
+    # algo name and keys used in algo
+    algo_name = 'PointPillarDetection'
+    model_key = f'{algo_name}_model'
+    class_ids_key = f'{algo_name}_class_ids'
+    ids_class_key = f'{algo_name}_ids_class'
+    pcd_limit_range_key = f'{algo_name}_pcd_limit_range'
+    class_color_key = f'{algo_name}_class_color'
+    
+    # get params
+    params = cfg_dict['proc']['lidar'][algo_name]
+    
+    # imports
+    import torch
+
+    # create model if not exists
+    if 'PointPillarDetection_model' not in data_dict:
+        data_dict[class_ids_key] = {'Pedestrian': 0, 'Cyclist': 1, 'Car': 2}
+        data_dict[ids_class_key] = {v:k for k, v in data_dict[class_ids_key].items()}
+        min_xyz = cfg_dict['proc']['lidar']['crop']['min_xyz']
+        max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
+        data_dict[pcd_limit_range_key] = np.array(min_xyz + max_xyz, dtype=np.float32)
+        data_dict[class_color_key] = {'Pedestrian': [1, 0, 0], 'Cyclist': [0, 0, 1], 'Car': [0, 1, 0]}
+
+        path = os.path.abspath(os.path.join(data_dict['root_path'], params['path_to_github_repo']))
+        if path not in sys.path: sys.path.append(path)
+        from algo.nn.PointPillars.model import PointPillars
+
+        data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
+        model_path = os.path.abspath(os.path.join(path, 'pretrained/epoch_160.pth'))
+        if torch.cuda.is_available():
+            data_dict[model_key].cuda()
+            data_dict[model_key].load_state_dict(torch.load(model_path))
+        else:
+             data_dict[model_key].load_state_dict(torch.load(model_path), map_location=torch.device('cpu'))
+
+        data_dict[model_key].eval()
+    
+    with torch.no_grad():
+        pc_torch = torch.from_numpy(data_dict['current_point_cloud_numpy'])
+        if torch.cuda.is_available(): pc_torch = pc_torch.cuda()
+        result_filter = data_dict[model_key](batched_pts=[pc_torch], mode='test')[0]
+
+    lidar_bboxes = result_filter['lidar_bboxes']
+    labels, scores = result_filter['labels'], result_filter['scores']
+
+    for i in range(len(labels)):
+        if scores[i] < params['score_threshold']: continue
+        lidar_bbox = lidar_bboxes[i]
+        lidar_xyz_center = lidar_bbox[:3]
+        lidar_xyz_center[2] += lidar_bbox[5] / 2
+        lidar_xyz_extent = lidar_bbox[3:6]
+        lidar_xyz_euler_angles = np.array([0, 0, lidar_bbox[6]], dtype=np.float32)
+        obj_class = data_dict[ids_class_key][labels[i]]
+        lidar_bbox_color = np.array(data_dict[class_color_key][obj_class], dtype=np.float32)
+        camera_bbox_color = np.array([i * 255.0 for i in data_dict[class_color_key][obj_class]], dtype=np.uint8)
+
+        label = dict()
+        label['class'] = obj_class
+        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
+        label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
+
+        if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
+        data_dict['current_label_list'].append(label)

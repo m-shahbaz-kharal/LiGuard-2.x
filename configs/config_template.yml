@@ -118,6 +118,12 @@ proc: # liguard processing configurations
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
             priority: 6 # priority of process - lower is higher
+        PointPillarDetection:
+            enabled: False
+            activate_on_key_set: 'current_point_cloud_numpy'
+            priority: 7
+            path_to_github_repo: 'algo/nn/PointPillars' # clone https://github.com/zhulf0804/PointPillars to this path and install the requirements
+            score_threshold: 0.5
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
