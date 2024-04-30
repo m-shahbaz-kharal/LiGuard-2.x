@@ -221,6 +221,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         data_dict[filter_key] = STDF(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
         logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter generated', Logger.INFO)
+        data_dict['BGFilterSTDF_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -235,6 +236,9 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
     
     # if filter exists, apply it
     if filter_key in data_dict:
+        # get util functions
+        from pcd.utils import get_fixed_sized_point_cloud
+        # apply filter
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
@@ -255,7 +259,10 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     # get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
     else: print('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
-
+    
+    # clear previous key set
+    if 'Clusterer_TEPP_DBSCAN_set' in data_dict: data_dict.pop('Clusterer_TEPP_DBSCAN_set')
+    
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
         logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
@@ -282,6 +289,7 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     # update label list
     for point_indices in point_indices_for_each_cluster_label:
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})
+    data_dict['Clusterer_TEPP_DBSCAN_set'] = True
 
 def Cluster2Object(data_dict: dict, cfg_dict: dict):
     """
