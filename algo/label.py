@@ -34,8 +34,8 @@ def remove_out_of_bound_labels(data_dict: Dict[str, any], cfg_dict: Dict[str, an
     output = []
 
     for lbl_dict in lbl_list:
-        if 'lidar_bbox' not in lbl_dict: continue
-        bbox_center = lbl_dict['lidar_bbox']['lidar_xyz_center']
+        if 'bbox_3d' not in lbl_dict: continue
+        bbox_center = lbl_dict['bbox_3d']['xyz_center']
         # Check if the bounding box center is within the specified limits
         x_condition = np.logical_and(min_xyz[0] <= bbox_center[0], bbox_center[0] <= max_xyz[0])
         y_condition = np.logical_and(min_xyz[1] <= bbox_center[1], bbox_center[1] <= max_xyz[1])
@@ -80,10 +80,10 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
     # iterate over the labels and check if the number of points in the bounding box is greater than the threshold
     # if it is, add the label to the output list, otherwise skip it
     for lbl_dict in lbl_list:
-        if 'lidar_bbox' not in lbl_dict: continue
-        bbox_center = lbl_dict['lidar_bbox']['lidar_xyz_center']
-        bbox_extent = lbl_dict['lidar_bbox']['lidar_xyz_extent']
-        bbox_euler_angles = lbl_dict['lidar_bbox']['lidar_xyz_euler_angles']
+        if 'bbox_3d' not in lbl_dict: continue
+        bbox_center = lbl_dict['bbox_3d']['xyz_center']
+        bbox_extent = lbl_dict['bbox_3d']['xyz_extent']
+        bbox_euler_angles = lbl_dict['bbox_3d']['xyz_euler_angles']
         R = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(bbox_euler_angles)
         # create an OrientedBoundingBox object
         try: rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)

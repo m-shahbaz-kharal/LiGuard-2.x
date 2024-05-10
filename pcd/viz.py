@@ -142,21 +142,21 @@ class PointCloudVisualizer:
         Args:
             label_dict: A dictionary containing the label information.
         """
-        if 'lidar_bbox' not in label_dict:
+        if 'bbox_3d' not in label_dict:
             return
         # bbox params
-        lidar_bbox_dict = label_dict['lidar_bbox']
-        lidar_xyz_center = lidar_bbox_dict['lidar_xyz_center']
-        lidar_xyz_extent = lidar_bbox_dict['lidar_xyz_extent']
-        lidar_xyz_euler_angles = lidar_bbox_dict['lidar_xyz_euler_angles']
-        if lidar_bbox_dict['predicted']:
-            color = lidar_bbox_dict['rgb_bbox_color']
+        bbox_3d_dict = label_dict['bbox_3d']
+        xyz_center = bbox_3d_dict['xyz_center']
+        xyz_extent = bbox_3d_dict['xyz_extent']
+        xyz_euler_angles = bbox_3d_dict['xyz_euler_angles']
+        if bbox_3d_dict['predicted']:
+            color = bbox_3d_dict['rgb_color']
         else:
-            color = lidar_bbox_dict['rgb_bbox_color'] * 0.5 # darken the color for ground truth
+            color = bbox_3d_dict['rgb_color'] * 0.5 # darken the color for ground truth
 
         # calculating bbox
-        rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(lidar_xyz_euler_angles)
-        lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(lidar_xyz_center, rotation_matrix, lidar_xyz_extent)
+        rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(xyz_euler_angles)
+        lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(xyz_center, rotation_matrix, xyz_extent)
         lidar_xyz_bbox.color = color
         
         self.bboxes.append(lidar_xyz_bbox)

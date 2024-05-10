@@ -67,24 +67,18 @@ def Handler(label_path: str, calib_data: dict):
         label['image_0_ry'] = image_0_ry
         
         # project to lidar coordinates
-        lidar_xyz_center = transform_from_image_0_to_lidar @ np.append(image_0_xyz, 1).reshape(4, 1)
-        lidar_xyz_center = lidar_xyz_center.T[0]
-        lidar_xyz_center = lidar_xyz_center[:3]
+        xyz_center = transform_from_image_0_to_lidar @ np.append(image_0_xyz, 1).reshape(4, 1)
+        xyz_center = xyz_center.T[0]
+        xyz_center = xyz_center[:3]
         # Adjust the height of the bounding box since the origin of the lidar coordinates is at the bottom of the vehicle
-        lidar_xyz_center[2] += height / 2.0
+        xyz_center[2] += height / 2.0
         # w l h -> x y z
-        lidar_xyz_extent = np.array([width, length, height], dtype=np.float32)
-        lidar_xyz_euler_angles = np.array([0, 0, -image_0_ry], dtype=np.float32)
-        lidar_bbox_color = np.array(colors[obj_class], dtype=np.float32)
+        xyz_extent = np.array([width, length, height], dtype=np.float32)
+        xyz_euler_angles = np.array([0, 0, -image_0_ry], dtype=np.float32)
+        rgb_color = np.array(colors[obj_class], dtype=np.float32)
         
-        # visualzer expect lidar_bbox to be present in order to visualize the bounding boxes, so we add them here
-        label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': False}
-        
-        # camera colors are in the range 0-255
-        camera_bbox_color = np.array([i * 255.0 for i in colors[obj_class]], dtype=np.uint8)
-        
-        # visualzer expect camera_bbox to be present in order to visualize the bounding boxes, so we add them here
-        label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': False}
+        # visualzer expect bbox_3d to be present in order to visualize the bounding boxes, so we add them here
+        label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': False}
         
         output.append(label)
     

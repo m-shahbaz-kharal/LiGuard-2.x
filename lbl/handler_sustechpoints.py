@@ -62,36 +62,22 @@ def Handler(label_path: str, calib_data: dict):
         label['obj_type'] = obj_type
         label['psr'] = psr
                   
-        lidar_xyz_center = psr_position_xyz.copy()
-        lidar_xyz_extent = psr_scale_xyz.copy()
-        lidar_xyz_euler_angles = psr_rotation_xyz.copy()
+        xyz_center = psr_position_xyz.copy()
+        xyz_extent = psr_scale_xyz.copy()
+        xyz_euler_angles = psr_rotation_xyz.copy()
 
         # create color for the bounding box
         if obj_type in colors:
-            lidar_bbox_color = np.array([i / 255.0 for i in colors[obj_type]], dtype=np.float32)
+            rgb_color = np.array([i / 255.0 for i in colors[obj_type]], dtype=np.float32)
         else:
-            lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
+            rgb_color = np.array([0, 0, 0], dtype=np.float32)
         
-        # Create a dictionary to store the lidar bounding box information
-        label['lidar_bbox'] = {
-            'lidar_xyz_center': lidar_xyz_center,
-            'lidar_xyz_extent': lidar_xyz_extent,
-            'lidar_xyz_euler_angles': lidar_xyz_euler_angles,
-            'rgb_bbox_color': lidar_bbox_color,
-            'predicted': False
-        }
-        
-        if obj_type in colors:
-            camera_bbox_color = np.array(colors[obj_type], dtype=np.uint8)
-        else:
-            camera_bbox_color = np.array([0, 0, 0], dtype=np.uint8)
-        
-        # Create a dictionary to store the camera bounding box information
-        label['camera_bbox'] = {
-            'lidar_xyz_center': lidar_xyz_center,
-            'lidar_xyz_extent': lidar_xyz_extent,
-            'lidar_xyz_euler_angles': lidar_xyz_euler_angles,
-            'rgb_bbox_color': camera_bbox_color,
+        # Create a dictionary to store the 3D bounding-box information
+        label['bbox_3d'] = {
+            'xyz_center': xyz_center,
+            'xyz_extent': xyz_extent,
+            'xyz_euler_angles': xyz_euler_angles,
+            'rgb_color': rgb_color,
             'predicted': False
         }
         

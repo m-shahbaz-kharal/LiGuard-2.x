@@ -44,17 +44,17 @@ def Handler(label_path: str, calib_data: dict):
         label['heading_angle'] = xyz_dxdydz_rz[6]
         label['category_name'] = obj_class
         
-        lidar_xyz_center = xyz_dxdydz_rz[0:3]
-        lidar_xyz_extent = xyz_dxdydz_rz[3:6]
-        lidar_xyz_euler_angles = np.array([0, 0, xyz_dxdydz_rz[6]], dtype=np.float32)
-        lidar_bbox_color = np.array(colors['Green'], dtype=np.float32)
+        xyz_center = xyz_dxdydz_rz[0:3]
+        xyz_extent = xyz_dxdydz_rz[3:6]
+        xyz_euler_angles = np.array([0, 0, xyz_dxdydz_rz[6]], dtype=np.float32)
+        rgb_color = np.array(colors['Green'], dtype=np.float32)
         
-        # Create a dictionary to store the lidar bounding box information
-        label['lidar_bbox'] = {
-            'lidar_xyz_center': lidar_xyz_center,
-            'lidar_xyz_extent': lidar_xyz_extent,
-            'lidar_xyz_euler_angles': lidar_xyz_euler_angles,
-            'rgb_bbox_color': lidar_bbox_color,
+        # Create a dictionary to store the 3D bounding-box information
+        label['bbox_3d'] = {
+            'xyz_center': xyz_center,
+            'xyz_extent': xyz_extent,
+            'xyz_euler_angles': xyz_euler_angles,
+            'rgb_color': rgb_color,
             'predicted': False
         }
         

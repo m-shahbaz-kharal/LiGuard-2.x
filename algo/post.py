@@ -47,11 +47,11 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     os.makedirs(lbl_output_dir, exist_ok=True)
     
     for idx, label_dict in enumerate(current_label_list):
-        if 'lidar_bbox' not in label_dict: continue
+        if 'bbox_3d' not in label_dict: continue
         # Get bounding box center, extent, and euler angles
-        bbox_center = label_dict['lidar_bbox']['lidar_xyz_center'].copy()
-        bbox_extent = label_dict['lidar_bbox']['lidar_xyz_extent']
-        bbox_euler_angles = label_dict['lidar_bbox']['lidar_xyz_euler_angles']
+        bbox_center = label_dict['bbox_3d']['xyz_center'].copy()
+        bbox_extent = label_dict['bbox_3d']['xyz_extent']
+        bbox_euler_angles = label_dict['bbox_3d']['xyz_euler_angles']
         R = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(bbox_euler_angles)
         
         # Create an oriented bounding box
@@ -122,11 +122,11 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     
     lbl_str = ''
     for label_dict in current_label_list:
-        if 'lidar_bbox' not in label_dict: continue
+        if 'bbox_3d' not in label_dict: continue
         # Get bounding box center, extent, and euler angles
-        bbox_center = label_dict['lidar_bbox']['lidar_xyz_center'].copy()
-        bbox_extent = label_dict['lidar_bbox']['lidar_xyz_extent']
-        bbox_euler_angles = label_dict['lidar_bbox']['lidar_xyz_euler_angles']
+        bbox_center = label_dict['bbox_3d']['xyz_center'].copy()
+        bbox_extent = label_dict['bbox_3d']['xyz_extent']
+        bbox_euler_angles = label_dict['bbox_3d']['xyz_euler_angles']
         lbl_str += str(bbox_center[0]) + ' ' + str(bbox_center[1]) + ' ' + str(bbox_center[2]) + ' '
         lbl_str += str(bbox_extent[0]) + ' ' + str(bbox_extent[1]) + ' ' + str(bbox_extent[2]) + ' '
         lbl_str += str(bbox_euler_angles[2]) + ' '
