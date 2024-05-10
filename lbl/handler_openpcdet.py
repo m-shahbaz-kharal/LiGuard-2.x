@@ -1,7 +1,18 @@
 import os
 import numpy as np
 
-colors = {'Green': [0, 1, 0]}
+colors = {
+    'Car': [0, 1, 0],
+    'Van': [0, 1, 0],
+    'Truck': [0, 1, 0],
+    'Pedestrian': [1, 0, 0],
+    'Person_sitting': [1, 0, 0],
+    'Cyclist': [0, 0, 1],
+    'Tram': [1, 1, 0],
+    'Misc': [1, 1, 0],
+    'DontCare': [1, 1, 1],
+    'Unknown': [1, 1, 1]
+}
 label_file_extension = '.txt'
 
 import os
@@ -42,12 +53,12 @@ def Handler(label_path: str, calib_data: dict):
         label['dy'] = xyz_dxdydz_rz[4]
         label['dz'] = xyz_dxdydz_rz[5]
         label['heading_angle'] = xyz_dxdydz_rz[6]
-        label['category_name'] = obj_class
+        label['class'] = obj_class
         
         xyz_center = xyz_dxdydz_rz[0:3]
         xyz_extent = xyz_dxdydz_rz[3:6]
         xyz_euler_angles = np.array([0, 0, xyz_dxdydz_rz[6]], dtype=np.float32)
-        rgb_color = np.array(colors['Green'], dtype=np.float32)
+        rgb_color = np.array(colors[obj_class], dtype=np.float32)
         
         # Create a dictionary to store the 3D bounding-box information
         label['bbox_3d'] = {
