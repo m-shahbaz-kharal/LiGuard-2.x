@@ -1,5 +1,8 @@
 # contains point-cloud processing algorithms
 
+import os
+import sys
+
 import numpy as np
 
 from gui.logger_gui import Logger
@@ -369,23 +372,23 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
             except:
                 logger.log('[algo->lidar.py->Cluster2Object]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
                 continue
-            lidar_xyz_center = bbox.get_center().astype(np.float32)
-            lidar_xyz_extent = bbox.extent.astype(np.float32)
+            xyz_center = bbox.get_center().astype(np.float32)
+            xyz_extent = bbox.extent.astype(np.float32)
             rotation_matrix = bbox.R.astype(np.float32)
-            lidar_xyz_euler_angles = np.array(
+            xyz_euler_angles = np.array(
                 [0.0, # np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]),
                  0.0, # np.arctan2(-rotation_matrix[2,0], np.sqrt(rotation_matrix[2,1]**2 + rotation_matrix[2,2]**2)),
                  np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])], dtype=np.float32)
         else:
             try: bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
             except: continue
-            lidar_xyz_center = bbox.get_center().astype(np.float32)
-            lidar_xyz_extent = (bbox.get_max_bound() - bbox.get_min_bound()).astype(np.float32)
-            lidar_xyz_euler_angles = np.array([0, 0, 0], dtype=np.float32)
+            xyz_center = bbox.get_center().astype(np.float32)
+            xyz_extent = (bbox.get_max_bound() - bbox.get_min_bound()).astype(np.float32)
+            xyz_euler_angles = np.array([0, 0, 0], dtype=np.float32)
         
         # get base length and height of the bounding box
-        base_length = lidar_xyz_extent[0] if lidar_xyz_extent[0] > lidar_xyz_extent[1] else lidar_xyz_extent[1]
-        height = lidar_xyz_extent[2]
+        base_length = xyz_extent[0] if xyz_extent[0] > xyz_extent[1] else xyz_extent[1]
+        height = xyz_extent[2]
 
         # check if the cluster belongs to any class
         selected_obj_class = None
@@ -402,17 +405,14 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
             continue
         else:
             if selected_obj_class in params['class_colors']:
-                lidar_bbox_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
-                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
+                rgb_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
             else:
                 logger.log(f'[algo->lidar.py->Cluster2Object]: class color not found for class: {selected_obj_class}, using default color', Logger.WARNING)
-                lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
-                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
+                rgb_color = np.array([0, 0, 0], dtype=np.float32)
             
             label = dict()
             label['class'] = selected_obj_class
-            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
-            label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
+            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
             
             data_dict['current_label_list'].append(label)
 
@@ -503,39 +503,128 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             cluster = torch.tensor(cluster, dtype=torch.float32).transpose(2,1).to(device)
             
             # get predictions and extract center, extent, orientation, and class
-            lidar_xyz_center, lidar_xyz_extent, ry, obj_class, crit_idxs, A_feat = data_dict[model_key](cluster)
-            lidar_xyz_center = lidar_xyz_center.detach().cpu().numpy()[0]
-            lidar_xyz_extent = lidar_xyz_extent.detach().cpu().numpy()[0]
+            xyz_center, xyz_extent, ry, obj_class, crit_idxs, A_feat = data_dict[model_key](cluster)
+            xyz_center = xyz_center.detach().cpu().numpy()[0]
+            xyz_extent = xyz_extent.detach().cpu().numpy()[0]
             ry = ry.detach().cpu().numpy()[0][0]
             obj_class = torch.argmax(obj_class[0]).detach().cpu().numpy()
             obj_class = data_dict[class_ids_key][obj_class.item()]
             
             # add cluster mean back to the center to get the actual center
-            lidar_xyz_center += cluster_mean
+            xyz_center += cluster_mean
             
             # apply orientation from orienter box calculated above, this is much more accurate than the orientation predicted by the model
             if orienter_box != None:
-                lidar_xyz_euler_angles = np.array(
+                xyz_euler_angles = np.array(
                     [0.0,
                      0.0,
                      np.arctan2(orienter_box.R[1,0], orienter_box.R[0,0])], dtype=np.float32)
             # if orienter box is not available, use the predicted orientation
-            else: lidar_xyz_euler_angles = np.array([0, 0, ry], dtype=np.float32)
+            else: xyz_euler_angles = np.array([0, 0, ry], dtype=np.float32)
             
             # select color for the object based on the class
             if obj_class in cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors']:
-                lidar_bbox_color = np.array(cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class], dtype=np.float32)
-                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
+                rgb_color = np.array(cfg_dict['proc']['lidar']['NNCluster2Object']['class_colors'][obj_class], dtype=np.float32)
             else:
                 logger.log(f'[algo->lidar.py->NNCluster2Object]: class color not found for class {obj_class}, using default color', Logger.WARNING)
-                lidar_bbox_color = np.array([0, 0, 0], dtype=np.float32)
-                camera_bbox_color = (lidar_bbox_color.copy() * 255.0).astype(np.uint8)
+                rgb_color = np.array([0, 0, 0], dtype=np.float32)
             
             # create label dict
             label = dict()
             label['class'] = obj_class
-            label['lidar_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': lidar_bbox_color, 'predicted': True}
-            label['camera_bbox'] = {'lidar_xyz_center': lidar_xyz_center, 'lidar_xyz_extent': lidar_xyz_extent, 'lidar_xyz_euler_angles': lidar_xyz_euler_angles, 'rgb_bbox_color': camera_bbox_color, 'predicted': True}
+            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
             
             # add label to the label list
             data_dict['current_label_list'].append(label)
+
+def PointPillarDetection(data_dict: dict, cfg_dict: dict):
+    """
+    Perform object detection using the PointPillar algorithm.
+
+    Original Paper:
+    Lang, Alex H., et al. "Pointpillars: Fast encoders for object detection from point clouds."
+    Proceedings of the IEEE/CVF conference on computer vision and pattern recognition. 2019.
+
+    The implementation used here is from "https://github.com/zhulf0804/PointPillars".
+    
+    Args:
+        data_dict (dict): A dictionary containing the required data for processing.
+        cfg_dict (dict): A dictionary containing the configuration parameters.
+
+    Returns:
+        None
+    """
+    # get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->lidar.py->PointPillarDetection]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    
+    # check if required data is present in data_dict
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->PointPillarDetection]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    
+    if cfg_dict['proc']['lidar']['PointPillarDetection']['activate_on_key_set'] not in data_dict: return
+    
+
+    # algo name and keys used in algo
+    algo_name = 'PointPillarDetection'
+    model_key = f'{algo_name}_model'
+    class_ids_key = f'{algo_name}_class_ids'
+    ids_class_key = f'{algo_name}_ids_class'
+    pcd_limit_range_key = f'{algo_name}_pcd_limit_range'
+    class_color_key = f'{algo_name}_class_color'
+    
+    # get params
+    params = cfg_dict['proc']['lidar'][algo_name]
+    
+    # imports
+    import torch
+
+    # create model if not exists
+    if 'PointPillarDetection_model' not in data_dict:
+        data_dict[class_ids_key] = {'Pedestrian': 0, 'Cyclist': 1, 'Car': 2}
+        data_dict[ids_class_key] = {v:k for k, v in data_dict[class_ids_key].items()}
+        min_xyz = cfg_dict['proc']['lidar']['crop']['min_xyz']
+        max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
+        data_dict[pcd_limit_range_key] = np.array(min_xyz + max_xyz, dtype=np.float32)
+        data_dict[class_color_key] = {'Pedestrian': [1, 0, 0], 'Cyclist': [0, 0, 1], 'Car': [0, 1, 0]}
+
+        path = os.path.abspath(os.path.join(data_dict['root_path'], params['path_to_github_repo']))
+        if path not in sys.path: sys.path.append(path)
+        from algo.nn.PointPillars.model import PointPillars
+
+        data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
+        model_path = os.path.abspath(os.path.join(path, 'pretrained/epoch_160.pth'))
+        if torch.cuda.is_available():
+            data_dict[model_key].cuda()
+            data_dict[model_key].load_state_dict(torch.load(model_path))
+        else:
+             data_dict[model_key].load_state_dict(torch.load(model_path), map_location=torch.device('cpu'))
+
+        data_dict[model_key].eval()
+    
+    with torch.no_grad():
+        pc_torch = torch.from_numpy(data_dict['current_point_cloud_numpy'])
+        if torch.cuda.is_available(): pc_torch = pc_torch.cuda()
+        result_filter = data_dict[model_key](batched_pts=[pc_torch], mode='test')[0]
+
+    bbox_3des = result_filter['bbox_3des']
+    labels, scores = result_filter['labels'], result_filter['scores']
+
+    for i in range(len(labels)):
+        if scores[i] < params['score_threshold']: continue
+        bbox_3d = bbox_3des[i]
+        xyz_center = bbox_3d[:3]
+        xyz_center[2] += bbox_3d[5] / 2
+        xyz_extent = bbox_3d[3:6]
+        xyz_euler_angles = np.array([0, 0, bbox_3d[6]], dtype=np.float32)
+        obj_class = data_dict[ids_class_key][labels[i]]
+        rgb_color = np.array(data_dict[class_color_key][obj_class], dtype=np.float32)
+
+        label = dict()
+        label['class'] = obj_class
+        label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
+
+
+        if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
+        data_dict['current_label_list'].append(label)

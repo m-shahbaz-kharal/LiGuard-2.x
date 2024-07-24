@@ -49,18 +49,18 @@ def Handler(label_path: str, calib_data: dict):
         # extract label information
         
         # Example extraction:
-        # lidar_xyz_center = ...
-        # lidar_xyz_extent = ...
-        # lidar_xyz_euler_angles = np.array([x, y, z], dtype=np.float32)
-        # lidar_bbox_color = np.array(colors[obj_class], dtype=np.float32) # this is in 0-1 range
-        # rgb_bbox_color = np.array(colors[obj_class], dtype=np.float32) * 255.0 # Convert to 0-255 range
+        # xyz_center = ...
+        # xyz_extent = ...
+        # xyz_euler_angles = np.array([x, y, z], dtype=np.float32)
+        # rgb_color = np.array(colors[obj_class], dtype=np.float32) # this is in 0-1 range
+        # rgb_color = np.array(colors[obj_class], dtype=np.float32) * 255.0 # Convert to 0-255 range
         
-        # Create a dictionary to store the lidar bounding box information
-        label['lidar_bbox'] = {
-            # 'lidar_xyz_center': lidar_xyz_center,
-            # 'lidar_xyz_extent': lidar_xyz_extent,
-            # 'lidar_xyz_euler_angles': lidar_xyz_euler_angles,
-            # 'rgb_bbox_color': lidar_bbox_color,
+        # Create a dictionary to store the 3D bounding-box information
+        label['bbox_3d'] = {
+            # 'xyz_center': xyz_center,
+            # 'xyz_extent': xyz_extent,
+            # 'xyz_euler_angles': xyz_euler_angles,
+            # 'rgb_color': rgb_color,
             'predicted': False  # as the label is ground truth and is read from file
         }
         

@@ -222,11 +222,11 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
     output = []
 
     for lbl_dict in lbl_list:
-        if 'lidar_bbox' not in lbl_dict: continue
+        if 'bbox_3d' not in lbl_dict: continue
         # Get bounding box center, extent, and euler angles
-        bbox_center = lbl_dict['lidar_bbox']['lidar_xyz_center']
-        bbox_extent = lbl_dict['lidar_bbox']['lidar_xyz_extent']
-        bbox_euler_angles = lbl_dict['lidar_bbox']['lidar_xyz_euler_angles']
+        bbox_center = lbl_dict['bbox_3d']['xyz_center']
+        bbox_extent = lbl_dict['bbox_3d']['xyz_extent']
+        bbox_euler_angles = lbl_dict['bbox_3d']['xyz_euler_angles']
         R = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(bbox_euler_angles)
         # Create an oriented bounding box
         try: rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
@@ -264,14 +264,10 @@ and may contain follwoing keys depending on the pipeline.
     - `Tr_velo_to_cam`: a 4x4 transformation matrix from lidar to camera.
 - `current_label_list`: a list of dictionaries containing the current labels. Each dictionary item in the list may contain the following keys:
     - `label_class`: a string representing the label class.
-    - `lidar_bbox`: a dictionary containing the lidar bounding box. It may contain the following keys:
-        - `lidar_xyz_center`: a list containing the x, y, z center of the bounding box.
-        - `lidar_xyz_extent`: a list containing the x, y, z extent of the bounding box.
-        - `lidar_xyz_euler_angles`: a list containing the x, y, z euler angles of the bounding box.
-    - `camera_bbox`: a dictionary containing the camera bounding box. It may contain the following keys:
-        - `camera_uv_center`: a list containing the u, v center of the bounding box.
-        - `camera_uv_extent`: a list containing the u, v extent of the bounding box.
-        - `camera_uv_euler_angles`: a list containing the u, v euler angles of the bounding box.
+    - `bbox_3d`: a dictionary containing the 3D bounding-box. It may contain the following keys:
+        - `xyz_center`: a list containing the x, y, z center of the bounding box.
+        - `xyz_extent`: a list containing the x, y, z extent of the bounding box.
+        - `xyz_euler_angles`: a list containing the x, y, z euler angles of the bounding box.
 
 Please note that the above mentioned keys are standard keys that are used accross the framework. However, you can add more keys to the `data_dict` as per your requirement to be shared between different components of the framework.
 
