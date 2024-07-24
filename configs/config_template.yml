@@ -54,6 +54,10 @@ proc: # liguard processing configurations
             lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
             bins_per_unit_length: 2 # number of bins per unit length
             background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
+        rotate: # rotate point cloud
+            enabled: False # set True to rotate point cloud
+            priority: 1 # priority of process - lower is higher
+            angles: [0.0, 0.0, 0.0] # rotation angles in degrees
         crop:
             priority: 2 # priority of process - lower is higher
             enabled: False # set True to crop point cloud
@@ -131,9 +135,9 @@ proc: # liguard processing configurations
             enabled: False # set True to crop labels
             priority: 1 # priority of process - lower is higher
         remove_less_point_labels: # remove labels with no points
-                enabled: False # set True to remove labels
-                priority: 2 # priority of process - lower is higher
-                min_points: 6 # minimum number of points to consider a label valid
+            enabled: False # set True to remove labels
+            priority: 2 # priority of process - lower is higher
+            min_points: 6 # minimum number of points to consider a label valid
     post:
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable

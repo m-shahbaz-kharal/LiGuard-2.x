@@ -4,6 +4,40 @@ import numpy as np
 
 from gui.logger_gui import Logger
 
+def rotate(data_dict: dict, cfg_dict: dict):
+    """
+    Rotate the point cloud data by the specified angles.
+
+    Args:
+        data_dict (dict): A dictionary containing the data.
+        cfg_dict (dict): A dictionary containing the configuration parameters.
+
+    Returns:
+        None
+    """
+    
+    # get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->lidar.py->rotate]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # check if required data is present in data_dict
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->rotate]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    
+    # get point cloud and rotation angles
+    pcd = data_dict['current_point_cloud_numpy']
+    angles = cfg_dict['proc']['lidar']['rotate']['angles']
+    angles_rad = np.deg2rad(angles)
+    
+    # calculate rotation matrix
+    rotation_matrix = np.array([[np.cos(angles_rad[1]) * np.cos(angles_rad[2]), np.cos(angles_rad[1]) * np.sin(angles_rad[2]), -np.sin(angles_rad[1])],
+                                [np.sin(angles_rad[0]) * np.sin(angles_rad[1]) * np.cos(angles_rad[2]) - np.cos(angles_rad[0]) * np.sin(angles_rad[2]), np.sin(angles_rad[0]) * np.sin(angles_rad[1]) * np.sin(angles_rad[2]) + np.cos(angles_rad[0]) * np.cos(angles_rad[2]), np.sin(angles_rad[0]) * np.cos(angles_rad[1])],
+                                [np.cos(angles_rad[0]) * np.sin(angles_rad[1]) * np.cos(angles_rad[2]) + np.sin(angles_rad[0]) * np.sin(angles_rad[2]), np.cos(angles_rad[0]) * np.sin(angles_rad[1]) * np.sin(angles_rad[2]) - np.sin(angles_rad[0]) * np.cos(angles_rad[2]), np.cos(angles_rad[0]) * np.cos(angles_rad[1])]])
+    
+    # rotate the point cloud
+    data_dict['current_point_cloud_numpy'] = np.dot(pcd[:, :3], rotation_matrix.T)
+
 def crop(data_dict: dict, cfg_dict: dict):
     """
     Crop the point cloud data based on the specified limits.
