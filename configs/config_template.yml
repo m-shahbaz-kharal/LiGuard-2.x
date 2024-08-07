@@ -40,8 +40,8 @@ sensors: # lidar and camera configurations
 
 proc: # liguard processing configurations
     pre:
-        dummy: # dummy pre-process
-            enabled: False # set True to enable
+        remove_nan_from_pcd: # remove nan points from point cloud
+            enabled: True # set True to remove nan points
             priority: 1 # priority of process - lower is higher
     lidar:
         BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
