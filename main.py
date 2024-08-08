@@ -73,6 +73,10 @@ class LiGuard:
                         self.data_dict['current_frame_index'] -= 1
                 elif event.name == 'space':
                     self.is_playing = not self.is_playing
+                # if the num 0 is pressed, reset the frame index
+                elif event.name == '0':
+                    self.is_playing = False
+                    self.data_dict['current_frame_index'] = 0
     
     def reset(self, cfg):
         """
