@@ -137,3 +137,69 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     # Save the label
     lbl_path = os.path.join(lbl_output_dir, os.path.basename(current_label_path))
     with open(lbl_path, 'w') as f: f.write(lbl_str)
+
+def visualize_in_vr(data_dict: dict, cfg_dict: dict):
+    """
+    Visualize outputs in the VR environment.
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # Get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->post.py->visualize_in_vr][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # algo name
+    algo_name = 'visualize_in_vr'
+
+    # dict keys
+    server_socket_key = f'{algo_name}_server_socket'
+    client_socket_key = f'{algo_name}_client_socket'
+
+    # get params
+    params = cfg_dict['proc']['post'][algo_name]
+
+    # imports
+    import socket
+    import struct
+    import open3d as o3d
+    import numpy as np
+
+    # create a server socket if it does not exist
+    if server_socket_key not in data_dict:
+        # Create a server socket
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.settimeout(cfg_dict['threads']['net_sleep'])
+        server_socket.bind((params['server_ip'], params['server_port']))
+        server_socket.listen(1)
+        data_dict[server_socket_key] = server_socket
+        logger.log(f'[algo->post.py->visualize_in_vr]: Server socket created', Logger.DEBUG)
+    
+    # accept a client connection
+    if client_socket_key not in data_dict:
+        server_socket = data_dict[server_socket_key]
+        try:
+            client_socket, addr = server_socket.accept()
+            data_dict[client_socket_key] = client_socket
+            logger.log(f'[algo->post.py->visualize_in_vr]: Client connected from {addr}', Logger.DEBUG)
+        except socket.timeout: pass
+    
+    else:
+        if 'current_point_cloud_numpy' in data_dict:
+            # receive an int32 value, convert to int
+            req = struct.unpack('I', data_dict[client_socket_key].recv(4))[0]
+            logger.log(f'[algo->post.py->visualize_in_vr]: Received request: {req}', Logger.DEBUG)
+            if req == 0: return # do nothing
+            if req == 1:
+                points = np.asarray(data_dict['current_point_cloud_numpy'][:, :3], dtype=np.float32)
+                data = points.flatten().tobytes()
+                data_dict[client_socket_key].sendall(struct.pack('I', len(data)))
+                data_dict[client_socket_key].sendall(data)
+            elif req == 2: # close the client socket
+                data_dict[client_socket_key].close()
+                data_dict.pop(client_socket_key)
+                logger.log(f'[algo->post.py->visualize_in_vr]: Client disconnected', Logger.DEBUG)

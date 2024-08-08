@@ -151,6 +151,12 @@ proc: # liguard processing configurations
         create_pcdet_dataset: # create dataset in pcdet format
             enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher
+        visualize_in_vr:
+            enabled: False
+            priority: 2
+            server_ip: '127.0.0.1'
+            server_port: 5254
+
 
 visualization: # visualization parameters
     enabled: True # set True to visualize
@@ -169,3 +175,4 @@ threads: # don't change unless debugging
     io_sleep: 0.01 # input/output threads sleep time in seconds
     proc_sleep: 0.01 # processing threads sleep time in seconds
     vis_sleep: 0.01 # visualization threads sleep time in seconds
+    net_sleep: 0.2 # network threads sleep time in seconds
