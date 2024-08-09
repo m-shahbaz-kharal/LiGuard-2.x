@@ -1,6 +1,7 @@
 # Installation
 The LiGuard Software Suite requires:
 - Keyboard (`pip install keybaord`)
+- pygetwindow (`pip install pygetwindow`)
 - Yaml (`pip install pyyaml`)
 - Open3D (`pip install open3d`)
 - OpenCV (`pip install opencv-python`)

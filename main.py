@@ -47,6 +47,7 @@ class LiGuard:
         # initialize the main lock
         self.lock = threading.Lock()
         self.is_running = False # if the app is running
+        self.is_focused = False # if the app is focused
         self.is_playing = False # if the frames are playing
         # initialize the data dictionary
         self.data_dict = dict()
@@ -58,10 +59,16 @@ class LiGuard:
         
         # start the application loop
         self.app.run()
+
+    def __is_focused__(self):
+        is_any_focused = False
+        if self.pcd_visualizer: is_any_focused = is_any_focused or self.pcd_visualizer.__is_focused__()
+        if self.img_visualizer: is_any_focused = is_any_focused or self.img_visualizer.__is_focused__()
+        return is_any_focused
         
     # handle the key events of right, left, and space keys
     def handle_key_event(self, event:keyboard.KeyboardEvent):
-        if event.event_type == keyboard.KEY_DOWN:
+        if event.event_type == keyboard.KEY_DOWN and self.__is_focused__():
             with self.lock:
                 if event.name == 'right':
                     self.is_playing = False

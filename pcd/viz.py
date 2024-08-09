@@ -8,6 +8,8 @@ from gui.logger_gui import Logger
 import open3d as o3d
 import numpy as np
 
+import pygetwindow as gw
+
 class PointCloudVisualizer:
     """
     Class for visualizing point clouds and bounding boxes using Open3D.
@@ -27,6 +29,17 @@ class PointCloudVisualizer:
         self.viz.create_window("PointCloud Feed", width=1000, height=1080, left=480, top=30)
         # init
         self.reset(cfg, True)
+
+    def __is_focused__(self):
+        """
+        Checks if the visualizer is focused.
+
+        Returns:
+            bool: True if the visualizer is focused, False otherwise.
+        """
+        window = gw.getWindowsWithTitle('PointCloud Feed')
+        if window: return window[0].isActive
+        return False
         
     def reset(self, cfg, reset_bounding_box=False):
         """
