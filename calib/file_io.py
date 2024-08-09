@@ -26,7 +26,8 @@ class FileIO:
         self.cfg = cfg
         self.clb_dir = os.path.join(cfg['data']['path'], cfg['data']['calib_subdir'])
         self.clb_type = cfg['data']['calib']['clb_type']
-        self.clb_count = cfg['data']['size']
+        self.clb_start_idx = cfg['data']['start']['calib']
+        self.clb_count = cfg['data']['count']
         
         # Check if the calibration type is supported
         if self.clb_type not in supported_calib_types: raise NotImplementedError("Calib type not supported. Supported file types: " + ', '.join(supported_calib_types) + ".")
@@ -38,7 +39,7 @@ class FileIO:
         files = glob.glob(os.path.join(self.clb_dir, '*' + self.clb_ext))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
-        self.files_basenames = file_basenames[:self.clb_count]
+        self.files_basenames = file_basenames[self.clb_start_idx:self.clb_count]
         
         # read the calibration files in async mode
         self.data_lock = threading.Lock()

@@ -25,6 +25,7 @@ class FileIO:
         cfg (dict): Configuration dictionary containing the path and file type information.
         pcd_dir (str): Directory path where the point cloud files are located.
         pcd_type (str): File extension of the point cloud files.
+        pcd_start_idx (int): Index of the first point cloud file to read.
         pcd_count (int): Number of point cloud files to read.
         files_basenames (list): List of file basenames (without extension) of the point cloud files.
         reader (function): Function to read the point cloud file based on its type.
@@ -38,12 +39,13 @@ class FileIO:
         self.cfg = cfg     
         self.pcd_dir = os.path.join(cfg['data']['path'], cfg['data']['lidar_subdir'])
         self.pcd_type = cfg['data']['lidar']['pcd_type']
-        self.pcd_count = cfg['data']['size']
+        self.pcd_start_idx = cfg['data']['start']['lidar']
+        self.pcd_count = cfg['data']['count']
         files = glob.glob(os.path.join(self.pcd_dir, '*' + self.pcd_type))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numerical part
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
-        self.files_basenames = file_basenames[:self.pcd_count]
+        self.files_basenames = file_basenames[self.pcd_start_idx:self.pcd_count]
         
         # Check if the file type is supported
         if self.pcd_type not in supported_file_types:

@@ -6,7 +6,12 @@ data: # dataset configurations
     camera_subdir: 'camera' # subdirectory containing images
     label_subdir: 'label' # subdirectory containing labels
     calib_subdir: 'calib' # subdirectory containing calibration files
-    size: 10 # number of frames to annotate
+    start: # index of first frame, only used if reading from disk; should be different for camera and lidar only if they are not synchronized
+        lidar: 0 # start frame index
+        camera: 0 # start frame index
+        label: 0 # start frame index
+        calib: 0 # start frame index
+    count: 10 # end frame number
 
     lidar:
         enabled: True # set True to read point clouds from disk

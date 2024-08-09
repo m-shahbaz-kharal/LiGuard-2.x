@@ -17,6 +17,7 @@ class SensorIO:
         model (str): The model of the camera sensor.
         serial_no (str): The serial number of the camera sensor.
         cfg (dict): The configuration dictionary.
+        img_start_idx (int): The starting index of the images in the data.
         img_count (int): The number of images in the data.
         handle (Handler): The handler for reading the sensor data.
         reader (Iterator): The iterator for reading the sensor data.
@@ -42,7 +43,8 @@ class SensorIO:
         if self.model not in supported_models: raise NotImplementedError("Model not supported. Supported models: " + ', '.join(supported_models) + ".")
         
         self.cfg = cfg
-        self.img_count = cfg['data']['size']
+        self.img_start_idx = cfg['data']['start']['camera']
+        self.img_count = cfg['data']['count']
         # Import the handler for the sensor data
         handler = __import__('img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         self.handle = handler(self.cfg)

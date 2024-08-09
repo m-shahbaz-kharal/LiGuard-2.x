@@ -29,7 +29,8 @@ class SensorIO:
             raise NotImplementedError("Model not supported. Supported models: " + ', '.join(supported_models) + ".")
         
         self.cfg = cfg
-        self.pcd_count = cfg['data']['size']
+        self.pcd_start_idx = cfg['data']['start']['lidar']
+        self.pcd_count = cfg['data']['count']
         
         # Import the appropriate handler based on the manufacturer and model
         handler = __import__('pcd.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler

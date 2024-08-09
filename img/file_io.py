@@ -15,6 +15,7 @@ class FileIO:
         cfg (dict): Configuration dictionary.
         img_dir (str): Directory path where the image files are located.
         img_type (str): File extension of the image files.
+        img_start_idx (int): Index of the first image file to read.
         img_count (int): Number of image files to read.
         files_basenames (list): List of file basenames (without extension) of the image files.
         reader (function): Function to read an image file.
@@ -37,12 +38,13 @@ class FileIO:
         self.cfg = cfg
         self.img_dir = os.path.join(cfg['data']['path'], cfg['data']['camera_subdir'])
         self.img_type = cfg['data']['camera']['img_type']
-        self.img_count = cfg['data']['size']
+        self.img_start_idx = cfg['data']['start']['camera']
+        self.img_count = cfg['data']['count']
         files = glob.glob(os.path.join(self.img_dir, '*' + self.img_type))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numerical part
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
-        self.files_basenames = file_basenames[:self.img_count]
+        self.files_basenames = file_basenames[self.img_start_idx:self.img_count]
         self.reader = self.__read_img__
 
         self.data_lock = threading.Lock()
