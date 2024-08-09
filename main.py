@@ -73,11 +73,13 @@ class LiGuard:
                         self.data_dict['current_frame_index'] -= 1
                 elif event.name == 'space':
                     self.is_playing = not self.is_playing
-                # if the num 0 is pressed, reset the frame index
                 elif event.name == '0':
                     self.is_playing = False
                     self.data_dict['current_frame_index'] = 0
-    
+                elif event.name == '[':
+                    self.is_playing = False
+                    self.config.show_input_dialog('Enter the frame index:', f'0-{self.data_dict["maximum_frame_index"]}', 'jump_to_frame')
+
     def reset(self, cfg):
         """
         Resets the LiGuard with the given configuration.
@@ -329,6 +331,9 @@ class LiGuard:
                 # check if the frames are playing, if yes increment the frame index
                 elif self.is_playing and self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']: self.data_dict['current_frame_index'] += 1
             
+            # check if user has jumped to a frame
+            jump = self.config.get_input_dialog_value('jump_to_frame')
+            if jump: self.data_dict['current_frame_index'] = int(jump)
             # check if the frame has changed
             frame_changed = self.data_dict['previous_frame_index'] != self.data_dict['current_frame_index']
             

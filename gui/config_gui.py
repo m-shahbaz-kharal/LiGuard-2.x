@@ -206,10 +206,50 @@ class BaseConfiguration:
         horiz.add_child(gui.Label(self.issue_text))
         dialog.add_child(horiz)
         # show the dialog
+        self.__show_dialog__(dialog)
+
+    def __show_dialog__(self, dialog):
+        if not hasattr(self, 'showing_dialog'): self.showing_dialog = True
+        elif self.showing_dialog: self.__close_dialog__()
+        self.showing_dialog = True
         self.mwin.show_dialog(dialog)
         
-    def __close_issue_dialog__(self):
+    def __close_dialog__(self):
+        self.showing_dialog = False
         self.mwin.close_dialog()
+
+    def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value'):
+        dialog = gui.Dialog(title)
+        
+        layout = gui.Vert(0.25 * self.em, gui.Margins(1 * self.em))
+
+        h_layout = gui.Horiz(0, gui.Margins(self.em * 0.6, self.em * 0.6, self.em * 0.6, self.em * 0.4))
+        
+        label = gui.Label(query)
+        h_layout.add_child(label)
+        
+        self.input_dialog_key = key
+        self.input_dialog_widget = ans_base_type(ans_type)
+        self.input_dialog_widget_value_variable = value_variable
+        h_layout.add_child(self.input_dialog_widget)
+        
+        layout.add_child(h_layout)
+        
+        ok_button = gui.Button("OK")
+        ok_button.set_on_clicked(self.__on_input_okay__)
+        
+        layout.add_child(ok_button)
+        dialog.add_child(layout)
+        
+        self.__show_dialog__(dialog)
+
+    def __on_input_okay__(self):
+        self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
+        self.__close_dialog__()
+
+    def get_input_dialog_value(self, key):
+        if hasattr(self, 'cfg') and key in self.cfg: return self.cfg.pop(key)
+        return None
         
     def __new_config__(self):
         # Load the default configuration
@@ -226,7 +266,7 @@ class BaseConfiguration:
         # Define the function to load the configuration file and close the dialog
         def load_cfg_and_close_dialog(cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
-            self.mwin.close_dialog()
+            self.__close_dialog__()
             
             self.cfg = self.load_config(cfg_path)
             cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
@@ -236,9 +276,9 @@ class BaseConfiguration:
         # Open the configuration file
         read_config_file_dialog = gui.FileDialog(gui.FileDialog.OPEN, "Load Configuration", self.mwin.theme)
         read_config_file_dialog.add_filter(".yml", "LiGuard Configuration (.yml)")
-        read_config_file_dialog.set_on_cancel(lambda: self.mwin.close_dialog())
+        read_config_file_dialog.set_on_cancel(lambda: self.__close_dialog__())
         read_config_file_dialog.set_on_done(lambda path: load_cfg_and_close_dialog(path))
-        self.mwin.show_dialog(read_config_file_dialog)
+        self.__show_dialog__(read_config_file_dialog)
         
         for callback in self.callbacks['open_config']: callback(self.cfg)
     
@@ -252,7 +292,7 @@ class BaseConfiguration:
             self.issue_text = "Failed to save configuration file."
             self.__show_issue_dialog__()
             time.sleep(self.cfg['threads']['vis_sleep'])
-            self.__close_issue_dialog__()
+            self.__close_dialog__()
         # Call the callback functions for the 'save_config' action
         for callback in self.callbacks['save_config']: callback(self.cfg)
             
@@ -261,15 +301,15 @@ class BaseConfiguration:
             self.config_file_path_textedit.text_value = cfg_path
             self.__update_cfg_from_gui__(self.cfg, ['cfg'])
             self.save_config(cfg, cfg_path)
-            self.mwin.close_dialog()
+            self.__close_dialog__()
             
         if hasattr(self, 'cfg'):
             # Save the configuration to the specified path
             save_as_config_file_dialog = gui.FileDialog(gui.FileDialog.SAVE, "Save Configuration", self.mwin.theme)
             save_as_config_file_dialog.add_filter(".yml", "LiGuard Configuration (.yml)")
-            save_as_config_file_dialog.set_on_cancel(lambda: self.mwin.close_dialog())
+            save_as_config_file_dialog.set_on_cancel(lambda: self.__close_dialog__())
             save_as_config_file_dialog.set_on_done(lambda path: save_cfg_and_close_dialog(self.cfg, path))
-            self.mwin.show_dialog(save_as_config_file_dialog)
+            self.__show_dialog__(save_as_config_file_dialog)
         
         # Call the callback functions for the 'save_as_config' action
         for callback in self.callbacks['save_as_config']: callback(self.cfg)
