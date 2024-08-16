@@ -204,6 +204,28 @@ class ImageVisualizer:
             # add to visualizer
             self.img = o3d.geometry.Image(img_np)
             self.__add_geometry__('image', self.img, False)
+
+        elif 'bbox_2d' in label_dict:
+            # bbox parameters
+            bbox_2d_dict = label_dict['bbox_2d']
+            xy_center = bbox_2d_dict['xy_center']
+            xy_extent = bbox_2d_dict['xy_extent']
+            rgb_color = bbox_2d_dict['rgb_color'] * 255.0
+            if not bbox_2d_dict['predicted']: rgb_color *= 0.5 # darken
+
+            # the image to draw on
+            img_np = np.asarray(self.img)
+            rgb_color = rgb_color.tolist()
+
+            # draw box
+            start_point = (xy_center - xy_extent / 2.0).astype(int)
+            end_point = (xy_center + xy_extent / 2.0).astype(int)
+            cv2.rectangle(img_np, start_point, end_point, rgb_color, self.cfg['visualization']['camera']['bbox_line_width'])
+
+            # add to visualizer
+            self.img = o3d.geometry.Image(img_np)
+            self.__add_geometry__('image', self.img, False)
+
         
     def redraw(self):
         """

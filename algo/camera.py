@@ -74,3 +74,70 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
     
     # Update the image with the projected lidar points
     data_dict['current_image_numpy'][pixel_coords_valid[:, 1], pixel_coords_valid[:, 0]] = np.column_stack((pixel_depths_valid, np.zeros_like(pixel_depths_valid), np.zeros_like(pixel_depths_valid)))
+
+def ultralytics_yolov5(data_dict: dict, cfg_dict: dict):
+    """
+    Runs the Ultralytics YOLOv5 object detection algorithm on the current image.
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->camera.py->ultralytics_yolov5][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    
+    if 'current_image_numpy' not in data_dict:
+        logger.log('[algo->camera.py->ultralytics_yolov5]: current_image_numpy not found in data_dict', Logger.ERROR)
+        return
+    
+    # imports
+    import torch
+
+    # algo name and keys used in algo
+    algo_name = 'ultralytics_yolov5'
+    model_key = f'{algo_name}_model'
+    tgt_cls_key = f'{algo_name}_target_classes'
+    
+    # get params
+    params = cfg_dict['proc']['camera']['ultralytics_yolov5']
+
+    # check if model is already loaded
+    if model_key not in data_dict:
+        logger.log(f'[algo->camera.py->ultralytics_yolov5]: Loading model', Logger.INFO)
+        data_dict[model_key] = torch.hub.load('ultralytics/yolov5', params['model'], pretrained=True, _verbose=False)
+        vk_dict = {v:k for (k,v) in data_dict[model_key].names.items()}
+        data_dict[tgt_cls_key] = [vk_dict[key] for key in params['class_colors']]
+    else:
+        result = data_dict[model_key](data_dict['current_image_path']).xywh[0].detach().cpu().numpy()
+        xywh = result[:, :4].astype(int)
+        score = result[:, 4]
+        obj_class = result[:, 5].astype(int)
+
+        idx = np.argwhere(np.isin(obj_class, data_dict[tgt_cls_key]))
+        
+        xywh = xywh[idx].reshape(-1, 4)
+        score = score[idx].reshape(-1)
+        obj_class = obj_class[idx].reshape(-1)
+
+        idx = np.argwhere(score >= params['score_threshold'])
+
+        xywh = xywh[idx]
+        score = score[idx]
+        obj_class = obj_class[idx]
+
+        for topleft_botright, cls in zip(xywh, obj_class):
+            topleft_botright = topleft_botright.reshape(-1)
+            xy_center = topleft_botright[:2]
+            xy_extent = topleft_botright[2:]
+            rgb_color = np.array(params['class_colors'][data_dict[model_key].names[cls.item()]], dtype=np.float32)
+            lbl = {'xy_center':xy_center, 'xy_extent':xy_extent, 'rgb_color':rgb_color, 'predicted':True}
+            if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
+            data_dict['current_label_list'].append({'bbox_2d':lbl})
+
+            
+
+
+    
