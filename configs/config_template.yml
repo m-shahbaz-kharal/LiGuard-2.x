@@ -48,6 +48,12 @@ proc: # liguard processing configurations
         remove_nan_from_pcd: # remove nan points from point cloud
             enabled: True # set True to remove nan points
             priority: 1 # priority of process - lower is higher
+        manual_calibration:
+            enabled: False # set True to manually calibrate camera and lidar
+            priority: 2 # priority of process - lower is higher
+            T_lidar_to_cam_4x4: "1.0 0.0 0.0 0.0 0.0 -1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0" #4x4 transformation matrix from lidar to camera
+            rotation_matrix_4x4: "0.0 1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0" # 4x4 rotation matrix
+            cam_intrinsic_3x4: "1000.0 0.0 960.0 0.0 0.0 1000.0 540.0 0.0 0.0 0.0 1.0 0.0" # 3x4 camera intrinsic matrix
     lidar:
         BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
             enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
