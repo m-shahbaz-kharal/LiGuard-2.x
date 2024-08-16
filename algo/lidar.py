@@ -174,9 +174,11 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
             data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
             logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter loaded from {params["filter_path"]}.', Logger.INFO)
+            data_dict['BGFilterDHistDPP_set'] = True
         else:
             data_dict[filter_loaded_key] = False
             logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+            data_dict['BGFilterDHistDPP_set'] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -202,6 +204,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         # save filter
         filter_saved_path = save_DHistDPP_params(filter_params, params['filter_path'])
         logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter generated and saved in {filter_saved_path}.', Logger.INFO)
+        data_dict['BGFilterDHistDPP_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -212,6 +215,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
+            data_dict['BGFilterDHistDPP_set'] = False
             return
     
     # if filter exists, apply it
@@ -235,6 +239,11 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
     else: print('[algo->lidar.py->BGFilterSTDF]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
+    # imports
+    from algo.non_nn.STDF import calc_STDF_params, save_STDF_params, load_STDF_params, make_STDF_filter
+    from algo.utils import gather_point_clouds, skip_frames, combine_gathers
+    from pcd.utils import get_fixed_sized_point_cloud
+    
     # algo name
     algo_name = 'BGFilterSTDF'
 
@@ -243,6 +252,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
     skip_frames_key = f'{algo_name}_skip_frames'
     params_key = f'{algo_name}_params'
     filter_key = f'{algo_name}_filter'
+    filter_loaded_key = f'{algo_name}_filter_loaded'
 
     # get params
     params = cfg_dict['proc']['lidar']['BGFilterSTDF'].copy()
@@ -252,14 +262,23 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
     all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(params['number_of_frame_gather_iters'])]
     all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(params['number_of_skip_frames_after_each_iter'])]
 
+    # load filter if exists
+    if filter_loaded_key not in data_dict and params['load_filter']:
+        # add params to data_dict
+        data_dict[params_key] = params
+        
+        filter_params = load_STDF_params(params['filter_path'])
+        if filter_params:
+            data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
+            data_dict[filter_loaded_key] = True
+            logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter loaded from {params["filter_path"]}.', Logger.INFO)
+        else:
+            data_dict[filter_loaded_key] = False
+            logger.log(f'[algo->lidar.py->BGFilterSTDF]: Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+    
     # generate filter if not exists
     if filter_key not in data_dict:
         data_dict[params_key] = params
-
-        # get util functions
-        from algo.utils import gather_point_clouds, skip_frames, combine_gathers
-        from pcd.utils import get_fixed_sized_point_cloud
-        
         # gather frames
         for i in range(params['number_of_frame_gather_iters']):
             gathering_done = gather_point_clouds(data_dict, cfg_dict, all_query_frames_keys[i], params['number_of_frames_in_each_gather_iter'])
@@ -273,10 +292,12 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         
         # generate filter
         logger.log(f'[algo->lidar.py->BGFilterSTDF]: Generating filter', Logger.INFO)
-        from algo.non_nn.STDF import STDF
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
-        data_dict[filter_key] = STDF(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
-        logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter generated', Logger.INFO)
+        filter_params = calc_STDF_params(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
+        data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
+        # save filter
+        filter_saved_path = save_STDF_params(filter_params, params['filter_path'])
+        logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter generated and saved in {filter_saved_path}.', Logger.INFO)
         data_dict['BGFilterSTDF_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
@@ -288,12 +309,11 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
+            data_dict['BGFilterSTDF_set'] = False
             return
     
     # if filter exists, apply it
     if filter_key in data_dict:
-        # get util functions
-        from pcd.utils import get_fixed_sized_point_cloud
         # apply filter
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]

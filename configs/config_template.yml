@@ -86,6 +86,8 @@ proc: # liguard processing configurations
             lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
             bins_per_unit_length: 2 # number of bins per unit length
             background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
+            filter_path: 'bg_filter_stdf' # path to save/load filter
+            load_filter: False # set True to load filter
         Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
             enabled: False # set True to cluster point cloud using TEPP DBSCAN
             activate_on_key_set: 'current_point_cloud_numpy' # activates as soon as this key is available in data_dict, it can be set by any other process to activate this process

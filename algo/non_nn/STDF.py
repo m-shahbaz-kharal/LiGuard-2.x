@@ -1,3 +1,6 @@
+import os
+import pickle
+
 import numpy as np
 
 """
@@ -27,7 +30,7 @@ Since the number of points in each frame is not fixed, all the point clouds (gat
 
 """
 
-def STDF(point_cloud_set: list, # a list of point clouds, points in each frame must be equal
+def calc_STDF_params(point_cloud_set: list, # a list of point clouds, points in each frame must be equal
          lidar_range_in_unit_length: float, # maximum range of lidar in lidar unit length
          bins_per_unit_length: int, # number of bins per unit length
 ):
@@ -38,14 +41,64 @@ def STDF(point_cloud_set: list, # a list of point clouds, points in each frame m
     histogram_range = [-lidar_range_in_unit_length, lidar_range_in_unit_length]
     histogram_3d, edges = np.histogramdd(point_cloud_set[:,:3], bins=(bins, bins, bins), range=[histogram_range, histogram_range, histogram_range])
     normalized_histogram_3d = histogram_3d / number_of_frames
+
+    filter_params = dict(
+        bins=bins,
+        bins_per_side=bins_per_side,
+        normalized_histogram_3d=normalized_histogram_3d
+    )
+
+    return filter_params
     
-    def filter(point_cloud: np.ndarray, # Nx3 or Nx4,
-               background_density_threshold: float # if the point falls in a bin with density less than this threshold, it is considered as foreground
+def make_STDF_filter(point_cloud: np.ndarray, # Nx3 or Nx4,
+            background_density_threshold: float, # if the point falls in a bin with density less than this threshold, it is considered as foreground
+            bins: np.ndarray, # bins for histogram
+            bins_per_side: int, # number of bins per side
+            normalized_histogram_3d: np.ndarray, # normalized histogram 3d
     ):
-        voxel_indices = np.digitize(point_cloud[:,:3], bins) - 1
-        voxel_indices = np.clip(voxel_indices, 0, bins_per_side-1)
-        mask = normalized_histogram_3d[voxel_indices[:,0], voxel_indices[:,1], voxel_indices[:,2]] < background_density_threshold
-        return mask
+    voxel_indices = np.digitize(point_cloud[:,:3], bins) - 1
+    voxel_indices = np.clip(voxel_indices, 0, bins_per_side-1)
+    mask = normalized_histogram_3d[voxel_indices[:,0], voxel_indices[:,1], voxel_indices[:,2]] < background_density_threshold
+    return mask
 
-    return filter
+def save_STDF_params(filter_params, filename):
+    if os.path.exists(filename):
+        if '.' in filename: filename = filename.split('.')[0]
+        if '_' in filename: possible_num = filename.split('_')[-1]
+        if possible_num.isdigit():
+            num = int(possible_num)
+            filename = filename.split('_')[:-1] + str(num+1).zfill(2)
+        else:
+            filename += '_01'
+        filename += '.pkl'
+    else:
+        if '.' in filename: filename = filename.split('.')[0]
+        if '_' in filename: possible_num = filename.split('_')[-1]
+        if possible_num.isdigit(): filename += '.pkl'
+        else: filename += '_01.pkl'
+    
+    with open(filename, 'wb') as f: pickle.dump(filter_params, f)
+    return filename
 
+def load_STDF_params(filename):
+    if '.' in filename: filename = filename.split('.')[0]
+    if '_' in filename: possible_num = filename.split('_')[-1]
+    if possible_num.isdigit():
+        filename = filename + '.pkl'
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f: return pickle.load(f)
+        else: return None
+    elif os.path.exists(filename + '.pkl'):
+        with open(filename + '.pkl', 'rb') as f: return pickle.load(f)
+    else:
+        try:
+            parent_path = os.path.dirname(filename)
+            if len(parent_path) > 0: files = os.listdir(parent_path)
+            else: files = os.listdir()
+            files = [f for f in files if f.startswith(filename)]
+            if len(files) == 0: return None
+            files.sort()
+            filename = files[-1]
+            filename = os.path.join(parent_path, filename)
+            with open(filename, 'rb') as f: return pickle.load(f)
+        except: return None
