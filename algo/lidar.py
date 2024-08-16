@@ -272,9 +272,11 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
             data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
             logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter loaded from {params["filter_path"]}.', Logger.INFO)
+            data_dict['BGFilterSTDF_set'] = True
         else:
             data_dict[filter_loaded_key] = False
             logger.log(f'[algo->lidar.py->BGFilterSTDF]: Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+            data_dict['BGFilterSTDF_set'] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
