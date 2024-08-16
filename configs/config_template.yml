@@ -65,6 +65,8 @@ proc: # liguard processing configurations
             lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
             bins_per_unit_length: 2 # number of bins per unit length
             background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
+            filter_path: 'bg_filter_dhist_dpp' # path to save/load filter
+            load_filter: False # set True to load filter
         rotate: # rotate point cloud
             enabled: False # set True to rotate point cloud
             priority: 1 # priority of process - lower is higher

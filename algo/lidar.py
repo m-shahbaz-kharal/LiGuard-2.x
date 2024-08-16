@@ -140,6 +140,11 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
     # get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
     else: print('[algo->lidar.py->BGFilterDHistDPP]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    
+    # imports
+    from algo.non_nn.DHistDPP import calc_DHistDPP_params, save_DHistDPP_params, load_DHistDPP_params, make_DHistDPP_filter
+    from algo.utils import gather_point_clouds, skip_frames, combine_gathers
+    from pcd.utils import get_fixed_sized_point_cloud
 
     # algo name
     algo_name = 'BGFilterDHistDPP'
@@ -149,6 +154,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
     skip_frames_key = f'{algo_name}_skip_frames'
     params_key = f'{algo_name}_params'
     filter_key = f'{algo_name}_filter'
+    filter_loaded_key = f'{algo_name}_filter_loaded'
 
     # get params
     params = cfg_dict['proc']['lidar']['BGFilterDHistDPP'].copy()
@@ -158,13 +164,23 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
     all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(params['number_of_frame_gather_iters'])]
     all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(params['number_of_skip_frames_after_each_iter'])]
 
+    # load filter if exists
+    if filter_loaded_key not in data_dict and params['load_filter']:
+        # add params to data_dict
+        data_dict[params_key] = params
+        
+        filter_params = load_DHistDPP_params(params['filter_path'])
+        if filter_params:
+            data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
+            data_dict[filter_loaded_key] = True
+            logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter loaded from {params["filter_path"]}.', Logger.INFO)
+        else:
+            data_dict[filter_loaded_key] = False
+            logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+    
     # generate filter if not exists
     if filter_key not in data_dict:
         data_dict[params_key] = params
-
-        # get util functions
-        from algo.utils import gather_point_clouds, skip_frames, combine_gathers
-        from pcd.utils import get_fixed_sized_point_cloud
         
         # gather frames
         for i in range(params['number_of_frame_gather_iters']):
@@ -179,10 +195,13 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         
         # generate filter
         logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Generating filter', Logger.INFO)
-        from algo.non_nn.DHistDPP import DHistDPP
+        
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
-        data_dict[filter_key] = DHistDPP(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
-        logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter generated', Logger.INFO)
+        filter_params = calc_DHistDPP_params(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
+        data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
+        # save filter
+        filter_saved_path = save_DHistDPP_params(filter_params, params['filter_path'])
+        logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter generated and saved in {filter_saved_path}.', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
         condition = False

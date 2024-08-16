@@ -1,3 +1,6 @@
+import os
+import pickle
+
 import numpy as np
 
 """
@@ -27,7 +30,7 @@ Since the point cloud is structured, each point index represents a unique ray in
         - otherwise background.
 """
 
-def DHistDPP(point_cloud_set: list, # a list of point clouds, points in each frame must be equal
+def calc_DHistDPP_params(point_cloud_set: list, # a list of point clouds, points in each frame must be equal
              number_of_points_per_frame: int, # number of points in each point cloud
              lidar_range_in_unit_length: float, # maximum range of lidar in lidar unit length
              bins_per_unit_length: int, # number of bins per unit length
@@ -41,15 +44,68 @@ def DHistDPP(point_cloud_set: list, # a list of point clouds, points in each fra
     bins = np.linspace(0, lidar_range_in_unit_length, bins_per_point+1)
     histograms_per_point = np.apply_along_axis(lambda x: np.histogram(x, bins_per_point, range=(0, lidar_range_in_unit_length))[0], axis=1, arr=distances_per_point)
     normalized_histogram_per_point = histograms_per_point.astype(np.float32) / number_of_frames
-    
-    def filter(point_cloud: np.ndarray, # Nx4,
-               background_density_threshold: float # if the point falls in a bin with density less than this threshold, it is considered as foreground
-    ):
-        
-        dists = np.linalg.norm(point_cloud[:,:3], ord=2, axis=1)
-        bin_indices = np.digitize(dists, bins) - 1
-        bin_indices = np.clip(bin_indices, 0, bins_per_point-1)
-        mask = normalized_histogram_per_point[np.arange(number_of_points_per_frame), bin_indices] < background_density_threshold
-        return mask
 
-    return filter
+    filter_params = dict(
+        bins=bins,
+        bins_per_point=bins_per_point,
+        normalized_histogram_per_point=normalized_histogram_per_point,
+        number_of_points_per_frame=number_of_points_per_frame
+    )
+
+    return filter_params
+    
+def make_DHistDPP_filter(point_cloud: np.ndarray, # Nx4,
+           background_density_threshold: float, # if the point falls in a bin with density less than this threshold, it is considered as foreground
+           bins: np.ndarray, # bins for histogram
+           bins_per_point: int, # number of bins per point
+           normalized_histogram_per_point: np.ndarray, # normalized histogram per point
+           number_of_points_per_frame: int # number of points in each frame
+    ):
+    dists = np.linalg.norm(point_cloud[:,:3], ord=2, axis=1)
+    bin_indices = np.digitize(dists, bins) - 1
+    bin_indices = np.clip(bin_indices, 0, bins_per_point-1)
+    mask = normalized_histogram_per_point[np.arange(number_of_points_per_frame), bin_indices] < background_density_threshold
+    return mask
+
+def save_DHistDPP_params(filter_params, filename):
+    if os.path.exists(filename):
+        if '.' in filename: filename = filename.split('.')[0]
+        if '_' in filename: possible_num = filename.split('_')[-1]
+        if possible_num.isdigit():
+            num = int(possible_num)
+            filename = filename.split('_')[:-1] + str(num+1).zfill(2)
+        else:
+            filename += '_01'
+        filename += '.pkl'
+    else:
+        if '.' in filename: filename = filename.split('.')[0]
+        if '_' in filename: possible_num = filename.split('_')[-1]
+        if possible_num.isdigit(): filename += '.pkl'
+        else: filename += '_01.pkl'
+    
+    with open(filename, 'wb') as f: pickle.dump(filter_params, f)
+    return filename
+
+def load_DHistDPP_params(filename):
+    if '.' in filename: filename = filename.split('.')[0]
+    if '_' in filename: possible_num = filename.split('_')[-1]
+    if possible_num.isdigit():
+        filename = filename + '.pkl'
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f: return pickle.load(f)
+        else: return None
+    elif os.path.exists(filename + '.pkl'):
+        with open(filename + '.pkl', 'rb') as f: return pickle.load(f)
+    else:
+        try:
+            parent_path = os.path.dirname(filename)
+            if len(parent_path) > 0: files = os.listdir(parent_path)
+            else: files = os.listdir()
+            files = [f for f in files if f.startswith(filename)]
+            if len(files) == 0: return None
+            files.sort()
+            filename = files[-1]
+            filename = os.path.join(parent_path, filename)
+            with open(filename, 'rb') as f: return pickle.load(f)
+        except: return None
+
