@@ -45,7 +45,7 @@ sensors: # lidar and camera configurations
 
 proc: # liguard processing configurations
     pre:
-        remove_nan_from_pcd: # remove nan points from point cloud
+        remove_nan_inf_allzero_from_pcd: # remove nan points from point cloud
             enabled: True # set True to remove nan points
             priority: 1 # priority of process - lower is higher
         manual_calibration:

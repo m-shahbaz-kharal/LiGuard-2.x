@@ -1,6 +1,6 @@
 from gui.logger_gui import Logger
 
-def remove_nan_from_pcd(data_dict: dict, cfg_dict: dict):
+def remove_nan_inf_allzero_from_pcd(data_dict: dict, cfg_dict: dict):
     """
     Remove NaN values from the point cloud.
 
@@ -28,6 +28,13 @@ def remove_nan_from_pcd(data_dict: dict, cfg_dict: dict):
 
     # Remove NaN values from the point cloud
     current_point_cloud_numpy = current_point_cloud_numpy[~np.isnan(current_point_cloud_numpy).any(axis=1), ...]
+
+    # Remove inf values from the point cloud
+    current_point_cloud_numpy = current_point_cloud_numpy[~np.isinf(current_point_cloud_numpy).any(axis=1), ...]
+
+    # Remove points with x,y,z all zero
+    current_point_cloud_numpy = current_point_cloud_numpy[~np.all(current_point_cloud_numpy[:, :3] == 0, axis=1), ...]
+
     data_dict['current_point_cloud_numpy'] = current_point_cloud_numpy
 
 def manual_calibration(data_dict: dict, cfg_dict: dict):
