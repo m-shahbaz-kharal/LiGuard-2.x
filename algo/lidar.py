@@ -714,7 +714,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
         if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
         data_dict['current_label_list'].append(label)
 
-def gen_bbox2d(data_dict: dict, cfg_dict: dict):
+def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
     """
     Generate 2D bounding boxes from 3D bounding boxes.
 

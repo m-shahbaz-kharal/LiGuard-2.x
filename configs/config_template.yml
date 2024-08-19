@@ -149,7 +149,7 @@ proc: # liguard processing configurations
             priority: 7
             path_to_github_repo: 'algo/nn/PointPillars' # clone https://github.com/zhulf0804/PointPillars to this path and install the requirements
             score_threshold: 0.5
-        gen_bbox2d:
+        gen_bbox_2d:
             enabled: False
             priority: 8
     camera:
