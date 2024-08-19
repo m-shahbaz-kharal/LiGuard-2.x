@@ -205,7 +205,7 @@ class ImageVisualizer:
             self.img = o3d.geometry.Image(img_np)
             self.__add_geometry__('image', self.img, False)
 
-        elif 'bbox_2d' in label_dict:
+        if 'bbox_2d' in label_dict:
             # bbox parameters
             bbox_2d_dict = label_dict['bbox_2d']
             xy_center = bbox_2d_dict['xy_center']
