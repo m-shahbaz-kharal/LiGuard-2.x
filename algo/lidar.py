@@ -713,3 +713,68 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
 
         if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
         data_dict['current_label_list'].append(label)
+
+def gen_bbox2d(data_dict: dict, cfg_dict: dict):
+    """
+    Generate 2D bounding boxes from 3D bounding boxes.
+
+    Args:
+        data_dict (dict): A dictionary containing the required data for processing.
+        cfg_dict (dict): A dictionary containing the configuration parameters.
+
+    Returns:
+        None
+    """
+    # get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->lidar.py->gen_bbox2d]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    
+    # check if required data is present in data_dict
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->lidar.py->gen_bbox2d]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+    if 'current_calib_data' not in data_dict:
+        logger.log('[algo->lidar.py->gen_bbox2d]: current_calib_data not found in data_dict', Logger.ERROR)
+        return
+    
+    # imports
+    import open3d as o3d
+    
+    # get params
+    params = cfg_dict['proc']['lidar']['gen_bbox2d']
+    
+    # get calibration data
+    calib_data = data_dict['current_calib_data']
+    
+    # get 2D bounding boxes from 3D bounding boxes
+    for label_dict in data_dict['current_label_list']:
+        if 'bbox_3d' not in label_dict: continue
+        
+        bbox_3d = label_dict['bbox_3d']
+        xyz_center = bbox_3d['xyz_center']
+        xyz_extent = bbox_3d['xyz_extent']
+        xyz_euler_angles = bbox_3d['xyz_euler_angles']
+        
+        # get 3D bounding box corners
+        rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(xyz_euler_angles)
+        o3d_bbox_3d = o3d.geometry.OrientedBoundingBox(xyz_center, rotation_matrix, xyz_extent)
+        corners_3d = np.array(o3d_bbox_3d.get_box_points()).astype(np.float32)
+        corners_3d = np.concatenate([corners_3d, np.ones((corners_3d.shape[0], 1))], axis=1) # make it x,y,z,1
+        
+        # project 3D bounding box corners onto the image plane
+        if 'R0_rect' not in calib_data: calib_data['R0_rect'] = np.eye(4)
+        corners_2d = calib_data['P2'] @ calib_data['R0_rect'] @ calib_data['Tr_velo_to_cam'] @ corners_3d.T
+        corners_2d = corners_2d[:2] / corners_2d[2]
+        corners_2d = corners_2d.T
+        
+        # get 2D bounding box from 2D corners
+        min_xy = np.min(corners_2d, axis=0)
+        max_xy = np.max(corners_2d, axis=0)
+        
+        xy_center = min_xy + (max_xy - min_xy) / 2.0
+        xy_extent = max_xy - min_xy
+        rgb_color = bbox_3d['rgb_color']
+        predicted = bbox_3d['predicted']
+        
+        # add 2D bounding box to the label dict
+        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': predicted}
