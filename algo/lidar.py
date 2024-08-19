@@ -727,21 +727,21 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
     """
     # get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->gen_bbox2d]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->lidar.py->gen_bbox_2d]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
     
     # check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->lidar.py->gen_bbox2d]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('[algo->lidar.py->gen_bbox_2d]: current_label_list not found in data_dict', Logger.ERROR)
         return
     if 'current_calib_data' not in data_dict:
-        logger.log('[algo->lidar.py->gen_bbox2d]: current_calib_data not found in data_dict', Logger.ERROR)
+        logger.log('[algo->lidar.py->gen_bbox_2d]: current_calib_data not found in data_dict', Logger.ERROR)
         return
     
     # imports
     import open3d as o3d
     
     # get params
-    params = cfg_dict['proc']['lidar']['gen_bbox2d']
+    params = cfg_dict['proc']['lidar']['gen_bbox_2d']
     
     # get calibration data
     calib_data = data_dict['current_calib_data']
@@ -750,6 +750,7 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
     for label_dict in data_dict['current_label_list']:
         if 'bbox_3d' not in label_dict: continue
         
+        # get 3D bounding box data
         bbox_3d = label_dict['bbox_3d']
         xyz_center = bbox_3d['xyz_center']
         xyz_extent = bbox_3d['xyz_extent']
@@ -762,7 +763,6 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
         corners_3d = np.concatenate([corners_3d, np.ones((corners_3d.shape[0], 1))], axis=1) # make it x,y,z,1
         
         # project 3D bounding box corners onto the image plane
-        if 'R0_rect' not in calib_data: calib_data['R0_rect'] = np.eye(4)
         corners_2d = calib_data['P2'] @ calib_data['R0_rect'] @ calib_data['Tr_velo_to_cam'] @ corners_3d.T
         corners_2d = corners_2d[:2] / corners_2d[2]
         corners_2d = corners_2d.T
