@@ -94,6 +94,12 @@ proc: # liguard processing configurations
             priority: 4 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
+        O3D_DBSCAN: # DBSCAN point clustering algorithm in Open3D
+            enabled: False # set True to cluster point cloud using Open3D DBSCAN
+            activate_on_key_set: 'current_point_cloud_numpy' # activates as soon as this key is available in data_dict, it can be set by any other process to activate this process
+            priority: 4 # priority of process - lower is higher
+            eps: 0.5 # maximum radius to search
+            min_samples: 5 # minimum number of points to consider a cluster valid
         Cluster2Object:
             enabled: False
             activate_on_key_set: 'current_point_cloud_numpy'

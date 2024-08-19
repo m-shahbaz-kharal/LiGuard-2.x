@@ -369,6 +369,50 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})
     data_dict['Clusterer_TEPP_DBSCAN_set'] = True
 
+def O3D_DBSCAN(data_dict: dict, cfg_dict: dict):
+    """
+    DBSCAN clustering available in Open3D library.
+
+    Args:
+        data_dict (dict): A dictionary containing data for processing.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->lidar.py->O3D_DBSCAN]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    
+    # clear previous key set
+    if 'O3D_DBSCAN_set' in data_dict: data_dict.pop('O3D_DBSCAN_set')
+    
+    # check if required data is present in data_dict
+    if "current_point_cloud_numpy" not in data_dict:
+        logger.log('[algo->lidar.py->O3D_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        return
+    if cfg_dict['proc']['lidar']['O3D_DBSCAN']['activate_on_key_set'] not in data_dict: return
+    
+    # get params
+    params = cfg_dict['proc']['lidar']['O3D_DBSCAN']
+
+    # perform clustering
+    import open3d as o3d
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, :3])
+    labels = np.array(pcd.cluster_dbscan(eps=params['eps'], min_points=params['min_samples'], print_progress=False))
+
+    # create 'current_label_list' if not exists
+    if 'current_label_list' not in data_dict:
+        data_dict['current_label_list'] = []
+        logger.log('[algo->lidar.py->O3D_DBSCAN]: current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
+
+    # update label list
+    for label in np.unique(labels):
+        if label == -1: continue
+        data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
+    data_dict['O3D_DBSCAN_set'] = True
+
 def Cluster2Object(data_dict: dict, cfg_dict: dict):
     """
     Converts lidar clusters to object labels and adds them to the current label list.
