@@ -15,7 +15,7 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
         None
     """
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->camera.py->project_point_cloud_points][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->camera.py->project_point_cloud_points]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
     
     # Check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
@@ -87,7 +87,7 @@ def ultralytics_yolov5(data_dict: dict, cfg_dict: dict):
         None
     """
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->camera.py->ultralytics_yolov5][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->camera.py->ultralytics_yolov5]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
     
     if 'current_image_numpy' not in data_dict:
         logger.log('[algo->camera.py->ultralytics_yolov5]: current_image_numpy not found in data_dict', Logger.ERROR)

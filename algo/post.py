@@ -15,7 +15,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
     # Get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->create_per_object_pcdet_dataset][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->post.py->create_per_object_pcdet_dataset]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
     # Check if required data is present in data_dict
     if 'current_point_cloud_numpy' not in data_dict:
@@ -86,7 +86,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
 def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     # Get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->create_pcdet_dataset][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->post.py->create_pcdet_dataset]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
     # Check if required data is present in data_dict
     if 'current_point_cloud_numpy' not in data_dict:
@@ -151,7 +151,7 @@ def visualize_in_vr(data_dict: dict, cfg_dict: dict):
     """
     # Get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->visualize_in_vr][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->post.py->visualize_in_vr]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
     # algo name
     algo_name = 'visualize_in_vr'

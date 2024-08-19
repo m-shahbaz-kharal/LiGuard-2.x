@@ -13,7 +13,7 @@ def remove_nan_inf_allzero_from_pcd(data_dict: dict, cfg_dict: dict):
     """
     # Get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->remove_nan_from_pcd][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->post.py->remove_nan_from_pcd]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
     # Check if required data is present in data_dict
     if 'current_point_cloud_numpy' not in data_dict:
@@ -40,7 +40,7 @@ def remove_nan_inf_allzero_from_pcd(data_dict: dict, cfg_dict: dict):
 def manual_calibration(data_dict: dict, cfg_dict: dict):
     # get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->calib.py->manual_calibration][CRITICAL]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->calib.py->manual_calibration]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
     # imports
     import numpy as np
