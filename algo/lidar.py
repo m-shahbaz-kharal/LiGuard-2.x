@@ -356,17 +356,17 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     params = cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']
 
     # perform clustering
-    cluster_label_for_each_point_index, _ = DBSCAN(data_dict['current_point_cloud_numpy'], params['eps'], params['min_samples'])
-    point_indices_for_each_cluster_label = [label == cluster_label_for_each_point_index for label in np.unique(cluster_label_for_each_point_index)]
-
+    labels, _ = DBSCAN(data_dict['current_point_cloud_numpy'], params['eps'], params['min_samples'])
+    
     # create 'current_label_list' if not exists
     if 'current_label_list' not in data_dict:
         data_dict['current_label_list'] = []
         logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
-
+    
     # update label list
-    for point_indices in point_indices_for_each_cluster_label:
-        data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': point_indices}})
+    for label in np.unique(labels):
+        if label == -1: continue
+        data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
     data_dict['Clusterer_TEPP_DBSCAN_set'] = True
 
 def O3D_DBSCAN(data_dict: dict, cfg_dict: dict):
