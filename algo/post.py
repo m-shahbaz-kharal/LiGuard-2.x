@@ -2,6 +2,93 @@
 
 from gui.logger_gui import Logger
 
+def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
+    """
+    Fuse source bbox information to target bbox information.
+
+    Requirements:
+    - bbox_3d in current_label_list, predicted by an arbitrary <bbox_target_algo>.
+    - Enable proc->lidar->gen_2d_bbox to convert bbox_3d to bbox_2d.
+    - bbox_2d in current_2d_bbox_list, predicted by an arbitrary <bbox_source_algo>.
+
+    Operation:
+    - It uses KD-Tree to find the nearest bbox_2d.
+    - It assigns the class of bbox_2d to bbox_3d.
+    - TODO: figure out a method to enhance respective bbox_3d.
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # Get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # Check if required data is present in data_dict
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+    
+    # imports
+    import numpy as np
+    from scipy.spatial import KDTree
+    from scipy.optimize import linear_sum_assignment
+
+    # algo name and dict keys
+    algo_name = 'FusePredictedBBoxesFromSourceToTarget'
+
+    # get params
+    params = cfg_dict['proc']['post'][algo_name]
+
+    # ---------------------- KDTree Matching ---------------------- #
+    # Extract 2D centers of bbox_2d from current_2d_bbox_list
+    target_points_list, source_points_list = [], []
+    target_idx, source_idx = [], []
+    for i, label_dict in enumerate(data_dict['current_label_list']):
+        if 'bbox_2d' not in label_dict: continue
+        bbox_2d_dict = label_dict['bbox_2d']
+        if bbox_2d_dict['added_by'] == params['bbox_target_algo']:
+            target_points_list.append(bbox_2d_dict['xy_center'])
+            target_idx.append(i)
+        elif bbox_2d_dict['added_by'] == params['bbox_source_algo']:
+            source_points_list.append(bbox_2d_dict['xy_center'])
+            source_idx.append(i)
+        else:
+            logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: Unknown bbox source: {bbox_2d_dict["added_by"]}', Logger.WARNING)
+            continue
+
+    if len(target_points_list) == 0 or len(source_points_list) == 0:
+        logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No bbox_2d found for {params["bbox_target_algo"]} or {params["bbox_source_algo"]}', Logger.WARNING)
+        return
+
+    # Create a KDTree for points_list_2
+    kd_tree = KDTree(source_points_list)
+
+    # Calculate the cost matrix based on the smallest distances
+    cost_matrix = np.zeros((len(target_points_list), len(source_points_list)))
+
+    for i, point in enumerate(target_points_list):
+        distances, indices = kd_tree.query(point, k=len(source_points_list))
+        cost_matrix[i, indices] = distances
+
+    # Use the Hungarian algorithm (linear_sum_assignment) to find the optimal matching
+    row_indices, col_indices = linear_sum_assignment(cost_matrix)
+
+    # Output the matching result
+    matches_kd_tree = list(zip(row_indices, col_indices))
+    # ---------------------- KDTree Matching ---------------------- #
+
+    for i, j in matches_kd_tree:
+        src_label = data_dict['current_label_list'][source_idx[j]]
+        trg_label = data_dict['current_label_list'][target_idx[i]]
+        trg_label['class'] = src_label['class']
+        trg_label['bbox_2d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
+        if 'bbox_3d' in trg_label: trg_label['bbox_3d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
+        # TODO: More enhancements to bbox_3d_match
+
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
     Create a per-object PCDet dataset by extracting object point clouds and labels from the input data.
