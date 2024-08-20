@@ -108,7 +108,7 @@ def ultralytics_yolov5(data_dict: dict, cfg_dict: dict):
     if model_key not in data_dict:
         logger.log(f'[algo->camera.py->ultralytics_yolov5]: Loading model', Logger.INFO)
         data_dict[model_key] = torch.hub.load('ultralytics/yolov5', params['model'], pretrained=True, _verbose=False)
-        vk_dict = {v:k for (k,v) in data_dict[model_key].names.items()}
+        vk_dict = {v.capitalize():k for (k,v) in data_dict[model_key].names.items()}
         data_dict[tgt_cls_key] = [vk_dict[key] for key in params['class_colors']]
     else:
         result = data_dict[model_key](data_dict['current_image_path']).xywh[0].detach().cpu().numpy()
@@ -130,12 +130,14 @@ def ultralytics_yolov5(data_dict: dict, cfg_dict: dict):
 
         for topleft_botright, cls in zip(xywh, obj_class):
             topleft_botright = topleft_botright.reshape(-1)
+            obj_class_str = data_dict[model_key].names[cls.item()].capitalize()
             xy_center = topleft_botright[:2]
             xy_extent = topleft_botright[2:]
-            rgb_color = np.array(params['class_colors'][data_dict[model_key].names[cls.item()]], dtype=np.float32)
-            lbl = {'xy_center':xy_center, 'xy_extent':xy_extent, 'rgb_color':rgb_color, 'predicted':True}
+            rgb_color = np.array(params['class_colors'][obj_class_str], dtype=np.float32)
+            bbox_2d = {'xy_center':xy_center, 'xy_extent':xy_extent, 'rgb_color':rgb_color, 'predicted':True, 'algo':algo_name}
             if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
-            data_dict['current_label_list'].append({'bbox_2d':lbl})
+            label = {'class': obj_class_str, 'bbox_2d':bbox_2d}
+            data_dict['current_label_list'].append(label)
 
             
 

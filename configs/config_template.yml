@@ -162,12 +162,12 @@ proc: # liguard processing configurations
             priority: 2
             model: 'yolov5s' # can be yolov5s, yolov5m, yolov5l, yolov5x https://pytorch.org/hub/ultralytics_yolov5
             class_colors: # in RGB format 
-                person: [1, 0, 0]
-                bicycle: [0, 1, 0]
-                car: [0, 0, 1]
-                motorcycle: [0, 1, 0]
-                bus: [0, 1, 1]
-                truck: [1, 0, 1]
+                Person: [1, 0, 0]
+                Bicycle: [0, 1, 0]
+                Car: [0, 0, 1]
+                Motorcycle: [0, 1, 0]
+                Bus: [0, 1, 1]
+                Truck: [1, 0, 1]
             score_threshold: 0.5
     calib:
         dummy: # dummy calibration process
