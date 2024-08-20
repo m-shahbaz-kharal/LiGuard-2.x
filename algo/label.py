@@ -27,23 +27,63 @@ def remove_out_of_bound_labels(data_dict: Dict[str, any], cfg_dict: Dict[str, an
         logger.log('[algo->label.py->remove_out_of_bound_labels]: current_label_list not found in data_dict', Logger.ERROR)
         return
     
+    # get params
+    params = cfg_dict['proc']['label']['remove_out_of_bound_labels']
+    use_lidar_range = params['use_lidar_range']
+    use_image_size = params['use_image_size']
+
+    if not (use_lidar_range or use_image_size):
+        logger.log('[algo->label.py->remove_out_of_bound_labels]: Both use_lidar_range and use_image_size are False. At least one of them should be True.', Logger.ERROR)
+        return
+
+    if use_lidar_range:
+        if cfg_dict['proc']['lidar']['crop']['enabled']:
+            pcd_min_xyz = cfg_dict['proc']['lidar']['crop']['min_xyz']
+            pcd_max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
+        elif 'current_point_cloud_numpy' in data_dict:
+            pcd_min_xyz = np.min(data_dict['current_point_cloud_numpy'][:, 0:3], axis=0)
+            pcd_max_xyz = np.max(data_dict['current_point_cloud_numpy'][:, 0:3], axis=0)
+        else:
+            logger.log('[algo->label.py->remove_out_of_bound_labels]: use_lidar_range is True but current_point_cloud_numpy not found in data_dict.', Logger.ERROR)
+            return
+    
+    if use_image_size and 'current_image_numpy' in data_dict:
+        img_min_xy = np.array([0, 0], dtype=np.float32)
+        img_max_xy = data_dict['current_image_numpy'].shape[:2][::-1]
+    else:
+        logger.log('[algo->label.py->remove_out_of_bound_labels]: use_image_size is True but current_image_numpy not found in data_dict.', Logger.ERROR)
+        return
+
     # Get label list and bounding box limits
     lbl_list = data_dict['current_label_list']
-    min_xyz = cfg_dict['proc']['lidar']['crop']['min_xyz']
-    max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
+    
     output = []
-
     for lbl_dict in lbl_list:
-        if 'bbox_3d' not in lbl_dict: continue
-        bbox_center = lbl_dict['bbox_3d']['xyz_center']
-        # Check if the bounding box center is within the specified limits
-        x_condition = np.logical_and(min_xyz[0] <= bbox_center[0], bbox_center[0] <= max_xyz[0])
-        y_condition = np.logical_and(min_xyz[1] <= bbox_center[1], bbox_center[1] <= max_xyz[1])
-        z_condition = np.logical_and(min_xyz[2] <= bbox_center[2], bbox_center[2] <= max_xyz[2])
-        # If the bounding box center is within the limits, add the label to the output list
-        if x_condition and y_condition and z_condition:
-            output.append(lbl_dict)
+        add_bbox_label = True
         
+        if use_lidar_range and 'bbox_3d' in lbl_dict:
+            bbox_3d_center = lbl_dict['bbox_3d']['xyz_center']
+            # Check if the bounding box center is within the specified limits
+            x_condition = np.logical_and(pcd_min_xyz[0] <= bbox_3d_center[0], bbox_3d_center[0] <= pcd_max_xyz[0])
+            y_condition = np.logical_and(pcd_min_xyz[1] <= bbox_3d_center[1], bbox_3d_center[1] <= pcd_max_xyz[1])
+            z_condition = np.logical_and(pcd_min_xyz[2] <= bbox_3d_center[2], bbox_3d_center[2] <= pcd_max_xyz[2])
+            # If not within the limits, skip the label
+            if not (x_condition and y_condition and z_condition): add_bbox_label = False
+        
+        if use_image_size and 'bbox_2d' in lbl_dict:
+            bbox_2d_center = lbl_dict['bbox_2d']['xy_center']
+            bbox_2d_extent = lbl_dict['bbox_2d']['xy_extent']
+            bbox_min_xy = bbox_2d_center - bbox_2d_extent / 2.0
+            bbox_max_xy = bbox_2d_center + bbox_2d_extent / 2.0
+            # Check if the bounding box is within the specified limits
+            x_condition = np.logical_and(img_min_xy[0] <= bbox_min_xy[0], bbox_max_xy[0] <= img_max_xy[0])
+            y_condition = np.logical_and(img_min_xy[1] <= bbox_min_xy[1], bbox_max_xy[1] <= img_max_xy[1])
+            # If not within the limits, skip the label
+            if not (x_condition and y_condition): add_bbox_label = False
+        
+        # Add the label to the output list if it is within the limits
+        if add_bbox_label: output.append(lbl_dict)
+
     # Update the label list in data_dict
     data_dict['current_label_list'] = output
 

@@ -177,6 +177,8 @@ proc: # liguard processing configurations
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: False # set True to crop labels
             priority: 1 # priority of process - lower is higher
+            use_lidar_range: False # set True to crop using lidar crop
+            use_image_size: False # set True to crop using image size
         remove_less_point_labels: # remove labels with no points
             enabled: False # set True to remove labels
             priority: 2 # priority of process - lower is higher
