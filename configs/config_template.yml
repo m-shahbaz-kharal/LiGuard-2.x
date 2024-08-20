@@ -156,7 +156,7 @@ proc: # liguard processing configurations
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
             priority: 1 # priority of process - lower is higher
-        ultralytics_yolov5:
+        UltralyticsYOLOv5:
             enabled: False
             activate_on_key_set: 'current_image_numpy'
             priority: 2
