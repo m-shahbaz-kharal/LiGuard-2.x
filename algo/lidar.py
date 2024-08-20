@@ -749,6 +749,7 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
     # get 2D bounding boxes from 3D bounding boxes
     for label_dict in data_dict['current_label_list']:
         if 'bbox_3d' not in label_dict: continue
+        if 'bbox_2d' in label_dict: continue
         
         # get 3D bounding box data
         bbox_3d = label_dict['bbox_3d']
