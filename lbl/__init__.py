@@ -61,8 +61,17 @@ def Handler(label_path: str, calib_data: dict):
             # 'xyz_extent': xyz_extent,
             # 'xyz_euler_angles': xyz_euler_angles,
             # 'rgb_color': rgb_color,
-            'predicted': False  # as the label is ground truth and is read from file
+            # 'predicted': False  # as the label is ground truth and is read from file
+            # 'added_by': None  # the source that added the label
         }
+
+        # Create a dictionary to store the 2D bounding-box information
+        label['bbox_2d'] = {
+            # 'xy_center': xy_center,
+            # 'xy_extent': xy_extent,
+            # 'rgb_color': rgb_color,
+            # 'predicted': False  # as the label is ground truth and is read from file
+            # 'added_by': None  # the source that added the label
         
         # Append the label to the output list
         output.append(label)

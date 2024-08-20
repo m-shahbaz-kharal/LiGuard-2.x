@@ -437,11 +437,15 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         logger.log('[algo->lidar.py->Cluster2Object]: current_label_list not found in data_dict', Logger.ERROR)
         return
     if cfg_dict['proc']['lidar']['Cluster2Object']['activate_on_key_set'] not in data_dict: return
+
+    # imports
+    import open3d as o3d
+
+    # algo name and keys used in algo
+    algo_name = 'Cluster2Object'
     
     # get params
-    params = cfg_dict['proc']['lidar']['Cluster2Object']
-
-    import open3d as o3d
+    params = cfg_dict['proc']['lidar'][algo_name]
     
     for label_dict in data_dict['current_label_list']:
         if 'lidar_cluster' not in label_dict: continue
@@ -497,7 +501,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
             
             label = dict()
             label['class'] = selected_obj_class
-            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
+            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
             
             data_dict['current_label_list'].append(label)
 
@@ -532,7 +536,7 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
     
     # get params
     import os
-    params = cfg_dict['proc']['lidar']['NNCluster2Object']
+    params = cfg_dict['proc']['lidar'][algo_name]
     checkpoint_path = os.path.join(data_dict['root_path'], params['point_nn_bbox_est_checkpoint_path'])
     if os.path.exists(checkpoint_path) == False:
         logger.log(f'[algo->lidar.py->NNCluster2Object]: checkpoint path {checkpoint_path} does not exist', Logger.ERROR)
@@ -617,7 +621,7 @@ def NNCluster2Object(data_dict: dict, cfg_dict: dict):
             # create label dict
             label = dict()
             label['class'] = obj_class
-            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
+            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
             
             # add label to the label list
             data_dict['current_label_list'].append(label)
@@ -708,7 +712,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
 
         label = dict()
         label['class'] = obj_class
-        label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
+        label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
 
 
         if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
@@ -776,6 +780,7 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
         xy_extent = max_xy - min_xy
         rgb_color = bbox_3d['rgb_color']
         predicted = bbox_3d['predicted']
+        added_by = bbox_3d['added_by'] + '_2d'
         
         # add 2D bounding box to the label dict
-        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': predicted}
+        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': predicted, 'added_by': added_by}

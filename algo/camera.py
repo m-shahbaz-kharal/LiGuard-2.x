@@ -102,7 +102,7 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict):
     tgt_cls_key = f'{algo_name}_target_classes'
     
     # get params
-    params = cfg_dict['proc']['camera']['UltralyticsYOLOv5']
+    params = cfg_dict['proc']['camera'][algo_name]
 
     # check if model is already loaded
     if model_key not in data_dict:
@@ -134,7 +134,7 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict):
             xy_center = topleft_botright[:2]
             xy_extent = topleft_botright[2:]
             rgb_color = np.array(params['class_colors'][obj_class_str], dtype=np.float32)
-            bbox_2d = {'xy_center':xy_center, 'xy_extent':xy_extent, 'rgb_color':rgb_color, 'predicted':True, 'algo':algo_name}
+            bbox_2d = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
             if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
             label = {'class': obj_class_str, 'bbox_2d':bbox_2d}
             data_dict['current_label_list'].append(label)
