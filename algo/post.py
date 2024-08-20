@@ -14,7 +14,7 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
     Operation:
     - It uses KD-Tree to find the nearest bbox_2d.
     - It assigns the class of bbox_2d to bbox_3d.
-    - TODO: figure out a method to enhance respective bbox_3d.
+    - TODO: figure out more methods to enhance bbox fusion.
 
     Args:
         data_dict (dict): A dictionary containing the required data.
@@ -31,6 +31,8 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
     if 'current_label_list' not in data_dict:
         logger.log('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: current_label_list not found in data_dict', Logger.ERROR)
         return
+    if 'current_calib_data' not in data_dict:
+        logger.log('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: current_calib_data not found in data_dict. Ignoring bbox_3d <--> bbox_2d fusion.', Logger.WARNING)
     
     # imports
     import numpy as np
@@ -39,6 +41,8 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
 
     # algo name and dict keys
     algo_name = 'FusePredictedBBoxesFromSourceToTarget'
+    tr_pcd_to_img_key = f'{algo_name}_tr_pcd_to_img'
+    inv_tr_pcd_to_img_key = f'{algo_name}_inv_tr_pcd_to_img'
 
     # get params
     params = cfg_dict['proc']['post'][algo_name]
@@ -60,8 +64,11 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
             logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: Unknown bbox source: {bbox_2d_dict["added_by"]}', Logger.WARNING)
             continue
 
-    if len(target_points_list) == 0 or len(source_points_list) == 0:
-        logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No bbox_2d found for {params["bbox_target_algo"]} or {params["bbox_source_algo"]}', Logger.WARNING)
+    if len(target_points_list) == 0:
+        logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No target bbox_2d found', Logger.DEBUG)
+        return
+    if len(source_points_list) == 0:
+        logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No source bbox_2d found', Logger.DEBUG)
         return
 
     # Create a KDTree for points_list_2
@@ -81,13 +88,34 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
     matches_kd_tree = list(zip(row_indices, col_indices))
     # ---------------------- KDTree Matching ---------------------- #
 
+    if tr_pcd_to_img_key not in data_dict and 'current_calib_data' in data_dict:
+        Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
+        R0_rect = data_dict['current_calib_data']['R0_rect']
+        P2 = data_dict['current_calib_data']['P2']
+        P2_4x4 = np.eye(4)
+        P2_4x4[:3, :] = P2
+        data_dict[tr_pcd_to_img_key] = P2_4x4 @ R0_rect @ Tr_velo_to_cam
+        data_dict[inv_tr_pcd_to_img_key] = np.linalg.inv(data_dict[tr_pcd_to_img_key])
+
     for i, j in matches_kd_tree:
         src_label = data_dict['current_label_list'][source_idx[j]]
         trg_label = data_dict['current_label_list'][target_idx[i]]
+
+        # check if the distance is within the threshold
+        if cost_matrix[i, j] > params['max_match_distance']: continue
+
+        # classification fusion
         trg_label['class'] = src_label['class']
         trg_label['bbox_2d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
         if 'bbox_3d' in trg_label: trg_label['bbox_3d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
-        # TODO: More enhancements to bbox_3d_match
+        
+        # bbox fusion
+        xy_center_delta = src_label['bbox_2d']['xy_center'] - trg_label['bbox_2d']['xy_center']
+        xyz1_center_delta = np.array([xy_center_delta[0], xy_center_delta[1], 0.0, 1.0])
+        xy_extent_delta = src_label['bbox_2d']['xy_extent'] - trg_label['bbox_2d']['xy_extent']
+        xyz1_extent_delta = np.array([xy_extent_delta[0], xy_extent_delta[1], 0.0, 1.0])
+        trg_label['bbox_3d']['xyz_center'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_center_delta)[1:3] # y, z
+        trg_label['bbox_3d']['xyz_extent'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_extent_delta)[1:3] # y, z
 
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
