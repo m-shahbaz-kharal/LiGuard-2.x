@@ -490,7 +490,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         
         # if the cluster does not belong to any class, skip it, otherwise add it to the label list
         if selected_obj_class == None:
-            logger.log(f'[algo->lidar.py->Cluster2Object]: class could not be determined for cluster with base_length: {base_length} and height: {height}, skipping ...', Logger.WARNING)
+            logger.log(f'[algo->lidar.py->Cluster2Object]: class could not be determined for cluster with base_length: {base_length} and height: {height}, skipping ...', Logger.DEBUG)
             continue
         else:
             if selected_obj_class in params['class_colors']:
