@@ -119,6 +119,109 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
             trg_label['bbox_3d']['xyz_center'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_center_delta)[1:3] # y, z
             trg_label['bbox_3d']['xyz_extent'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_extent_delta)[1:3] # y, z
 
+def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
+    """
+    Get past trajectory of objects using KDTree matching.
+
+    Requirements:
+    - bbox_3d dict in data_dict['current_label_list'][<index>].
+    
+    Operation:
+    - It uses KDTree to track objects.
+    - Stores the past trajectory of objects in data_dict['current_label_list'][<index>]['bbox_3d']['past_trajectory'].
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # Get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->post.py->GenerateKDTreePastTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # Check if required data is present in data_dict
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->post.py->GenerateKDTreePastTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+
+    # imports
+    import numpy as np
+    from scipy.spatial import KDTree
+    from scipy.optimize import linear_sum_assignment
+
+    # algo name and dict keys
+    algo_name = 'GenerateKDTreePastTrajectory'
+    processed_frames_key = f'{algo_name}_processed_frames'
+    last_bbox_3d_labels_key = f'{algo_name}_last_bbox_3d_labels'
+
+    # get params
+    params = cfg_dict['proc']['post'][algo_name]
+
+    # check if the current frame is already processed
+    if processed_frames_key in data_dict and data_dict['current_frame_index'] in data_dict[processed_frames_key]:
+        logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
+        return
+
+    # ---------------------- KDTree Tracking ---------------------- #
+    current_bbox_3d_labels = []
+    for i, label_dict in enumerate(data_dict['current_label_list']):
+        if 'bbox_3d' not in label_dict: continue
+        bbox_3d_dict = label_dict['bbox_3d']
+        current_bbox_3d_labels.append([i, bbox_3d_dict])
+
+    if last_bbox_3d_labels_key not in data_dict:
+        data_dict[last_bbox_3d_labels_key] = current_bbox_3d_labels
+        return
+    last_bbox_3d_labels = data_dict[last_bbox_3d_labels_key]
+    
+    if len(current_bbox_3d_labels) == 0:
+        logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: No bbox_3d found in current frame, skipping ...', Logger.WARNING)
+        return
+
+    # Create a KDTree for points_list
+    last_bbox_3d_xyz_center = np.array([bbox_3d_dict['xyz_center'] for _, bbox_3d_dict in last_bbox_3d_labels])
+    current_bbox_3d_xyz_center = np.array([bbox_3d_dict['xyz_center'] for _, bbox_3d_dict in current_bbox_3d_labels])
+    
+    kd_tree = KDTree(current_bbox_3d_xyz_center)
+    cost_matrix = np.zeros((len(last_bbox_3d_xyz_center), len(current_bbox_3d_xyz_center)))
+
+    for i, point in enumerate(last_bbox_3d_xyz_center):
+        distances, indices = kd_tree.query(point, k=len(current_bbox_3d_xyz_center))
+        cost_matrix[i, indices] = distances
+
+    # Use the Hungarian algorithm (linear_sum_assignment) to find the optimal matching
+    row_indices, col_indices = linear_sum_assignment(cost_matrix)
+
+    # Output the matching result
+    matches_kd_tree = list(zip(row_indices, col_indices))
+
+    for i, j in matches_kd_tree:
+        # check if the distance is within the threshold
+        if cost_matrix[i, j] > params['max_match_distance']: continue
+
+        # get the bbox_3d dict
+        last_bbox_3d = last_bbox_3d_labels[i][1]
+        current_bbox_3d = current_bbox_3d_labels[j][1]
+
+        # store the past trajectory
+        if 'past_trajectory' in last_bbox_3d:
+            current_bbox_3d['past_trajectory'] = last_bbox_3d['past_trajectory'] + [last_bbox_3d['xyz_center']]
+        else:
+            current_bbox_3d['past_trajectory'] = [last_bbox_3d['xyz_center']]
+
+        # update the bbox_3d dict
+        data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['bbox_3d'] = current_bbox_3d
+    # ---------------------- KDTree Tracking ---------------------- #
+
+    # keep record of processed frames
+    if processed_frames_key not in data_dict: data_dict[processed_frames_key] = [data_dict['current_frame_index']]
+    else: data_dict[processed_frames_key].append(data_dict['current_frame_index'])
+    
+    # update the last_bbox_3d_labels
+    data_dict[last_bbox_3d_labels_key] = current_bbox_3d_labels
+
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
     Create a per-object PCDet dataset by extracting object point clouds and labels from the input data.

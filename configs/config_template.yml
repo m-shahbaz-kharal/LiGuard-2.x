@@ -190,6 +190,10 @@ proc: # liguard processing configurations
             bbox_target_algo: 'Cluster2Object_2d' # algorithm that generated 3D bounding boxes
             bbox_source_algo: 'UltralyticsYOLOv5' # algorithm that generated 2D bounding boxes
             max_match_distance: 100 # maximum euclidean distance for matching source and target bounding boxes
+        GenerateKDTreePastTrajectory: # generate past trajectory using KDTree matching
+            enabled: False # set True to generate past trajectory
+            priority: 2 # priority of process - lower is higher
+            max_match_distance: 4.0 # maximum euclidean distance for matching last and current bbox_3d
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher
