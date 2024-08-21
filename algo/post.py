@@ -107,15 +107,17 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
         # classification fusion
         trg_label['class'] = src_label['class']
         trg_label['bbox_2d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
-        if 'bbox_3d' in trg_label: trg_label['bbox_3d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
+        if 'bbox_3d' in trg_label:
+            # color fusion
+            trg_label['bbox_3d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
         
-        # bbox fusion
-        xy_center_delta = src_label['bbox_2d']['xy_center'] - trg_label['bbox_2d']['xy_center']
-        xyz1_center_delta = np.array([xy_center_delta[0], xy_center_delta[1], 0.0, 1.0])
-        xy_extent_delta = src_label['bbox_2d']['xy_extent'] - trg_label['bbox_2d']['xy_extent']
-        xyz1_extent_delta = np.array([xy_extent_delta[0], xy_extent_delta[1], 0.0, 1.0])
-        trg_label['bbox_3d']['xyz_center'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_center_delta)[1:3] # y, z
-        trg_label['bbox_3d']['xyz_extent'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_extent_delta)[1:3] # y, z
+            # bbox_3d center and extent fusion
+            xy_center_delta = src_label['bbox_2d']['xy_center'] - trg_label['bbox_2d']['xy_center']
+            xyz1_center_delta = np.array([xy_center_delta[0], xy_center_delta[1], 0.0, 1.0])
+            xy_extent_delta = src_label['bbox_2d']['xy_extent'] - trg_label['bbox_2d']['xy_extent']
+            xyz1_extent_delta = np.array([xy_extent_delta[0], xy_extent_delta[1], 0.0, 1.0])
+            trg_label['bbox_3d']['xyz_center'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_center_delta)[1:3] # y, z
+            trg_label['bbox_3d']['xyz_extent'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_extent_delta)[1:3] # y, z
 
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
