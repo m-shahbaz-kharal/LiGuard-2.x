@@ -228,7 +228,14 @@ visualization: # visualization parameters
         space_color: [0, 0, 0] # color of non-point-cloud space
         bound_color: [0, 0, 1] # point cloud range bound bbox color
         point_size: 2.0 # rendered point size
+        draw_cluster: True # visualize clusters
+        draw_bbox_3d: True # visualize bounding boxes
+        draw_trajectory: True # visualize trajectory
     camera:
+        draw_bbox_2d: True # visualize 2D bounding boxes
+        draw_bbox_3d: True # visualize 3D bounding boxes
+        draw_trajectory: True # visualize trajectory
+        draw_text_info: True # visualize text
         bbox_line_width: 2 # bbox line width
         trajectory_line_width: 2 # trajectory line width
 

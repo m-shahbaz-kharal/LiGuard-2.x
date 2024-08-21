@@ -118,6 +118,8 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
             xyz1_extent_delta = np.array([xy_extent_delta[0], xy_extent_delta[1], 0.0, 1.0])
             trg_label['bbox_3d']['xyz_center'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_center_delta)[1:3] # y, z
             trg_label['bbox_3d']['xyz_extent'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_extent_delta)[1:3] # y, z
+        if 'text_info' not in trg_label: trg_label['text_info'] = f'fused: {params["bbox_source_algo"]}'
+        else: trg_label['text_info'] += f' | fused: {params["bbox_source_algo"]}'
 
 def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     """
@@ -211,6 +213,10 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
         else:
             current_bbox_3d['past_trajectory'] = np.array([last_bbox_3d['xyz_center']], dtype=np.float32)
 
+        # add text info
+        if 'text_info' not in current_bbox_3d: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] = f'traj-: {len(current_bbox_3d["past_trajectory"])}'
+        else: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] += f' | traj-: {len(current_bbox_3d["past_trajectory"])}'
+
         # update the bbox_3d dict
         data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['bbox_3d'] = current_bbox_3d
     # ---------------------- KDTree Tracking ---------------------- #
@@ -269,7 +275,10 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
         past_trajectory_y = past_trajectory[:, 1]
         past_trajectory_z = past_trajectory[:, 2]
         len_past_trajectory = len(past_trajectory)
-        if len_past_trajectory < params['t_minimum']: continue
+        if len_past_trajectory < params['t_minimum']:
+            if 'text_info' not in label_dict: label_dict['text_info'] = f'traj+: {params["t_minimum"] - len_past_trajectory}'
+            else: label_dict['text_info'] += f' | traj+: {params["t_minimum"] - len_past_trajectory}'
+            continue
         cs_x = CubicSpline(np.arange(len_past_trajectory), past_trajectory_x)
         cs_y = CubicSpline(np.arange(len_past_trajectory), past_trajectory_y)
         future_steps = np.arange(len_past_trajectory, len_past_trajectory + params['t_plus_steps'])
@@ -277,6 +286,8 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
         future_trajectory_y = cs_y(future_steps).astype(np.float32)
         future_trajectory_z = np.full_like(future_trajectory_x, past_trajectory_z[-1]).astype(np.float32)
         label_dict['bbox_3d']['future_trajectory'] = np.column_stack((future_trajectory_x, future_trajectory_y, future_trajectory_z))
+        if 'text_info' not in label_dict: label_dict['text_info'] = f'traj+: locked'
+        else: label_dict['text_info'] += f' | traj+: locked'
     # ---------------------- Cubic Spline Interpolation ---------------------- #
 
 def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
@@ -326,7 +337,10 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
         past_trajectory_y = past_trajectory[:, 1]
         past_trajectory_z = past_trajectory[:, 2]
         len_past_trajectory = len(past_trajectory)
-        if len_past_trajectory < params['t_minimum']: continue
+        if len_past_trajectory < params['t_minimum']:
+            if 'text_info' not in label_dict: label_dict['text_info'] = f'traj+: {params["t_minimum"] - len_past_trajectory}'
+            else: label_dict['text_info'] += f' | traj+: {params["t_minimum"] - len_past_trajectory}'
+            continue
         poly_x = Polynomial.fit(np.arange(len_past_trajectory), past_trajectory_x, params['poly_degree'])
         poly_y = Polynomial.fit(np.arange(len_past_trajectory), past_trajectory_y, params['poly_degree'])
         future_steps = np.arange(len_past_trajectory, len_past_trajectory + params['t_plus_steps'])
@@ -334,6 +348,8 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
         future_trajectory_y = poly_y(future_steps).astype(np.float32)
         future_trajectory_z = np.full_like(future_trajectory_x, past_trajectory_z[-1]).astype(np.float32)
         label_dict['bbox_3d']['future_trajectory'] = np.column_stack((future_trajectory_x, future_trajectory_y, future_trajectory_z))
+        if 'text_info' not in label_dict: label_dict['text_info'] = f'traj+: locked'
+        else: label_dict['text_info'] += f' | traj+: locked'
     # ---------------------- Polynomial Fit ---------------------- #
 
 def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict):
@@ -391,6 +407,8 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict):
         past_velocity = np.diff(past_trajectory, axis=0) / params['t_delta']
         past_velocity = np.append(past_velocity, [past_velocity[-1]], axis=0)
         label_dict['bbox_3d']['past_velocity'] = past_velocity
+        if 'text_info' not in label_dict: label_dict['text_info'] = f'vel: {np.linalg.norm(past_velocity[-1]):.2f} m/s'
+        else: label_dict['text_info'] += f' | vel: {np.linalg.norm(past_velocity[-1]):.2f} m/s'
     # ---------------------- Velocity Calculation ---------------------- #
 
     # keep record of processed frames

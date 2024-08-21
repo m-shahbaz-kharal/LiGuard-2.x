@@ -161,7 +161,7 @@ class PointCloudVisualizer:
         Args:
             label_dict: A dictionary containing the label information.
         """
-        if 'bbox_3d' not in label_dict:
+        if 'bbox_3d' not in label_dict or not self.cfg['visualization']['lidar']['draw_bbox_3d']:
             return
         # bbox params
         bbox_3d_dict = label_dict['bbox_3d']
@@ -196,7 +196,7 @@ class PointCloudVisualizer:
         Args:
             label_dict: A dictionary containing the label information.
         """
-        if 'lidar_cluster' not in label_dict:
+        if 'lidar_cluster' not in label_dict or not self.cfg['visualization']['lidar']['draw_cluster']:
             return
         # cluster params
         lidar_cluster_dict = label_dict['lidar_cluster']
@@ -215,7 +215,8 @@ class PointCloudVisualizer:
             trajectory: The trajectory to be added.
             color: The color of the trajectory.
         """
-        if 'bbox_3d' not in label_dict: return
+        if 'bbox_3d' not in label_dict or not self.cfg['visualization']['lidar']['draw_trajectory']:
+            return
 
         color = label_dict['bbox_3d']['rgb_color']
         
