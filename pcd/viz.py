@@ -90,6 +90,9 @@ class PointCloudVisualizer:
         
         # bboxes
         self.bboxes = []
+
+        # trajectories
+        self.trajectories = []
         
     def __add_geometry__(self, name, geometry, reset_bounding_box):
         """
@@ -142,11 +145,14 @@ class PointCloudVisualizer:
         self.__update_geometry__('point_cloud', self.point_cloud)
         
         self.__clear_bboxes__()
+        self.__clear_trajectories__()
+        
         if "current_label_list" not in data_dict:
             return
         for lbl in data_dict['current_label_list']:
             self.__add_bbox__(lbl)
             self.__add_cluster__(lbl)
+            self.__add_trajectory__(lbl)
 
     def __add_bbox__(self, label_dict: dict):
         """
@@ -171,7 +177,7 @@ class PointCloudVisualizer:
         rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(xyz_euler_angles)
         lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(xyz_center, rotation_matrix, xyz_extent)
         lidar_xyz_bbox.color = color
-        
+
         self.bboxes.append(lidar_xyz_bbox)
         self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', lidar_xyz_bbox, False)
         
@@ -200,6 +206,52 @@ class PointCloudVisualizer:
             colors = np.zeros_like(self.point_cloud.points)
         colors[point_indices] = np.random.rand(3) # ToDO: use consistent color if tracking is enabled
         self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
+
+    def __add_trajectory__(self, label_dict: dict):
+        """
+        Adds a trajectory to the visualizer.
+
+        Args:
+            trajectory: The trajectory to be added.
+            color: The color of the trajectory.
+        """
+        if 'bbox_3d' not in label_dict: return
+
+        color = label_dict['bbox_3d']['rgb_color']
+        
+        if 'past_trajectory' in label_dict['bbox_3d']: past_trajectory = label_dict['bbox_3d']['past_trajectory']
+        else: past_trajectory = []
+        
+        if 'future_trajectory' in label_dict['bbox_3d']: future_trajectory = label_dict['bbox_3d']['future_trajectory']
+        else: future_trajectory = []
+        
+        if len(past_trajectory) >= 2:
+            lines = []
+            for i in range(len(past_trajectory) - 1): lines.append([i, i + 1])
+            line_set = o3d.geometry.LineSet()
+            line_set.points = o3d.utility.Vector3dVector(past_trajectory)
+            line_set.lines = o3d.utility.Vector2iVector(lines)
+            line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
+            self.trajectories.append(line_set)
+            self.__add_geometry__(f'past_trajectory_{str(len(self.trajectories)+1).zfill(4)}', line_set, False)
+        
+        if len(future_trajectory) >= 2:
+            lines = []
+            for i in range(len(future_trajectory) - 1): lines.append([i, i + 1])
+            line_set = o3d.geometry.LineSet()
+            line_set.points = o3d.utility.Vector3dVector(future_trajectory)
+            line_set.lines = o3d.utility.Vector2iVector(lines)
+            line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
+            self.trajectories.append(line_set)
+            self.__add_geometry__(f'future_trajectory_{str(len(self.trajectories)+1).zfill(4)}', line_set, False)
+
+    def __clear_trajectories__(self):
+        """
+        Clears all the trajectories from the visualizer.
+        """
+        for trajectory in self.trajectories:
+            self.viz.remove_geometry(trajectory, False)
+        self.trajectories.clear()
         
     def redraw(self):
         """
