@@ -121,6 +121,7 @@ class ImageVisualizer:
 
         for lbl in data_dict['current_label_list']:
             self.__add_bbox__(lbl, clb)
+            self.__add_trajectories__(lbl, clb)
         
     def __add_bbox__(self, label_dict, calib_dict):
         """
@@ -226,7 +227,50 @@ class ImageVisualizer:
             self.img = o3d.geometry.Image(img_np)
             self.__add_geometry__('image', self.img, False)
 
-        
+    def __add_trajectories__(self, label_dict, calib_data=None):
+        """
+        Adds the trajectories to the visualizer.
+
+        Args:
+            label_dict (dict): A dictionary containing the label information.
+            calib_data (dict): A dictionary containing the calibration information.
+        """
+        # the image to draw on
+        img_np = np.asarray(self.img)
+        if 'bbox_3d' in label_dict and calib_data:
+            color = label_dict['bbox_3d']['rgb_color']
+
+            if 'past_trajectory' in label_dict['bbox_3d']:
+                past_trajectory = label_dict['bbox_3d']['past_trajectory']
+                past_trajectory = np.concatenate([past_trajectory, np.ones((past_trajectory.shape[0], 1))], axis=1)
+                past_trajectory = calib_data['P2'] @ calib_data['R0_rect'] @ calib_data['Tr_velo_to_cam'] @ past_trajectory.T
+                past_trajectory = past_trajectory[:, past_trajectory[2] > 0]
+                past_trajectory = past_trajectory[:2] / past_trajectory[2]
+                past_trajectory = past_trajectory.T
+                past_trajectory = past_trajectory.astype(np.int32)
+                
+                for i in range(len(past_trajectory) - 1): cv2.line(img_np,
+                                                                   tuple(past_trajectory[i]),
+                                                                   tuple(past_trajectory[i + 1]),
+                                                                   (color * 127).tolist(),
+                                                                   self.cfg['visualization']['camera']['trajectory_line_width'])
+            if 'future_trajectory' in label_dict['bbox_3d']:
+                future_trajectory = label_dict['bbox_3d']['future_trajectory']
+                future_trajectory = np.concatenate([future_trajectory, np.ones((future_trajectory.shape[0], 1))], axis=1)
+                future_trajectory = calib_data['P2'] @ calib_data['R0_rect'] @ calib_data['Tr_velo_to_cam'] @ future_trajectory.T
+                future_trajectory = future_trajectory[:, future_trajectory[2] > 0]
+                future_trajectory = future_trajectory[:2] / future_trajectory[2]
+                future_trajectory = future_trajectory.T
+                future_trajectory = future_trajectory.astype(np.int32)
+                
+                for i in range(len(future_trajectory) - 1): cv2.line(img_np,
+                                                                     tuple(future_trajectory[i]),
+                                                                     tuple(future_trajectory[i + 1]),
+                                                                     (color * 255).tolist(),
+                                                                     self.cfg['visualization']['camera']['trajectory_line_width'])
+        self.img = o3d.geometry.Image(img_np)
+        self.__add_geometry__('image', self.img, False)
+
     def redraw(self):
         """
         Redraws the visualizer.

@@ -226,6 +226,7 @@ visualization: # visualization parameters
         point_size: 2.0 # rendered point size
     camera:
         bbox_line_width: 2 # bbox line width
+        trajectory_line_width: 2 # trajectory line width
 
 logging: # parameters for logger
     level: 1 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL
