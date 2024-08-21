@@ -200,11 +200,15 @@ proc: # liguard processing configurations
             t_minimum: 10 # minimum need past trajectory length (ms)
             t_plus_steps: 10 # number of steps to predict in future (ms)
         GeneratePolyFitFutureTrajectory: # generate future trajectory using polynomial fitting
-            enabled: true # set True to generate future trajectory
+            enabled: False # set True to generate future trajectory
             priority: 3 # priority of process - lower is higher
             t_minimum: 10 # minimum need past trajectory length (ms)
             t_plus_steps: 20 # number of steps to predict in future (ms)
             poly_degree: 3 # degree of polynomial fitting
+        GenerateVelocityFromTrajectory: # generate velocity from trajectory
+            enabled: False # set True to generate velocity from trajectory
+            priority: 4 # priority of process - lower is higher
+            t_delta: 0.1 # time delta between two points in trajectory (ms) = 1/fps
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher

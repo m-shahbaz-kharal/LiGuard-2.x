@@ -336,6 +336,67 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
         label_dict['bbox_3d']['future_trajectory'] = np.column_stack((future_trajectory_x, future_trajectory_y, future_trajectory_z))
     # ---------------------- Polynomial Fit ---------------------- #
 
+def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict):
+    """
+    Generate velocity from trajectory.
+
+    Requirements:
+    - past_trajectory dict in data_dict['current_label_list'][<index>]['bbox_3d'].
+
+    Operation:
+    - It calculates the velocity from the past trajectory.
+    - Stores the velocity of objects in data_dict['current_label_list'][<index>]['bbox_3d']['past_velocity'].
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # Get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->post.py->GenerateVelocityFromTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # Check if required data is present in data_dict
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->post.py->GenerateVelocityFromTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+
+    # imports
+    import numpy as np
+
+    # algo name and dict keys
+    algo_name = 'GenerateVelocityFromTrajectory'
+    processed_frames_key = f'{algo_name}_processed_frames'
+
+    # get params
+    params = cfg_dict['proc']['post'][algo_name]
+
+    # check if the current frame is already processed
+    if processed_frames_key in data_dict and data_dict['current_frame_index'] in data_dict[processed_frames_key]:
+        logger.log(f'[algo->post.py->GenerateVelocityFromTrajectory]: Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
+        return
+    
+    # ---------------------- Velocity Calculation ---------------------- #
+    for label_dict in data_dict['current_label_list']:
+        if 'bbox_3d' not in label_dict: continue
+        if 'past_trajectory' not in label_dict['bbox_3d']: continue
+
+        past_trajectory = label_dict['bbox_3d']['past_trajectory']
+        len_past_trajectory = len(past_trajectory)
+        if len_past_trajectory < 2: continue
+
+        # calculate velocity
+        past_velocity = np.diff(past_trajectory, axis=0) / params['t_delta']
+        past_velocity = np.append(past_velocity, [past_velocity[-1]], axis=0)
+        label_dict['bbox_3d']['past_velocity'] = past_velocity
+    # ---------------------- Velocity Calculation ---------------------- #
+
+    # keep record of processed frames
+    if processed_frames_key not in data_dict: data_dict[processed_frames_key] = [data_dict['current_frame_index']]
+    else: data_dict[processed_frames_key].append(data_dict['current_frame_index'])
+
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
     Create a per-object PCDet dataset by extracting object point clouds and labels from the input data.
