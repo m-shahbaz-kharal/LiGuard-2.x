@@ -279,6 +279,63 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
         label_dict['bbox_3d']['future_trajectory'] = np.column_stack((future_trajectory_x, future_trajectory_y, future_trajectory_z))
     # ---------------------- Cubic Spline Interpolation ---------------------- #
 
+def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
+    """
+    Predict future trajectory using polynomial fit.
+
+    Requirements:
+    - past_trajectory dict in data_dict['current_label_list'][<index>]['bbox_3d'].
+
+    Operation:
+    - It uses polynomial fit to predict future trajectory.
+    - Stores the future trajectory of objects in data_dict['current_label_list'][<index>]['bbox_3d']['future_trajectory'].
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # Get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->post.py->GeneratePolyFitFutureTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # Check if required data is present in data_dict
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->post.py->GeneratePolyFitFutureTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+
+    # imports
+    import numpy as np
+    from numpy.polynomial import Polynomial
+
+    # algo name and dict keys
+    algo_name = 'GeneratePolyFitFutureTrajectory'
+
+    # get params
+    params = cfg_dict['proc']['post'][algo_name]
+
+    # ---------------------- Polynomial Fit ---------------------- #
+    for label_dict in data_dict['current_label_list']:
+        if 'bbox_3d' not in label_dict: continue
+        if 'past_trajectory' not in label_dict['bbox_3d']: continue
+
+        past_trajectory = label_dict['bbox_3d']['past_trajectory']
+        past_trajectory_x = past_trajectory[:, 0]
+        past_trajectory_y = past_trajectory[:, 1]
+        past_trajectory_z = past_trajectory[:, 2]
+        len_past_trajectory = len(past_trajectory)
+        if len_past_trajectory < params['t_minimum']: continue
+        poly_x = Polynomial.fit(np.arange(len_past_trajectory), past_trajectory_x, params['poly_degree'])
+        poly_y = Polynomial.fit(np.arange(len_past_trajectory), past_trajectory_y, params['poly_degree'])
+        future_steps = np.arange(len_past_trajectory, len_past_trajectory + params['t_plus_steps'])
+        future_trajectory_x = poly_x(future_steps).astype(np.float32)
+        future_trajectory_y = poly_y(future_steps).astype(np.float32)
+        future_trajectory_z = np.full_like(future_trajectory_x, past_trajectory_z[-1]).astype(np.float32)
+        label_dict['bbox_3d']['future_trajectory'] = np.column_stack((future_trajectory_x, future_trajectory_y, future_trajectory_z))
+    # ---------------------- Polynomial Fit ---------------------- #
+
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
     Create a per-object PCDet dataset by extracting object point clouds and labels from the input data.
