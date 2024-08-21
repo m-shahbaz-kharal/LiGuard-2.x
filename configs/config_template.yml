@@ -197,6 +197,7 @@ proc: # liguard processing configurations
         GenerateCubicSplineFutureTrajectory: # generate future trajectory using cubic spline interpolation
             enabled: False # set True to generate future trajectory
             priority: 3 # priority of process - lower is higher
+            t_minimum: 10 # minimum need past trajectory length (ms)
             t_plus_steps: 10 # number of steps to predict in future (ms)
         GeneratePolyFitFutureTrajectory: # generate future trajectory using polynomial fitting
             enabled: true # set True to generate future trajectory

@@ -269,7 +269,7 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
         past_trajectory_y = past_trajectory[:, 1]
         past_trajectory_z = past_trajectory[:, 2]
         len_past_trajectory = len(past_trajectory)
-        if len_past_trajectory < 2: continue
+        if len_past_trajectory < params['t_minimum']: continue
         cs_x = CubicSpline(np.arange(len_past_trajectory), past_trajectory_x)
         cs_y = CubicSpline(np.arange(len_past_trajectory), past_trajectory_y)
         future_steps = np.arange(len_past_trajectory, len_past_trajectory + params['t_plus_steps'])
