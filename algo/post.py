@@ -222,6 +222,57 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     # update the last_bbox_3d_labels
     data_dict[last_bbox_3d_labels_key] = current_bbox_3d_labels
 
+def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
+    """
+    Predict future trajectory using cubic spline interpolation.
+
+    Requirements:
+    - past_trajectory dict in data_dict['current_label_list'][<index>]['bbox_3d'].
+
+    Operation:
+    - It uses cubic spline interpolation to predict future trajectory.
+    - Stores the future trajectory of objects in data_dict['current_label_list'][<index>]['bbox_3d']['future_trajectory'].
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+
+    Returns:
+        None
+    """
+    # Get logger object from data_dict
+    if 'logger' in data_dict: logger:Logger = data_dict['logger']
+    else: print('[algo->post.py->GenerateCubicSplineFutureTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+
+    # Check if required data is present in data_dict
+    if 'current_label_list' not in data_dict:
+        logger.log('[algo->post.py->GenerateCubicSplineFutureTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        return
+
+    # imports
+    import numpy as np
+    from scipy.interpolate import CubicSpline
+
+    # algo name and dict keys
+    algo_name = 'GenerateCubicSplineFutureTrajectory'
+
+    # get params
+    params = cfg_dict['proc']['post'][algo_name]
+
+    # ---------------------- Cubic Spline Interpolation ---------------------- #
+    for label_dict in data_dict['current_label_list']:
+        if 'bbox_3d' not in label_dict: continue
+        if 'past_trajectory' not in label_dict['bbox_3d']: continue
+
+        past_trajectory = np.array(label_dict['bbox_3d']['past_trajectory'])
+        len_past_trajectory = len(past_trajectory)
+        if len_past_trajectory < 2: continue
+        cs = CubicSpline(np.arange(len_past_trajectory), past_trajectory, axis=0)
+        future_steps = np.arange(len_past_trajectory, len_past_trajectory + params['t_plus_steps'])
+        future_traj = cs(future_steps)
+        label_dict['bbox_3d']['future_trajectory'] = future_traj
+    # ---------------------- Cubic Spline Interpolation ---------------------- #
+
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     """
     Create a per-object PCDet dataset by extracting object point clouds and labels from the input data.
