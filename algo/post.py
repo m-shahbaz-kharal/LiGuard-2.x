@@ -207,9 +207,9 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
 
         # store the past trajectory
         if 'past_trajectory' in last_bbox_3d:
-            current_bbox_3d['past_trajectory'] = last_bbox_3d['past_trajectory'] + [last_bbox_3d['xyz_center']]
+            current_bbox_3d['past_trajectory'] = np.append(last_bbox_3d['past_trajectory'], [last_bbox_3d['xyz_center']], axis=0)
         else:
-            current_bbox_3d['past_trajectory'] = [last_bbox_3d['xyz_center']]
+            current_bbox_3d['past_trajectory'] = np.array([last_bbox_3d['xyz_center']], dtype=np.float32)
 
         # update the bbox_3d dict
         data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['bbox_3d'] = current_bbox_3d
@@ -264,13 +264,19 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
         if 'bbox_3d' not in label_dict: continue
         if 'past_trajectory' not in label_dict['bbox_3d']: continue
 
-        past_trajectory = np.array(label_dict['bbox_3d']['past_trajectory'])
+        past_trajectory = label_dict['bbox_3d']['past_trajectory']
+        past_trajectory_x = past_trajectory[:, 0]
+        past_trajectory_y = past_trajectory[:, 1]
+        past_trajectory_z = past_trajectory[:, 2]
         len_past_trajectory = len(past_trajectory)
         if len_past_trajectory < 2: continue
-        cs = CubicSpline(np.arange(len_past_trajectory), past_trajectory, axis=0)
+        cs_x = CubicSpline(np.arange(len_past_trajectory), past_trajectory_x)
+        cs_y = CubicSpline(np.arange(len_past_trajectory), past_trajectory_y)
         future_steps = np.arange(len_past_trajectory, len_past_trajectory + params['t_plus_steps'])
-        future_traj = cs(future_steps)
-        label_dict['bbox_3d']['future_trajectory'] = future_traj
+        future_trajectory_x = cs_x(future_steps).astype(np.float32)
+        future_trajectory_y = cs_y(future_steps).astype(np.float32)
+        future_trajectory_z = np.full_like(future_trajectory_x, past_trajectory_z[-1]).astype(np.float32)
+        label_dict['bbox_3d']['future_trajectory'] = np.column_stack((future_trajectory_x, future_trajectory_y, future_trajectory_z))
     # ---------------------- Cubic Spline Interpolation ---------------------- #
 
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):

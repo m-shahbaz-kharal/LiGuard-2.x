@@ -197,7 +197,7 @@ proc: # liguard processing configurations
         GenerateCubicSplineFutureTrajectory: # generate future trajectory using cubic spline interpolation
             enabled: False # set True to generate future trajectory
             priority: 3 # priority of process - lower is higher
-            t_plus_steps: 100 # number of steps to predict in future (ms)
+            t_plus_steps: 10 # number of steps to predict in future (ms)
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher
