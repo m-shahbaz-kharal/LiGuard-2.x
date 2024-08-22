@@ -50,19 +50,19 @@ class BaseConfiguration:
         self.__init__layout__()
         
     def __init__layout__(self):
-        # base container
-        self.base_container = gui.ScrollableVert(self.em * 0.2, gui.Margins(self.em * 0.4, self.em * 0.4, self.em * 0.4, self.em * 0.4))
-        
+        # top container
+        self.top_container = gui.Vert(self.em * 0.2)
+
         # file_io controls
         # -- define text edit
         self.config_file_path_textedit =  gui.TextEdit()
         self.config_file_path_textedit.text_value = "None"
         self.config_file_path_textedit.enabled = False
         #   add to file_io container
-        self.base_container.add_child(self.config_file_path_textedit)
+        self.top_container.add_child(self.config_file_path_textedit)
         # buttons for new, open, save, save as, and apply
         # -- define buttons
-        button_container = gui.Horiz(self.em * 0.2)
+        button_container = gui.Horiz(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.new_config_button = gui.Button("New")
         self.open_config_button = gui.Button("Open")
         self.save_config_button = gui.Button("Save")
@@ -81,17 +81,26 @@ class BaseConfiguration:
         button_container.add_child(self.save_config_button)
         button_container.add_child(self.save_as_config_button)
         button_container.add_child(self.apply_config_button)
-        # add to base container
-        self.base_container.add_child(button_container)
+        
+        # add to top container
+        self.top_container.add_child(button_container)
+
+        # base container
+        self.base_container = gui.ScrollableVert(self.em * 0.2, gui.Margins(self.em * 0.4, self.em * 0.4, self.em * 0.4, self.em * 0.4))
         
         # all the generated configuration gui will be set here
         self.generated_config = gui.WidgetProxy()
         self.generated_config_gui_dict = dict()
+        
         # add to base container
         self.base_container.add_child(self.generated_config)
+        self.base_container.add_stretch()
+
+        # add to top container
+        self.top_container.add_child(self.base_container)
         
         # add to main window
-        self.mwin.add_child(self.base_container)
+        self.mwin.add_child(self.top_container)
         
     def update_callbacks(self, callbacks):
         """
