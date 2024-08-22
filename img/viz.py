@@ -130,6 +130,9 @@ class ImageVisualizer:
             label_dict (dict): A dictionary containing the label information.
             calib_dict (dict): A dictionary containing the calibration information.
         """
+        # the image to draw on
+        img_np = np.asarray(self.img)
+
         if 'bbox_3d' in label_dict and calib_dict != None and self.cfg['visualization']['camera']['draw_bbox_3d']:
             # bbox parameters
             bbox_3d_dict = label_dict['bbox_3d']
@@ -179,9 +182,6 @@ class ImageVisualizer:
             bbox_pts_in_image_pixel_coords = P2 @ bbox_pts_in_camera_coords
             # normalize
             points_in_image = bbox_pts_in_image_pixel_coords[0:2,:] / bbox_pts_in_image_pixel_coords[2:,:]
-            
-            # the image to draw on
-            img_np = np.asarray(self.img)
             
             # draw
             points_in_image = points_in_image.T
@@ -238,12 +238,9 @@ class ImageVisualizer:
                                                                      tuple(future_trajectory[i + 1]),
                                                                      (bbox_3d_dict['rgb_color'] * 255).tolist(),
                                                                      self.cfg['visualization']['camera']['trajectory_line_width'])
-
-            # add to visualizer
-            self.img = o3d.geometry.Image(img_np)
-            self.__add_geometry__('image', self.img, False)
-
-        if 'bbox_2d' in label_dict and self.cfg['visualization']['camera']['draw_bbox_2d']:
+                    
+        if 'bbox_2d' in label_dict and self.cfg['visualization']['camera']['draw_bbox_2d'] \
+            and not ('visualize' in label_dict['bbox_2d'] and not label_dict['bbox_2d']['visualize']):
             # bbox parameters
             bbox_2d_dict = label_dict['bbox_2d']
             xy_center = bbox_2d_dict['xy_center']
@@ -251,8 +248,6 @@ class ImageVisualizer:
             rgb_color = bbox_2d_dict['rgb_color'] * 255.0
             if not bbox_2d_dict['predicted']: rgb_color *= 0.5 # darken
 
-            # the image to draw on
-            img_np = np.asarray(self.img)
             rgb_color = rgb_color.tolist()
 
             # draw box
@@ -266,9 +261,18 @@ class ImageVisualizer:
                 cv2.putText(img_np, text, (start_point[0], start_point[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
                 label_dict['text_info_drawn'] = True
 
-            # add to visualizer
-            self.img = o3d.geometry.Image(img_np)
-            self.__add_geometry__('image', self.img, False)
+        # draw extras if available
+        if 'extras' in label_dict and 'img_visualizer' in label_dict['extras'] and self.cfg['visualization']['camera']['draw_extras']:
+            for algo_name, algo_extras in label_dict['extras']['img_visualizer'].items():
+                for name, extra in algo_extras.items():
+                    getattr(cv2, extra['cv2_attr'])(img_np, **extra['params'])
+                    if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info'] and 'text_info_drawn' not in label_dict:
+                        text = label_dict['text_info']
+                        cv2.putText(img_np, text, (extra['params']['center'][0], extra['params']['center'][1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, extra['params']['color'], 1, cv2.LINE_AA)
+                        
+        # add to visualizer
+        self.img = o3d.geometry.Image(img_np)
+        self.__add_geometry__('image', self.img, False)
 
         # remove text_info_drawn flag
         label_dict.pop('text_info_drawn', None)

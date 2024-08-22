@@ -57,6 +57,10 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
         if bbox_2d_dict['added_by'] == params['bbox_target_algo']:
             target_points_list.append(bbox_2d_dict['xy_center'])
             target_idx.append(i)
+            if 'extras' not in label_dict: label_dict['extras'] = {}
+            if 'img_visualizer' not in label_dict['extras']: label_dict['extras']['img_visualizer'] = {}
+            if algo_name not in label_dict['extras']['img_visualizer']: label_dict['extras']['img_visualizer'][algo_name] = {}
+            label_dict['extras']['img_visualizer'][algo_name]['fusion_dot'] = {'cv2_attr': 'circle', 'params': {'center': tuple(map(int, bbox_2d_dict['xy_center'])), 'radius': 5, 'color': [255, 0, 0], 'thickness': -1}}
         elif bbox_2d_dict['added_by'] == params['bbox_source_algo']:
             source_points_list.append(bbox_2d_dict['xy_center'])
             source_idx.append(i)
@@ -103,6 +107,8 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
 
         # check if the distance is within the threshold
         if cost_matrix[i, j] > params['max_match_distance']: continue
+
+        data_dict['current_label_list'][target_idx[i]]['extras']['img_visualizer'][algo_name]['fusion_dot']['params']['color'] = [0, 255, 0]
 
         # classification fusion
         trg_label['class'] = src_label['class']
@@ -214,7 +220,7 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
             current_bbox_3d['past_trajectory'] = np.array([last_bbox_3d['xyz_center']], dtype=np.float32)
 
         # add text info
-        if 'text_info' not in current_bbox_3d: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] = f'traj-: {len(current_bbox_3d["past_trajectory"])}'
+        if 'text_info' not in data_dict['current_label_list'][current_bbox_3d_labels[j][0]]: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] = f'traj-: {len(current_bbox_3d["past_trajectory"])}'
         else: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] += f' | traj-: {len(current_bbox_3d["past_trajectory"])}'
 
         # update the bbox_3d dict

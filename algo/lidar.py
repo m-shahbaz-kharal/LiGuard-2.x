@@ -783,4 +783,4 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
         added_by = bbox_3d['added_by'] + '_2d'
         
         # add 2D bounding box to the label dict
-        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': predicted, 'added_by': added_by}
+        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': predicted, 'added_by': added_by, 'visualize': params['visualize']}

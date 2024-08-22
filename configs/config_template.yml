@@ -152,6 +152,7 @@ proc: # liguard processing configurations
         gen_bbox_2d:
             enabled: False
             priority: 8
+            visualize: True
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
@@ -236,6 +237,7 @@ visualization: # visualization parameters
         draw_bbox_3d: True # visualize 3D bounding boxes
         draw_trajectory: True # visualize trajectory
         draw_text_info: True # visualize text
+        draw_extras: True # visualize extras
         bbox_line_width: 2 # bbox line width
         trajectory_line_width: 2 # trajectory line width
 
