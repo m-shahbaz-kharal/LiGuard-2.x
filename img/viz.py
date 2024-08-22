@@ -201,6 +201,12 @@ class ImageVisualizer:
             cv2.line(img_np,tuple(pts[2]),tuple(pts[6]),rgb_color,self.cfg['visualization']['camera']['bbox_line_width'])
             cv2.line(img_np,tuple(pts[3]),tuple(pts[7]),rgb_color,self.cfg['visualization']['camera']['bbox_line_width'])
 
+            # add text info if available
+            if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info'] and 'text_info_drawn' not in label_dict:
+                text = 'bbox 3d->2d | ' + label_dict['text_info']
+                cv2.putText(img_np, text, (pts[0][0], pts[0][1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
+                label_dict['text_info_drawn'] = True
+            
             # add past bbox_3d trajectories if available
             if 'past_trajectory' in bbox_3d_dict and self.cfg['visualization']['camera']['draw_trajectory']:
                 past_trajectory = bbox_3d_dict['past_trajectory']
@@ -255,13 +261,17 @@ class ImageVisualizer:
             cv2.rectangle(img_np, start_point, end_point, rgb_color, self.cfg['visualization']['camera']['bbox_line_width'])
 
             # add text info
-            if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info']:
-                text = label_dict['text_info']
+            if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info'] and 'text_info_drawn' not in label_dict:
+                text = 'bbox 2d | ' + label_dict['text_info']
                 cv2.putText(img_np, text, (start_point[0], start_point[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
+                label_dict['text_info_drawn'] = True
 
             # add to visualizer
             self.img = o3d.geometry.Image(img_np)
             self.__add_geometry__('image', self.img, False)
+
+        # remove text_info_drawn flag
+        label_dict.pop('text_info_drawn', None)
 
     def redraw(self):
         """
