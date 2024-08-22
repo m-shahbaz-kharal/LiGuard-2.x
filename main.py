@@ -156,7 +156,7 @@ class LiGuard:
         self.logger.log(f'[main.py->LiGuard->reset]: total_pcd_frames: {self.data_dict["total_pcd_frames"]}', Logger.DEBUG)
         
         # manage pcd visualization
-        if self.pcd_io and cfg['visualization']['enabled']:
+        if self.pcd_io:
             if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
             else:
                 try:
@@ -189,7 +189,7 @@ class LiGuard:
         self.logger.log(f'[main.py->LiGuard->reset]: total_img_frames: {self.data_dict["total_img_frames"]}', Logger.DEBUG)
         
         # manage image visualization
-        if self.img_io and cfg['visualization']['enabled']:
+        if self.img_io:
             try:
                 if self.img_visualizer != None: self.img_visualizer.reset(cfg)
                 else: self.img_visualizer = ImageVisualizer(self.app, cfg)
