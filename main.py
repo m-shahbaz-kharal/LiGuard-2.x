@@ -3,6 +3,7 @@ import open3d.visualization.gui as gui
 
 from gui.config_gui import BaseConfiguration as BaseConfigurationGUI
 from gui.logger_gui import Logger
+from profiler import Profiler
 
 from pcd.file_io import FileIO as PCD_File_IO
 from pcd.sensor_io import SensorIO as PCD_Sensor_IO
@@ -16,6 +17,8 @@ from calib.file_io import FileIO as CLB_File_IO
 from lbl.file_io import FileIO as LBL_File_IO
 
 import keyboard, threading, time
+
+profiler = Profiler('main')
 
 class LiGuard:
     def __init__(self):
@@ -68,7 +71,7 @@ class LiGuard:
         
     # handle the key events of right, left, and space keys
     def handle_key_event(self, event:keyboard.KeyboardEvent):
-        if event.event_type == keyboard.KEY_DOWN and self.__is_focused__():
+        if event.event_type == keyboard.KEY_DOWN:
             with self.lock:
                 if event.name == 'right':
                     self.is_playing = False
@@ -80,7 +83,7 @@ class LiGuard:
                         self.data_dict['current_frame_index'] -= 1
                 elif event.name == 'space':
                     self.is_playing = not self.is_playing
-                elif event.name == '0':
+                elif event.name == 'delete':
                     self.is_playing = False
                     self.data_dict['current_frame_index'] = 0
                 elif event.name == '[':
@@ -346,36 +349,45 @@ class LiGuard:
             
             # if the frame has changed, update the data dictionary with the new frame data
             if frame_changed:
+                profiler.add_target('Total Time / Step')
                 self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
                 
                 if self.pcd_io:
+                    profiler.add_target('pcd_io')
                     current_point_cloud_path, current_point_cloud_numpy = self.pcd_io[self.data_dict['current_frame_index']]
                     self.data_dict['current_point_cloud_path'] = current_point_cloud_path
                     self.data_dict['current_point_cloud_numpy'] = current_point_cloud_numpy
+                    profiler.end_target('pcd_io')
                 elif 'current_point_cloud_numpy' in self.data_dict:
                     self.logger.log(f'[main.py->LiGuard->start]: current_point_cloud_numpy found in data_dict while pcd_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_point_cloud_numpy')
                 
                 if self.img_io:
+                    profiler.add_target('img_io')
                     current_image_path, current_image_numpy = self.img_io[self.data_dict['current_frame_index']]
                     self.data_dict['current_image_path'] = current_image_path
                     self.data_dict['current_image_numpy'] = current_image_numpy
+                    profiler.end_target('img_io')
                 elif 'current_image_numpy' in self.data_dict:
                     self.logger.log(f'[main.py->LiGuard->start]: current_image_numpy found in data_dict while img_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_image_numpy')
 
                 if self.clb_io:
+                    profiler.add_target('clb_io')
                     current_calib_path, current_calib_data = self.clb_io[self.data_dict['current_frame_index']]
                     self.data_dict['current_calib_path'] = current_calib_path
                     self.data_dict['current_calib_data'] = current_calib_data
+                    profiler.end_target('clb_io')
                 elif 'current_calib_data' in self.data_dict:
                     self.logger.log(f'[main.py->LiGuard->start]: current_calib_data found in data_dict while clb_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_calib_data')
                 
                 if self.lbl_io:
+                    profiler.add_target('lbl_io')
                     current_label_path, current_label_list = self.lbl_io[self.data_dict['current_frame_index']]
                     self.data_dict['current_label_path'] = current_label_path
                     self.data_dict['current_label_list'] = current_label_list
+                    profiler.end_target('lbl_io')
                 elif 'current_label_list' in self.data_dict:
                     self.logger.log(f'[main.py->LiGuard->start]: current_label_list found in data_dict while lbl_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_label_list')
@@ -388,40 +400,85 @@ class LiGuard:
 
                 # apply the processes
                 for proc in self.pre_processes:
-                    try: proc(self.data_dict, cfg)
-                    except Exception as e: self.logger.log(f'[main.py->LiGuard->start]: pre_processes failed for {proc}:\n{e}', Logger.ERROR)
+                    try:
+                        profiler.add_target(f'pre_{proc}')
+                        proc(self.data_dict, cfg)
+                        profiler.end_target(f'pre_{proc}')
+                    except Exception as e:
+                        profiler.end_target(f'pre_{proc}')
+                        self.logger.log(f'[main.py->LiGuard->start]: pre_processes failed for {proc}:\n{e}', Logger.ERROR)
             
                 if self.pcd_io:
                     for proc in self.lidar_processes:
-                        try: proc(self.data_dict, cfg)
-                        except Exception as e: self.logger.log(f'[main.py->LiGuard->start]: lidar_processes failed for {proc}:\n{e}', Logger.ERROR)
+                        try:
+                            profiler.add_target(f'lidar_{proc}')
+                            proc(self.data_dict, cfg)
+                            profiler.end_target(f'lidar_{proc}')
+                        except Exception as e:
+                            profiler.end_target(f'lidar_{proc}')
+                            self.logger.log(f'[main.py->LiGuard->start]: lidar_processes failed for {proc}:\n{e}', Logger.ERROR)
                 if self.img_io:
                     for proc in self.camera_processes:
-                        try: proc(self.data_dict, cfg)
-                        except Exception as e: self.logger.log(f'[main.py->LiGuard->start]: camera_processes failed for {proc}:\n{e}', Logger.ERROR)
+                        try:
+                            profiler.add_target(f'camera_{proc}')
+                            proc(self.data_dict, cfg)
+                            profiler.end_target(f'camera_{proc}')
+                        except Exception as e:
+                            profiler.end_target(f'camera_{proc}')
+                            self.logger.log(f'[main.py->LiGuard->start]: camera_processes failed for {proc}:\n{e}', Logger.ERROR)
                 if self.clb_io:
                     for proc in self.calib_processes:
-                        try: proc(self.data_dict, cfg)
-                        except Exception as e: self.logger.log(f'[main.py->LiGuard->start]: calib_processes failed for {proc}:\n{e}', Logger.ERROR)
+                        try:
+                            profiler.add_target(f'calib_{proc}')
+                            proc(self.data_dict, cfg)
+                            profiler.end_target(f'calib_{proc}')
+                        except Exception as e:
+                            profiler.end_target(f'calib_{proc}')
+                            self.logger.log(f'[main.py->LiGuard->start]: calib_processes failed for {proc}:\n{e}', Logger.ERROR)
                 if self.lbl_io:
                     for proc in self.label_processes:
-                        try: proc(self.data_dict, cfg)
-                        except Exception as e: self.logger.log(f'[main.py->LiGuard->start]: label_processes failed for {proc}:\n{e}', Logger.ERROR)
+                        try:
+                            profiler.add_target(f'label_{proc}')
+                            proc(self.data_dict, cfg)
+                            profiler.end_target(f'label_{proc}')
+                        except Exception as e:
+                            profiler.end_target(f'label_{proc}')
+                            self.logger.log(f'[main.py->LiGuard->start]: label_processes failed for {proc}:\n{e}', Logger.ERROR)
                 
                 for proc in self.post_processes:
-                    try: proc(self.data_dict, cfg)
-                    except Exception as e: self.logger.log(f'[main.py->LiGuard->start]: post_processes failed for {proc}:\n{e}', Logger.ERROR)
+                    try:
+                        profiler.add_target(f'post_{proc}')
+                        proc(self.data_dict, cfg)
+                        profiler.end_target(f'post_{proc}')
+                    except Exception as e:
+                        profiler.end_target(f'post_{proc}')
+                        self.logger.log(f'[main.py->LiGuard->start]: post_processes failed for {proc}:\n{e}', Logger.ERROR)
 
                 # update the visualizers
                 if self.pcd_io:
-                    if cfg['visualization']['enabled']: self.pcd_visualizer.update(self.data_dict)
+                    profiler.add_target('pcd_visualizer_update')
+                    if cfg['visualization']['enabled']:
+                        self.pcd_visualizer.update(self.data_dict)
                     self.pcd_visualizer.redraw()
+                    profiler.end_target('pcd_visualizer_update')
+                    if cfg['visualization']['lidar']['save_images']:
+                        profiler.add_target('pcd_visualizer_save_current_view')
+                        self.pcd_visualizer.save_current_view(self.data_dict['current_frame_index'])
+                        profiler.end_target('pcd_visualizer_save_current_view')
                 if self.img_io:
-                    if cfg['visualization']['enabled']: self.img_visualizer.update(self.data_dict)
+                    profiler.add_target('img_visualizer_update')
+                    if cfg['visualization']['enabled']:
+                        self.img_visualizer.update(self.data_dict)
                     self.img_visualizer.redraw()
+                    profiler.end_target('img_visualizer_update')
+                    if cfg['visualization']['camera']['save_images']:
+                        profiler.add_target('img_visualizer_save_current_view')
+                        self.img_visualizer.save_current_view(self.data_dict['current_frame_index'])
+                        profiler.end_target('img_visualizer_save_current_view')
 
                 if cfg['visualization']['enabled'] == False:
                     self.logger.log(f'[main.py->LiGuard->start]: Processed frame {self.data_dict["current_frame_index"]}', Logger.INFO)
+                profiler.end_target('Total Time / Step')
                     
             else:
                 # if the frame has not changed, redraw the visualizers only no processing is required
@@ -430,6 +487,7 @@ class LiGuard:
             
             # sleep for a while
             time.sleep(cfg['threads']['vis_sleep'])
+            profiler.save('LiGuardMainLoopProfile')
             
     def quit(self, cfg):
         # stop the app

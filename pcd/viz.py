@@ -1,3 +1,5 @@
+import os
+
 import open3d as o3d
 import numpy as np
 
@@ -28,6 +30,11 @@ class PointCloudVisualizer:
         self.viz = o3d.visualization.Visualizer()
         self.viz.create_window("PointCloud Feed", width=1000, height=1080, left=480, top=30)
         # init
+        # create necessary paths
+        if cfg['visualization']['lidar']['save_images']:
+            self.lidar_save_path = cfg['visualization']['lidar']['save_path']
+            os.makedirs(self.lidar_save_path, exist_ok=True)
+        # reset
         self.reset(cfg, True)
 
     def __is_focused__(self):
@@ -260,6 +267,16 @@ class PointCloudVisualizer:
         """
         self.viz.poll_events()
         self.viz.update_renderer()
+
+    def save_current_view(self, frame_idx):
+        """
+        Saves the current view of the visualizer to file.
+
+        Args:
+            frame_idx: The index of the frame.
+        """
+        file_path = os.path.join(self.lidar_save_path, f'{frame_idx:08d}.png')
+        self.viz.capture_screen_image(file_path)
         
     def quit(self):
         """

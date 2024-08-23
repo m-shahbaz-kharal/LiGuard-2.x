@@ -232,6 +232,8 @@ visualization: # visualization parameters
         draw_cluster: True # visualize clusters
         draw_bbox_3d: True # visualize bounding boxes
         draw_trajectory: True # visualize trajectory
+        save_images: False # save images
+        save_path: 'pcd_visuals' # path to save images
     camera:
         draw_bbox_2d: True # visualize 2D bounding boxes
         draw_bbox_3d: True # visualize 3D bounding boxes
@@ -240,6 +242,8 @@ visualization: # visualization parameters
         draw_extras: True # visualize extras
         bbox_line_width: 2 # bbox line width
         trajectory_line_width: 2 # trajectory line width
+        save_images: False # save images
+        save_path: 'img_visuals' # path to save images
 
 logging: # parameters for logger
     level: 1 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL

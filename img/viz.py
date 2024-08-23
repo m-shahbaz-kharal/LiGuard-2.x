@@ -1,3 +1,5 @@
+import os
+
 import open3d as o3d
 import cv2
 import numpy as np
@@ -33,6 +35,11 @@ class ImageVisualizer:
         self.viz = o3d.visualization.Visualizer()
         self.viz.create_window("Image Feed", width=int(1440/4), height=int(1080/4), left=480 - int(1440/4), top=30)
         # init
+        # create necessary paths
+        if cfg['visualization']['camera']['save_images']:
+            self.image_save_path = cfg['visualization']['camera']['save_path']
+            os.makedirs(self.image_save_path, exist_ok=True)
+        # reset
         self.reset(cfg, True)
 
     def __is_focused__(self):
@@ -283,6 +290,19 @@ class ImageVisualizer:
         """
         self.viz.poll_events()
         self.viz.update_renderer()
+
+    def save_current_view(self, frame_idx):
+        """
+        Saves the current view of the visualizer to file.
+
+        Args:
+            frame_idx (int): The frame index.
+        """
+        img = np.asarray(self.img)
+        image_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        
+        path = os.path.join(self.image_save_path, f'{frame_idx:08d}.png')
+        cv2.imwrite(path, image_bgr)
         
     def quit(self):
         """
