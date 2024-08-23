@@ -211,7 +211,7 @@ class ImageVisualizer:
             # add text info if available
             if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info'] and 'text_info_drawn' not in label_dict:
                 text = 'bbox 3d->2d | ' + label_dict['text_info']
-                cv2.putText(img_np, text, (pts[0][0], pts[0][1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
+                img_np = self.__highlighted_text__(img_np, text, (pts[0][0], pts[0][1] - 5))
                 label_dict['text_info_drawn'] = True
             
             # add past bbox_3d trajectories if available
@@ -265,7 +265,7 @@ class ImageVisualizer:
             # add text info
             if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info'] and 'text_info_drawn' not in label_dict:
                 text = 'bbox 2d | ' + label_dict['text_info']
-                cv2.putText(img_np, text, (start_point[0], start_point[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
+                img_np = self.__highlighted_text__(img_np, text, (start_point[0], start_point[1] - 5))
                 label_dict['text_info_drawn'] = True
 
         # draw extras if available
@@ -275,7 +275,7 @@ class ImageVisualizer:
                     getattr(cv2, extra['cv2_attr'])(img_np, **extra['params'])
                     if 'text_info' in label_dict and self.cfg['visualization']['camera']['draw_text_info'] and 'text_info_drawn' not in label_dict:
                         text = label_dict['text_info']
-                        cv2.putText(img_np, text, (extra['params']['center'][0], extra['params']['center'][1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, extra['params']['color'], 1, cv2.LINE_AA)
+                        img_np = self.__highlighted_text__(img_np, text, (extra['params']['center'][0], extra['params']['center'][1] - 5))
                         
         # add to visualizer
         self.img = o3d.geometry.Image(img_np)
@@ -283,6 +283,38 @@ class ImageVisualizer:
 
         # remove text_info_drawn flag
         label_dict.pop('text_info_drawn', None)
+
+    def __highlighted_text__(self, image, text, position):
+        # keep copy
+        highlight_img = image.copy()
+        
+        # Define text properties
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.5
+        font_thickness = 1
+        text_color = (255, 255, 255)  # White
+
+        # Define highlight properties
+        highlight_color = (0, 0, 255)  # Red
+
+        # Get the size of the text
+        (text_width, text_height), baseline = cv2.getTextSize(text, font, font_scale, font_thickness)
+
+        # Define the position of the text
+        text_x, text_y = position
+
+        # Draw the filled rectangle (highlight)
+        rect_start = (text_x - 10, text_y + 10)
+        rect_end = (text_x + text_width + 10, text_y - text_height - 10)
+        cv2.rectangle(image, rect_start, rect_end, highlight_color, -1)
+
+        # Blend the highlight image with the original image using alpha
+        cv2.addWeighted(highlight_img, 0.75, image, 1 - 0.75, 0, image)
+
+        # Draw the text
+        cv2.putText(image, text, (text_x, text_y), font, font_scale, text_color, font_thickness, cv2.LINE_AA)
+
+        return image
 
     def redraw(self):
         """
