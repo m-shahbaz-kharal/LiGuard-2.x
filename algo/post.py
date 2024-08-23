@@ -106,7 +106,7 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
         trg_label = data_dict['current_label_list'][target_idx[i]]
 
         # check if the distance is within the threshold
-        if cost_matrix[i, j] > params['max_match_distance']: continue
+        if cost_matrix[i, j] > src_label['bbox_2d']['xy_extent'].max() / 2: continue
 
         data_dict['current_label_list'][target_idx[i]]['extras']['img_visualizer'][algo_name]['fusion_dot']['params']['color'] = [0, 255, 0]
 
