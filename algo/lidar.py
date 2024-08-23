@@ -454,32 +454,20 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         lidar_cluster_dict = label_dict['lidar_cluster']
         point_indices = lidar_cluster_dict['point_indices']
         cluster = data_dict['current_point_cloud_numpy'][point_indices][:, :3]
-        
-        # create bounding box and get its center, extent, and euler angles
-        if params['oriented']:
-            try: bbox = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
-            except:
-                logger.log('[algo->lidar.py->Cluster2Object]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
-                continue
-            xyz_center = bbox.get_center().astype(np.float32)
-            xyz_extent = bbox.extent.astype(np.float32)
-            rotation_matrix = bbox.R.astype(np.float32)
-            xyz_euler_angles = np.array(
-                [0.0, # np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]),
-                 0.0, # np.arctan2(-rotation_matrix[2,0], np.sqrt(rotation_matrix[2,1]**2 + rotation_matrix[2,2]**2)),
-                 np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])], dtype=np.float32)
-        else:
-            try: bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
-            except: continue
+
+        # get an axis-aligned bounding box
+        try:
+            bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
             xyz_center = bbox.get_center().astype(np.float32)
             xyz_extent = (bbox.get_max_bound() - bbox.get_min_bound()).astype(np.float32)
             xyz_euler_angles = np.array([0, 0, 0], dtype=np.float32)
-        
-        # get base length and height of the bounding box
+        except: continue
+
+        # get bbox params
         base_length = xyz_extent[0] if xyz_extent[0] > xyz_extent[1] else xyz_extent[1]
         height = xyz_extent[2]
 
-        # check if the cluster belongs to any class
+        # classify the object based on size constraints
         selected_obj_class = None
         for obj_class, size_constraint in params['size_constraints'].items():
             base_length_range = size_constraint['base_length']
@@ -488,22 +476,36 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
                 selected_obj_class = obj_class
                 break
         
-        # if the cluster does not belong to any class, skip it, otherwise add it to the label list
-        if selected_obj_class == None:
-            logger.log(f'[algo->lidar.py->Cluster2Object]: class could not be determined for cluster with base_length: {base_length} and height: {height}, skipping ...', Logger.DEBUG)
-            continue
+        # if can't classify, skip the cluster
+        if selected_obj_class == None: continue
+
+        # get color of the cluster
+        if selected_obj_class in params['class_colors']:
+            rgb_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
         else:
-            if selected_obj_class in params['class_colors']:
-                rgb_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
-            else:
-                logger.log(f'[algo->lidar.py->Cluster2Object]: class color not found for class: {selected_obj_class}, using default color', Logger.WARNING)
-                rgb_color = np.array([0, 0, 0], dtype=np.float32)
+            logger.log(f'[algo->lidar.py->Cluster2Object]: class color not found for class: {selected_obj_class}, using default color', Logger.WARNING)
+            rgb_color = np.array([0, 0, 0], dtype=np.float32)
+
+        # generate label
+        label = dict()
+        label['class'] = selected_obj_class
+
+        # get orientation of the object
+        if selected_obj_class in params['classes_require_orientation']:
+            try:
+                bbox_o = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(cluster))
+                xyz_center = bbox_o.get_center().astype(np.float32)
+                xyz_extent = bbox_o.extent.astype(np.float32)
+                rotation_matrix = bbox_o.R.astype(np.float32)
+                xyz_euler_angles = np.array(
+                    [0.0, # np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]),
+                    0.0, # np.arctan2(-rotation_matrix[2,0], np.sqrt(rotation_matrix[2,1]**2 + rotation_matrix[2,2]**2)),
+                    np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])], dtype=np.float32)
+            except: pass
             
-            label = dict()
-            label['class'] = selected_obj_class
-            label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
-            
-            data_dict['current_label_list'].append(label)
+        # complete label dict and add to label list
+        label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
+        data_dict['current_label_list'].append(label)
 
 def NNCluster2Object(data_dict: dict, cfg_dict: dict):
     """
