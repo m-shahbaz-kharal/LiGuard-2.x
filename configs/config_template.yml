@@ -194,6 +194,7 @@ proc: # liguard processing configurations
             enabled: False # set True to generate past trajectory
             priority: 2 # priority of process - lower is higher
             max_match_distance: 4.0 # maximum euclidean distance for matching last and current bbox_3d
+            history_size: 10 # number of past frames to consider
         GenerateCubicSplineFutureTrajectory: # generate future trajectory using cubic spline interpolation
             enabled: False # set True to generate future trajectory
             priority: 3 # priority of process - lower is higher

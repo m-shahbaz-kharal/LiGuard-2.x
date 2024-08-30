@@ -162,7 +162,7 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     # algo name and dict keys
     algo_name = 'GenerateKDTreePastTrajectory'
     processed_frames_key = f'{algo_name}_processed_frames'
-    last_bbox_3d_labels_key = f'{algo_name}_last_bbox_3d_labels'
+    bbox_history_window_key = f'{algo_name}_last_bbox_3d_labels'
 
     # get params
     params = cfg_dict['proc']['post'][algo_name]
@@ -171,60 +171,73 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     if processed_frames_key in data_dict and data_dict['current_frame_index'] in data_dict[processed_frames_key]:
         logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
         return
-
-    # ---------------------- KDTree Tracking ---------------------- #
+    
     current_bbox_3d_labels = []
     for i, label_dict in enumerate(data_dict['current_label_list']):
         if 'bbox_3d' not in label_dict: continue
         bbox_3d_dict = label_dict['bbox_3d']
         current_bbox_3d_labels.append([i, bbox_3d_dict])
-
-    if last_bbox_3d_labels_key not in data_dict:
-        data_dict[last_bbox_3d_labels_key] = current_bbox_3d_labels
-        return
-    last_bbox_3d_labels = data_dict[last_bbox_3d_labels_key]
     
+    # if no bbox_3d found in current frame, skip
     if len(current_bbox_3d_labels) == 0:
-        logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: No bbox_3d found in current frame, skipping ...', Logger.WARNING)
+        logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: No bbox_3d found in current frame, skipping ...', Logger.DEBUG)
+        return
+    
+    # create history window if it does not exist
+    if bbox_history_window_key not in data_dict:
+        data_dict[bbox_history_window_key] = [current_bbox_3d_labels]
         return
 
     # Create a KDTree for points_list
-    last_bbox_3d_xyz_center = np.array([bbox_3d_dict['xyz_center'] for _, bbox_3d_dict in last_bbox_3d_labels])
+    all_history_bbox_3d_xyz_centers = []
+    for bbox_3d_labels in data_dict[bbox_history_window_key]:
+        xyz_centers = np.array([bbox_3d_dict['xyz_center'] for _, bbox_3d_dict in bbox_3d_labels])
+        all_history_bbox_3d_xyz_centers.append(xyz_centers)
     current_bbox_3d_xyz_center = np.array([bbox_3d_dict['xyz_center'] for _, bbox_3d_dict in current_bbox_3d_labels])
     
+    # ---------------------- KDTree Tracking ---------------------- #
     kd_tree = KDTree(current_bbox_3d_xyz_center)
-    cost_matrix = np.zeros((len(last_bbox_3d_xyz_center), len(current_bbox_3d_xyz_center)))
+    already_matched = []
 
-    for i, point in enumerate(last_bbox_3d_xyz_center):
-        distances, indices = kd_tree.query(point, k=len(current_bbox_3d_xyz_center))
-        cost_matrix[i, indices] = distances
+    for history_idx, xyz_centers in enumerate(all_history_bbox_3d_xyz_centers):
+        cost_matrix = np.zeros((len(xyz_centers), len(current_bbox_3d_xyz_center)))
 
-    # Use the Hungarian algorithm (linear_sum_assignment) to find the optimal matching
-    row_indices, col_indices = linear_sum_assignment(cost_matrix)
+        for i, point in enumerate(xyz_centers):
+            distances, indices = kd_tree.query(point, k=len(current_bbox_3d_xyz_center))
+            cost_matrix[i, indices] = distances
 
-    # Output the matching result
-    matches_kd_tree = list(zip(row_indices, col_indices))
+        # Use the Hungarian algorithm (linear_sum_assignment) to find the optimal matching
+        row_indices, col_indices = linear_sum_assignment(cost_matrix)
 
-    for i, j in matches_kd_tree:
-        # check if the distance is within the threshold
-        if cost_matrix[i, j] > params['max_match_distance']: continue
+        # Output the matching result
+        matches_kd_tree = list(zip(row_indices, col_indices))
 
-        # get the bbox_3d dict
-        last_bbox_3d = last_bbox_3d_labels[i][1]
-        current_bbox_3d = current_bbox_3d_labels[j][1]
+        for i, j in matches_kd_tree:
+            # check if the current bbox is already matched
+            if j in already_matched: continue
+            
+            # check if the distance is within the threshold
+            if cost_matrix[i, j] > params['max_match_distance']: continue
 
-        # store the past trajectory
-        if 'past_trajectory' in last_bbox_3d:
-            current_bbox_3d['past_trajectory'] = np.append(last_bbox_3d['past_trajectory'], [last_bbox_3d['xyz_center']], axis=0)
-        else:
-            current_bbox_3d['past_trajectory'] = np.array([last_bbox_3d['xyz_center']], dtype=np.float32)
+            # get the bbox_3d dict
+            last_bbox_3d = data_dict[bbox_history_window_key][history_idx][i][1]
+            current_bbox_3d = current_bbox_3d_labels[j][1]
 
-        # add text info
-        if 'text_info' not in data_dict['current_label_list'][current_bbox_3d_labels[j][0]]: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] = f'traj-: {len(current_bbox_3d["past_trajectory"])}'
-        else: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] += f' | traj-: {len(current_bbox_3d["past_trajectory"])}'
+            # store the past trajectory
+            if 'past_trajectory' in last_bbox_3d:
+                current_bbox_3d['past_trajectory'] = np.append(last_bbox_3d['past_trajectory'], [last_bbox_3d['xyz_center']], axis=0)
+            else:
+                current_bbox_3d['past_trajectory'] = np.array([last_bbox_3d['xyz_center']], dtype=np.float32)
 
-        # update the bbox_3d dict
-        data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['bbox_3d'] = current_bbox_3d
+            # add text info
+            if 'text_info' not in data_dict['current_label_list'][current_bbox_3d_labels[j][0]]: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] = f'traj-: {len(current_bbox_3d["past_trajectory"])}'
+            else: data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['text_info'] += f' | traj-: {len(current_bbox_3d["past_trajectory"])}'
+
+            # update the bbox_3d dict
+            data_dict['current_label_list'][current_bbox_3d_labels[j][0]]['bbox_3d'] = current_bbox_3d
+
+            # mark the current bbox as matched
+            already_matched.append(j)
     # ---------------------- KDTree Tracking ---------------------- #
 
     # keep record of processed frames
@@ -232,7 +245,8 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     else: data_dict[processed_frames_key].append(data_dict['current_frame_index'])
     
     # update the last_bbox_3d_labels
-    data_dict[last_bbox_3d_labels_key] = current_bbox_3d_labels
+    data_dict[bbox_history_window_key].insert(0, current_bbox_3d_labels)
+    data_dict[bbox_history_window_key] = data_dict[bbox_history_window_key][:params['history_size']]
 
 def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
     """
