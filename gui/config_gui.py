@@ -186,6 +186,7 @@ class BaseConfiguration:
             for key in item.keys():
                 # Create a global key by joining the parent keys and the current key
                 global_key = ".".join(parent_keys + [key])
+                if global_key not in G: continue # Skip if the key is not in the GUI dictionary
                 # If the value of the current key is a dictionary, recursively call the function
                 if type(item[key]) == dict:
                     self.__update_cfg_from_gui__(item[key], parent_keys + [key])
