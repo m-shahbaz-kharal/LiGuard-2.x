@@ -40,12 +40,13 @@ class FileIO:
         self.pcd_dir = os.path.join(cfg['data']['path'], cfg['data']['lidar_subdir'])
         self.pcd_type = cfg['data']['lidar']['pcd_type']
         self.pcd_start_idx = cfg['data']['start']['lidar']
+        self.global_zero = cfg['data']['start']['global_zero']
         self.pcd_end_idx = self.pcd_start_idx + cfg['data']['count']
         files = glob.glob(os.path.join(self.pcd_dir, '*' + self.pcd_type))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numerical part
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
-        self.files_basenames = file_basenames[self.pcd_start_idx:self.pcd_end_idx]
+        self.files_basenames = file_basenames[self.pcd_start_idx:self.pcd_end_idx][self.global_zero:]
         
         # Check if the file type is supported
         if self.pcd_type not in supported_file_types:

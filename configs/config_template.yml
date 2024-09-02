@@ -11,6 +11,7 @@ data: # dataset configurations
         camera: 0 # start frame index
         label: 0 # start frame index
         calib: 0 # start frame index
+        global_zero: 0 # first frame index in 0 to count-1 range
     count: 10 # end frame number
 
     lidar:
@@ -234,6 +235,7 @@ visualization: # visualization parameters
         draw_trajectory: True # visualize trajectory
         save_images: False # save images
         save_path: 'pcd_visuals' # path to save images
+        open3d_view_status_string: '' # string used in Open3D's set_view_status function
     camera:
         draw_bbox_2d: True # visualize 2D bounding boxes
         draw_bbox_3d: True # visualize 3D bounding boxes

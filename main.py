@@ -354,7 +354,7 @@ class LiGuard:
             # if the frame has changed, update the data dictionary with the new frame data
             if frame_changed:
                 profiler.add_target('Total Time / Step')
-                self.logger.set_status_frame_idx(self.data_dict['current_frame_index'])
+                self.logger.set_status_frame_idx(self.data_dict['current_frame_index'] + self.config.cfg['data']['start']['global_zero'])
                 self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
                 
                 if self.pcd_io:

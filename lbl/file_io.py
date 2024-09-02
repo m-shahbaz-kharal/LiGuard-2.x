@@ -42,6 +42,7 @@ class FileIO:
         self.lbl_dir = os.path.join(cfg['data']['path'], cfg['data']['label_subdir'])
         self.lbl_type = cfg['data']['label']['lbl_type']
         self.lbl_start_idx = cfg['data']['start']['label']
+        self.global_zero = cfg['data']['start']['global_zero']
         self.lbl_end_idx = self.lbl_start_idx + cfg['data']['count']
         
         # Check if the label type is supported
@@ -55,7 +56,7 @@ class FileIO:
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numbers in the filenames
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
-        self.files_basenames = file_basenames[self.lbl_start_idx:self.lbl_end_idx]
+        self.files_basenames = file_basenames[self.lbl_start_idx:self.lbl_end_idx][self.global_zero:]
         
         self.data_lock = threading.Lock()
         self.data = []
