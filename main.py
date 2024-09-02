@@ -32,7 +32,7 @@ class LiGuard:
         self.logger = Logger(self.app)
         # set the callbacks for the configuration GUI
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
-        config_call_backs['apply_config'] = [self.reset, self.start]
+        config_call_backs['apply_config'] = [lambda cfg: self.logger.set_status_state('Applying Configuration ...'), self.reset, lambda cfg: self.logger.set_status_state('Ready'), self.start]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         
@@ -354,6 +354,7 @@ class LiGuard:
             # if the frame has changed, update the data dictionary with the new frame data
             if frame_changed:
                 profiler.add_target('Total Time / Step')
+                self.logger.set_status_frame_idx(self.data_dict['current_frame_index'])
                 self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
                 
                 if self.pcd_io:
