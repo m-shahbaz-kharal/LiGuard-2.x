@@ -277,9 +277,23 @@ class PointCloudVisualizer:
         """
         file_path = os.path.join(self.lidar_save_path, f'{frame_idx:08d}.png')
         self.viz.capture_screen_image(file_path)
-        
-    def quit(self):
+
+    def set_view_status(self):
         """
+        Updates the view status (parameters of looking camera) of the visualizer to the configuration.
+        """
+        self.cfg['visualization']['lidar']['open3d_view_status_string'] = self.viz.get_view_status()
+    
+    def reset_view_status(self):
+        """
+        Resets the view status (parameters of looking camera) of the visualizer from the configuration.
+        """
+        if 'open3d_view_status_string' in self.cfg['visualization']['lidar']:
+            try: self.viz.set_view_status(self.cfg['visualization']['lidar']['open3d_view_status_string'])
+            except: pass
+
+    def quit(self):
+        """ 
         Quits the visualizer.
         """
         self.viz.destroy_window()

@@ -86,10 +86,11 @@ class LiGuard:
                 elif event.name == 'delete':
                     self.is_playing = False
                     self.data_dict['current_frame_index'] = 0
+                    if self.pcd_visualizer: self.pcd_visualizer.reset_view_status()
                 elif event.name == '[':
                     self.is_playing = False
                     self.config.show_input_dialog('Enter the frame index:', f'0-{self.data_dict["maximum_frame_index"]}', 'jump_to_frame')
-
+                    
     def reset(self, cfg):
         """
         Resets the LiGuard with the given configuration.
@@ -160,10 +161,13 @@ class LiGuard:
         
         # manage pcd visualization
         if self.pcd_io:
-            if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
+            if self.pcd_visualizer != None:
+                self.pcd_visualizer.reset(cfg)
+                self.pcd_visualizer.set_view_status()
             else:
                 try:
                     self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
+                    self.pcd_visualizer.reset_view_status()
                     self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer created', Logger.DEBUG)
                 except Exception as e:
                     self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer creation failed:\n{e}', Logger.CRITICAL)
@@ -456,11 +460,13 @@ class LiGuard:
 
                 # update the visualizers
                 if self.pcd_io:
+                    # update and redraw
                     profiler.add_target('pcd_visualizer_update')
                     if cfg['visualization']['enabled']:
                         self.pcd_visualizer.update(self.data_dict)
                     self.pcd_visualizer.redraw()
                     profiler.end_target('pcd_visualizer_update')
+                    # save image of the view if enabled
                     if cfg['visualization']['lidar']['save_images']:
                         profiler.add_target('pcd_visualizer_save_current_view')
                         self.pcd_visualizer.save_current_view(self.data_dict['current_frame_index'])
