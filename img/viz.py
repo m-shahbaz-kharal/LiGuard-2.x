@@ -37,7 +37,7 @@ class ImageVisualizer:
         # init
         # create necessary paths
         if cfg['visualization']['camera']['save_images']:
-            self.image_save_path = cfg['visualization']['camera']['save_path']
+            self.image_save_path = os.path.join(cfg['data']['outputs_dir'], 'img_viz')
             os.makedirs(self.image_save_path, exist_ok=True)
         # reset
         self.reset(cfg, True)

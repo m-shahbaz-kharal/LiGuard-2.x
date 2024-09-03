@@ -26,6 +26,7 @@ data: # dataset configurations
     label:
         enabled: False # set True to read labels from disk
         lbl_type: 'kitti' # can be kitti, openpcdet, or sustechpoints
+    outputs_dir: 'outputs' # directory to save outputs
 
 sensors: # lidar and camera configurations
     lidar: # lidar sensor configurations, at this point only Ouster lidars are supported, support for other lidars is coming soon
@@ -234,8 +235,6 @@ visualization: # visualization parameters
         draw_bbox_3d: True # visualize bounding boxes
         draw_trajectory: True # visualize trajectory
         save_images: False # save images
-        save_path: 'pcd_visuals' # path to save images
-        open3d_view_status_string: '' # string used in Open3D's set_view_status function
     camera:
         draw_bbox_2d: True # visualize 2D bounding boxes
         draw_bbox_3d: True # visualize 3D bounding boxes
@@ -245,7 +244,6 @@ visualization: # visualization parameters
         bbox_line_width: 2 # bbox line width
         trajectory_line_width: 2 # trajectory line width
         save_images: False # save images
-        save_path: 'img_visuals' # path to save images
 
 logging: # parameters for logger
     level: 1 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL

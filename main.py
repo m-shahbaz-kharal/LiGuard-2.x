@@ -33,6 +33,8 @@ class LiGuard:
         # set the callbacks for the configuration GUI
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
         config_call_backs['apply_config'] = [lambda cfg: self.logger.set_status_state('Applying Configuration ...'), self.reset, lambda cfg: self.logger.set_status_state('Ready'), self.start]
+        config_call_backs['save_config'] = [lambda cfg: self.pcd_visualizer.save_view_status()]
+        config_call_backs['save_as_config'] = [lambda cfg: self.pcd_visualizer.save_view_status()]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         
@@ -86,7 +88,7 @@ class LiGuard:
                 elif event.name == 'delete':
                     self.is_playing = False
                     self.data_dict['current_frame_index'] = 0
-                    if self.pcd_visualizer: self.pcd_visualizer.reset_view_status()
+                    if self.pcd_visualizer: self.pcd_visualizer.load_view_status()
                 elif event.name == '[':
                     self.is_playing = False
                     self.config.show_input_dialog('Enter the frame index:', f'0-{self.data_dict["maximum_frame_index"]}', 'jump_to_frame')
@@ -161,13 +163,11 @@ class LiGuard:
         
         # manage pcd visualization
         if self.pcd_io:
-            if self.pcd_visualizer != None:
-                self.pcd_visualizer.reset(cfg)
-                self.pcd_visualizer.set_view_status()
+            if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
             else:
                 try:
                     self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
-                    self.pcd_visualizer.reset_view_status()
+                    self.pcd_visualizer.load_view_status()
                     self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer created', Logger.DEBUG)
                 except Exception as e:
                     self.logger.log(f'[main.py->LiGuard->reset]: PointCloudVisualizer creation failed:\n{e}', Logger.CRITICAL)
