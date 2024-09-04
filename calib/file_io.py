@@ -27,7 +27,7 @@ class FileIO:
         self.clb_dir = os.path.join(cfg['data']['path'], cfg['data']['calib_subdir'])
         self.clb_type = cfg['data']['calib']['clb_type']
         self.clb_start_idx = cfg['data']['start']['calib']
-        self.global_zero - cfg['data']['start']['global_zero']
+        self.global_zero = cfg['data']['start']['global_zero']
         self.clb_end_idx = self.clb_start_idx + cfg['data']['count']
         
         # Check if the calibration type is supported

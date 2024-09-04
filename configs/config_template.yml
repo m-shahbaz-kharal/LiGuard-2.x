@@ -191,7 +191,7 @@ proc: # liguard processing configurations
             min_points: 6 # minimum number of points to consider a label valid
     post:
         Fuse2DPredictedBBoxes: # use KDTree matching to fuse 2D bounding boxes information
-            enabled: true # set True to enable
+            enabled: False # set True to enable
             priority: 1 # priority of process - lower is higher
             ModalityA: # first modality
                 algo_src: Cluster2Object_2d # bbox_2d 'added_by' field value
