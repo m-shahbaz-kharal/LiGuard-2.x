@@ -466,6 +466,13 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         # get bbox params
         base_length = xyz_extent[0] if xyz_extent[0] > xyz_extent[1] else xyz_extent[1]
         height = xyz_extent[2]
+        foot = xyz_center[2] - height / 2.0
+
+        # foot can't be too heigh
+        if foot > params['ground_level'] + params['max_foot_level']: continue
+
+        # very small height objects are noise
+        if height < params['min_height']: continue
 
         # classify the object based on size constraints
         selected_obj_class = None
