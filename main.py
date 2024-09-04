@@ -33,8 +33,8 @@ class LiGuard:
         # set the callbacks for the configuration GUI
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
         config_call_backs['apply_config'] = [lambda cfg: self.logger.set_status_state('Applying Configuration ...'), self.reset, lambda cfg: self.logger.set_status_state('Ready'), self.start]
-        config_call_backs['save_config'] = [lambda cfg: self.pcd_visualizer.save_view_status()]
-        config_call_backs['save_as_config'] = [lambda cfg: self.pcd_visualizer.save_view_status()]
+        config_call_backs['save_config'] = [lambda cfg: self.pcd_visualizer.save_view_status() if hasattr(self, 'pcd_visualizer') else None]
+        config_call_backs['save_as_config'] = [lambda cfg: self.pcd_visualizer.save_view_status() if hasattr(self, 'pcd_visualizer') else None]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         
@@ -130,6 +130,9 @@ class LiGuard:
         if need_level_change:
             self.last_logging_level = cfg['logging']['level']
             logger.change_level(cfg['logging']['level'])
+
+        # Make sure the required directories exist
+        if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(cfg['data']['outputs_dir'], exist_ok=True)
 
         # unlock the keyboard keys right, left, and space
         keyboard.unhook_all()
