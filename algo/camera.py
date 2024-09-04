@@ -128,13 +128,13 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict):
         score = score[idx]
         obj_class = obj_class[idx]
 
-        for topleft_botright, cls in zip(xywh, obj_class):
+        for topleft_botright, scr, cls in zip(xywh, score, obj_class):
             topleft_botright = topleft_botright.reshape(-1)
             obj_class_str = data_dict[model_key].names[cls.item()].capitalize()
             xy_center = topleft_botright[:2]
             xy_extent = topleft_botright[2:]
             rgb_color = np.array(params['class_colors'][obj_class_str], dtype=np.float32)
-            bbox_2d = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
+            bbox_2d = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name, 'confidence': scr.item()}
             if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
             label = {'class': obj_class_str, 'bbox_2d':bbox_2d}
             data_dict['current_label_list'].append(label)

@@ -28,7 +28,7 @@ class PointCloudVisualizer:
         self.app = app
         # create visualizer
         self.viz = o3d.visualization.Visualizer()
-        self.viz.create_window("PointCloud Feed", width=1000, height=1080, left=480, top=30)
+        self.win_created = self.viz.create_window("PointCloud Feed", width=1000, height=1080, left=480, top=30)
         # init
         # create necessary paths
         if cfg['visualization']['lidar']['save_images']:
@@ -282,8 +282,9 @@ class PointCloudVisualizer:
         """
         Saves the view status (parameters of looking camera) of the visualizer.
         """
-        save_path = os.path.join(self.cfg['data']['outputs_dir'], 'view_status.txt')
-        with open(save_path, 'w') as file: file.write(str(self.viz.get_view_status()))
+        if self.win_created:
+            save_path = os.path.join(self.cfg['data']['outputs_dir'], 'view_status.txt')
+            with open(save_path, 'w') as file: file.write(str(self.viz.get_view_status()))
     
     def load_view_status(self):
         """

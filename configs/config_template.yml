@@ -190,11 +190,20 @@ proc: # liguard processing configurations
             priority: 2 # priority of process - lower is higher
             min_points: 6 # minimum number of points to consider a label valid
     post:
-        FusePredictedBBoxesFromSourceToTarget: # enhance 3D bounding boxes using 2D bounding boxes
-            enabled: False # set True to enhance 3D bounding boxes
+        Fuse2DPredictedBBoxes: # use KDTree matching to fuse 2D bounding boxes information
+            enabled: true # set True to enable
             priority: 1 # priority of process - lower is higher
-            bbox_target_algo: 'Cluster2Object_2d' # algorithm that generated 3D bounding boxes
-            bbox_source_algo: 'UltralyticsYOLOv5' # algorithm that generated 2D bounding boxes
+            ModalityA: # first modality
+                algo_src: Cluster2Object_2d # bbox_2d 'added_by' field value
+                img_extras: # extra visualization options
+                    show_fusion_dot: True # shows a green dot if fusion is successful
+                    show_text_info: False # shows text info on the bbox
+            ModalityB: # second modality
+                algo_src: UltralyticsYOLOv5 # bbox_2d 'added_by' field value
+                img_extras: # extra visualization options
+                    show_fusion_dot: False # shows a green dot if fusion is successful
+                    show_text_info: True # shows text info on the bbox
+            max_match_distance: 150.0 # maximum euclidean distance between pixel indices (x,y) of two bbox_2d
         GenerateKDTreePastTrajectory: # generate past trajectory using KDTree matching
             enabled: False # set True to generate past trajectory
             priority: 2 # priority of process - lower is higher

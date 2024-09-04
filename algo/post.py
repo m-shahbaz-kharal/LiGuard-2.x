@@ -2,18 +2,18 @@
 
 from gui.logger_gui import Logger
 
-def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
+def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict):
     """
-    Fuse source bbox information to target bbox information.
+    Fuse bbox_2d information among ModalityA and ModalityB.
 
     Requirements:
-    - bbox_3d in current_label_list, predicted by an arbitrary <bbox_target_algo>.
-    - Enable proc->lidar->gen_2d_bbox to convert bbox_3d to bbox_2d.
-    - bbox_2d in current_2d_bbox_list, predicted by an arbitrary <bbox_source_algo>.
+    - bbox_2d in current_label_list, predicted by an arbitrary ModalityA's <algo_src>.
+    - bbox_2d in current_label_list, predicted by an arbitrary ModalityB's <algo_src>.
 
     Operation:
-    - It uses KD-Tree to find the nearest bbox_2d.
-    - It assigns the class of bbox_2d to bbox_3d.
+    - It uses KD-Tree to find the nearest bbox_2d from ModalityA's <algo_src> and ModalityB's <algo_src>.
+    - It assigns the class based on the highest confidence score.
+    - It assigns the depth based on the highest confidence score.
     - TODO: figure out more methods to enhance bbox fusion.
 
     Args:
@@ -25,107 +25,135 @@ def FusePredictedBBoxesFromSourceToTarget(data_dict: dict, cfg_dict: dict):
     """
     # Get logger object from data_dict
     if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    else: print('[algo->post.py->Fuse2DPredictedBBoxes]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
     # Check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('[algo->post.py->Fuse2DPredictedBBoxes]: current_label_list not found in data_dict', Logger.ERROR)
         return
     if 'current_calib_data' not in data_dict:
-        logger.log('[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: current_calib_data not found in data_dict. Ignoring bbox_3d <--> bbox_2d fusion.', Logger.WARNING)
+        logger.log('[algo->post.py->Fuse2DPredictedBBoxes]: current_calib_data not found in data_dict', Logger.ERROR)
     
     # imports
     import numpy as np
     from scipy.spatial import KDTree
-    from scipy.optimize import linear_sum_assignment
 
     # algo name and dict keys
-    algo_name = 'FusePredictedBBoxesFromSourceToTarget'
-    tr_pcd_to_img_key = f'{algo_name}_tr_pcd_to_img'
-    inv_tr_pcd_to_img_key = f'{algo_name}_inv_tr_pcd_to_img'
+    algo_name = 'Fuse2DPredictedBBoxes'
 
     # get params
     params = cfg_dict['proc']['post'][algo_name]
 
     # ---------------------- KDTree Matching ---------------------- #
-    # Extract 2D centers of bbox_2d from current_2d_bbox_list
-    target_points_list, source_points_list = [], []
-    target_idx, source_idx = [], []
+    # Extract info from bbox_2d from modality a and b
+    mod_a_list, mod_b_list = [], []
+    mod_a_idx, mod_b_idx = [], []
     for i, label_dict in enumerate(data_dict['current_label_list']):
         if 'bbox_2d' not in label_dict: continue
+        # get bbox_2d dict
         bbox_2d_dict = label_dict['bbox_2d']
-        if bbox_2d_dict['added_by'] == params['bbox_target_algo']:
-            target_points_list.append(bbox_2d_dict['xy_center'])
-            target_idx.append(i)
-            if 'extras' not in label_dict: label_dict['extras'] = {}
-            if 'img_visualizer' not in label_dict['extras']: label_dict['extras']['img_visualizer'] = {}
-            if algo_name not in label_dict['extras']['img_visualizer']: label_dict['extras']['img_visualizer'][algo_name] = {}
-            label_dict['extras']['img_visualizer'][algo_name]['fusion_dot'] = {'cv2_attr': 'circle', 'params': {'center': tuple(map(int, bbox_2d_dict['xy_center'])), 'radius': 5, 'color': [255, 0, 0], 'thickness': -1}}
-        elif bbox_2d_dict['added_by'] == params['bbox_source_algo']:
-            source_points_list.append(bbox_2d_dict['xy_center'])
-            source_idx.append(i)
-        else:
-            logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: Unknown bbox source: {bbox_2d_dict["added_by"]}', Logger.WARNING)
-            continue
+        
+        # add xy_center to mod_a_list or mod_b_list
+        if bbox_2d_dict['added_by'] == params['ModalityA']['algo_src']:
+            mod_a_list.append(bbox_2d_dict['xy_center'])
+            mod_a_idx.append(i)
+            if params['ModalityA']['img_extras']['show_fusion_dot']:
+                label_dict.setdefault('extras', {}).setdefault('img_visualizer', {}).setdefault(algo_name, {}).setdefault('fusion_dot', {'cv2_attr': 'circle', 'params': {'center': tuple(map(int, bbox_2d_dict['xy_center'])), 'radius': 5, 'color': [255, 0, 0], 'thickness': -1}})
+        elif bbox_2d_dict['added_by'] == params['ModalityB']['algo_src']:
+            mod_b_list.append(bbox_2d_dict['xy_center'])
+            mod_b_idx.append(i)
+            if params['ModalityB']['img_extras']['show_fusion_dot']:
+                label_dict.setdefault('extras', {}).setdefault('img_visualizer', {}).setdefault(algo_name, {}).setdefault('fusion_dot', {'cv2_attr': 'circle', 'params': {'center': tuple(map(int, bbox_2d_dict['xy_center'])), 'radius': 5, 'color': [255, 0, 0], 'thickness': -1}})
+                
 
-    if len(target_points_list) == 0:
-        logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No target bbox_2d found', Logger.DEBUG)
+    if len(mod_a_list) == 0:
+        logger.log(f"[algo->post.py->Fuse2DPredictedBBoxes]: No bbox_2d found from ModalityA's <algo_src>", Logger.DEBUG)
         return
-    if len(source_points_list) == 0:
-        logger.log(f'[algo->post.py->FusePredictedBBoxesFromSourceToTarget]: No source bbox_2d found', Logger.DEBUG)
+    if len(mod_b_list) == 0:
+        logger.log(f"[algo->post.py->Fuse2DPredictedBBoxes]: No bbox_2d found from ModalityB's <algo_src>", Logger.DEBUG)
         return
 
-    # Create a KDTree for points_list_2
-    kd_tree = KDTree(source_points_list)
+    # Create a KDTree for xy_center points of bbox_2d from ModalityA <algo_src>
+    kd_tree = KDTree(mod_a_list)
 
     # Calculate the cost matrix based on the smallest distances
-    cost_matrix = np.zeros((len(target_points_list), len(source_points_list)))
+    cost_matrix = np.zeros((len(mod_a_list), len(mod_b_list)))
 
-    for i, point in enumerate(target_points_list):
-        distances, indices = kd_tree.query(point, k=len(source_points_list))
-        cost_matrix[i, indices] = distances
+    for i, point in enumerate(mod_b_list):
+        distances, indices = kd_tree.query(point, k=len(mod_a_list))
+        cost_matrix[indices, i] = distances
 
-    # Use the Hungarian algorithm (linear_sum_assignment) to find the optimal matching
-    row_indices, col_indices = linear_sum_assignment(cost_matrix)
+    # find the optimal matching
+    row_indices = np.arange(len(mod_a_list))
+    col_indices = cost_matrix.argmin(axis=1)
 
     # Output the matching result
     matches_kd_tree = list(zip(row_indices, col_indices))
+    already_matched = []
     # ---------------------- KDTree Matching ---------------------- #
-
-    if tr_pcd_to_img_key not in data_dict and 'current_calib_data' in data_dict:
-        Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
-        R0_rect = data_dict['current_calib_data']['R0_rect']
-        P2 = data_dict['current_calib_data']['P2']
-        P2_4x4 = np.eye(4)
-        P2_4x4[:3, :] = P2
-        data_dict[tr_pcd_to_img_key] = P2_4x4 @ R0_rect @ Tr_velo_to_cam
-        data_dict[inv_tr_pcd_to_img_key] = np.linalg.inv(data_dict[tr_pcd_to_img_key])
-
     for i, j in matches_kd_tree:
-        src_label = data_dict['current_label_list'][source_idx[j]]
-        trg_label = data_dict['current_label_list'][target_idx[i]]
-
-        # check if the distance is within the threshold
-        if cost_matrix[i, j] > src_label['bbox_2d']['xy_extent'].max() / 2: continue
-
-        data_dict['current_label_list'][target_idx[i]]['extras']['img_visualizer'][algo_name]['fusion_dot']['params']['color'] = [0, 255, 0]
-
-        # classification fusion
-        trg_label['class'] = src_label['class']
-        trg_label['bbox_2d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
-        if 'bbox_3d' in trg_label:
-            # color fusion
-            trg_label['bbox_3d']['rgb_color'] = src_label['bbox_2d']['rgb_color']
+        # check if the current bbox is already matched and cost is within the threshold
+        if j in already_matched: continue
+        elif cost_matrix[i, j] > params['max_match_distance']: continue
         
-            # bbox_3d center and extent fusion
-            xy_center_delta = src_label['bbox_2d']['xy_center'] - trg_label['bbox_2d']['xy_center']
-            xyz1_center_delta = np.array([xy_center_delta[0], xy_center_delta[1], 0.0, 1.0])
-            xy_extent_delta = src_label['bbox_2d']['xy_extent'] - trg_label['bbox_2d']['xy_extent']
-            xyz1_extent_delta = np.array([xy_extent_delta[0], xy_extent_delta[1], 0.0, 1.0])
-            trg_label['bbox_3d']['xyz_center'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_center_delta)[1:3] # y, z
-            trg_label['bbox_3d']['xyz_extent'][1:3] += (data_dict[inv_tr_pcd_to_img_key] @ xyz1_extent_delta)[1:3] # y, z
-        if 'text_info' not in trg_label: trg_label['text_info'] = f'fused: {params["bbox_source_algo"]}'
-        else: trg_label['text_info'] += f' | fused: {params["bbox_source_algo"]}'
+        already_matched.append(j)
+
+        mod_a_label = data_dict['current_label_list'][mod_a_idx[i]]
+        mod_b_label = data_dict['current_label_list'][mod_b_idx[j]]
+
+        # make the fusion dot green
+        if params['ModalityA']['img_extras']['show_fusion_dot']:
+            mod_a_label['extras']['img_visualizer'][algo_name]['fusion_dot']['params']['color'] = [0, 255, 0]
+        if params['ModalityB']['img_extras']['show_fusion_dot']:
+            mod_b_label['extras']['img_visualizer'][algo_name]['fusion_dot']['params']['color'] = [0, 255, 0]
+
+        # placeholder for text_info
+        text_info = 'fused: Fuse2DPredictedBBoxes'
+
+        # check availability of confidence score
+        conf_in_mod_a = 'confidence' in mod_a_label['bbox_2d']
+        conf_in_mod_b = 'confidence' in mod_b_label['bbox_2d']
+        if conf_in_mod_a and conf_in_mod_b: confidence_exists = 'both'
+        elif conf_in_mod_a: confidence_exists = 'a'
+        elif conf_in_mod_b: confidence_exists = 'b'
+        else: confidence_exists = 'none'
+
+        # assign class based on the highest confidence score
+        # and assign color based on the highest confidence score
+        # and assign depth based on the highest confidence score
+        if confidence_exists == 'both':
+            if mod_a_label['bbox_2d']['confidence'] > mod_b_label['bbox_2d']['confidence']:
+                mod_b_label['class'] = mod_a_label['class']
+                mod_b_label['bbox_2d']['rgb_color'] = mod_a_label['bbox_2d']['rgb_color']
+                if 'depth' in mod_a_label['bbox_2d']: mod_b_label['bbox_2d']['depth'] = mod_a_label['bbox_2d']['depth']
+                text_info += f" | conf: {mod_a_label['bbox_2d']['confidence']:.2f}"
+                text_info += f" | dist: {mod_b_label['bbox_2d']['depth']:.2f} m"
+            else:
+                mod_a_label['class'] = mod_b_label['class']
+                mod_a_label['bbox_2d']['rgb_color'] = mod_b_label['bbox_2d']['rgb_color']
+                if 'depth' in mod_b_label['bbox_2d']: mod_a_label['bbox_2d']['depth'] = mod_b_label['bbox_2d']['depth']
+                text_info += f" | conf: {mod_b_label['bbox_2d']['confidence']:.2f}"
+                text_info += f" | dist: {mod_a_label['bbox_2d']['depth']:.2f} m"
+        elif confidence_exists == 'a':
+            mod_b_label['class'] = mod_a_label['class']
+            mod_b_label['bbox_2d']['rgb_color'] = mod_a_label['bbox_2d']['rgb_color']
+            if 'depth' in mod_a_label['bbox_2d']: mod_b_label['bbox_2d']['depth'] = mod_a_label['bbox_2d']['depth']
+            text_info += f" | conf: {mod_a_label['bbox_2d']['confidence']:.2f}"
+            text_info += f" | dist: {mod_b_label['bbox_2d']['depth']:.2f} m"
+        elif confidence_exists == 'b':
+            mod_a_label['class'] = mod_b_label['class']
+            mod_a_label['bbox_2d']['rgb_color'] = mod_b_label['bbox_2d']['rgb_color']
+            if 'depth' in mod_b_label['bbox_2d']: mod_a_label['bbox_2d']['depth'] = mod_b_label['bbox_2d']['depth']
+            text_info += f" | conf: {mod_b_label['bbox_2d']['confidence']:.2f}"
+            text_info += f" | dist: {mod_a_label['bbox_2d']['depth']:.2f} m"
+
+        if params['ModalityA']['img_extras']['show_text_info']:
+            if 'text_info' not in mod_a_label: mod_a_label['text_info'] = text_info
+            else: mod_a_label['text_info'] += f' | {text_info}'
+        
+        if params['ModalityB']['img_extras']['show_text_info']:
+            if 'text_info' not in mod_b_label: mod_b_label['text_info'] = text_info
+            else: mod_b_label['text_info'] += f' | {text_info}'
 
 def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     """
@@ -472,8 +500,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     current_label_path = data_dict['current_label_path']
     
     # Create output directories if they do not exist
-    output_path = os.path.join(cfg_dict['data']['path'], 'output', 'post', 'per_object_pcdet_dataset')
-    os.makedirs(output_path, exist_ok=True)
+    output_path = os.path.join(cfg_dict['data']['outputs_dir'], 'post', 'per_object_pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')
@@ -542,8 +569,7 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     current_label_path = data_dict['current_label_path']
     
     # Create output directories if they do not exist
-    output_path = os.path.join(cfg_dict['data']['path'], 'output', 'post', 'pcdet_dataset')
-    os.makedirs(output_path, exist_ok=True)
+    output_path = os.path.join(cfg_dict['data']['outputs_dir'], 'post', 'pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')

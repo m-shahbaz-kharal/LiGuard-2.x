@@ -788,8 +788,9 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
         xy_center = min_xy + (max_xy - min_xy) / 2.0
         xy_extent = max_xy - min_xy
         rgb_color = bbox_3d['rgb_color']
+        depth = np.linalg.norm(bbox_3d['xyz_center']).item()
         predicted = bbox_3d['predicted']
         added_by = bbox_3d['added_by'] + '_2d'
         
         # add 2D bounding box to the label dict
-        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'predicted': predicted, 'added_by': added_by, 'visualize': params['visualize']}
+        label_dict['bbox_2d'] = {'xy_center': xy_center, 'xy_extent': xy_extent, 'rgb_color': rgb_color, 'depth': depth, 'predicted': predicted, 'added_by': added_by, 'visualize': params['visualize']}
