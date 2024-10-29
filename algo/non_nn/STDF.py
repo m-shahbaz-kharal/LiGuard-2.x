@@ -72,6 +72,7 @@ def save_STDF_params(filter_params, filename):
 
 def load_STDF_params(filename):
     try:
+        filename = filename.split('.')[0] + '.pkl'
         with open(filename, 'rb') as f: return pickle.load(f)
     except:
         return None
