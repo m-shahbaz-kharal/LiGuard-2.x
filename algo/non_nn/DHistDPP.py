@@ -2,6 +2,7 @@ import os
 import pickle
 
 import numpy as np
+import time
 
 """
 Author: Muhammad Shahbaz (m.shahbaz.kharal@outlook.com)
@@ -9,8 +10,7 @@ Github: github.com/m-shahbaz-kharal
 
 Discrete Histograms of Distances-Per-Point (D_HistDPP)
 
-It is a background filter for roadside LIDAR "structured" point cloud data.
-This (that is the term structured) essentially means that the point cloud can be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix.
+It is a background filter for roadside LIDAR "structured" point cloud data. The term "structured", here, means that the point cloud can be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix.
 
 For example:
     - If a LiDAR has a 1024 horizontal and 64 vertical resolution,
@@ -69,43 +69,16 @@ def make_DHistDPP_filter(point_cloud: np.ndarray, # Nx4,
 
 def save_DHistDPP_params(filter_params, filename):
     if os.path.exists(filename):
-        if '.' in filename: filename = filename.split('.')[0]
-        if '_' in filename: possible_num = filename.split('_')[-1]
-        if possible_num.isdigit():
-            num = int(possible_num)
-            filename = filename.split('_')[:-1] + str(num+1).zfill(2)
-        else:
-            filename += '_01'
-        filename += '.pkl'
+        filename = filename.split('.')[0]
+        filename = filename + '_' + time.strftime("%Y%m%d-%H%M%S") + '.pkl'
     else:
-        if '.' in filename: filename = filename.split('.')[0]
-        if '_' in filename: possible_num = filename.split('_')[-1]
-        if possible_num.isdigit(): filename += '.pkl'
-        else: filename += '_01.pkl'
-    
+        filename = filename.split('.')[0]
+        filename = filename + '.pkl'
     with open(filename, 'wb') as f: pickle.dump(filter_params, f)
     return filename
 
 def load_DHistDPP_params(filename):
-    if '.' in filename: filename = filename.split('.')[0]
-    if '_' in filename: possible_num = filename.split('_')[-1]
-    if possible_num.isdigit():
-        filename = filename + '.pkl'
-        if os.path.exists(filename):
-            with open(filename, 'rb') as f: return pickle.load(f)
-        else: return None
-    elif os.path.exists(filename + '.pkl'):
-        with open(filename + '.pkl', 'rb') as f: return pickle.load(f)
-    else:
-        try:
-            parent_path = os.path.dirname(filename)
-            if len(parent_path) > 0: files = os.listdir(parent_path)
-            else: files = os.listdir()
-            files = [f for f in files if f.startswith(filename)]
-            if len(files) == 0: return None
-            files.sort()
-            filename = files[-1]
-            filename = os.path.join(parent_path, filename)
-            with open(filename, 'rb') as f: return pickle.load(f)
-        except: return None
-
+    try:
+        with open(filename, 'rb') as f: return pickle.load(f)
+    except:
+        return None

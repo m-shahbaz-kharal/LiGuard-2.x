@@ -203,6 +203,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
         # save filter
         filter_saved_path = save_DHistDPP_params(filter_params, params['filter_path'])
+        cfg_dict['proc']['lidar']['BGFilterDHistDPP']['filter_path'] = filter_saved_path
         logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter generated and saved in {filter_saved_path}.', Logger.INFO)
         data_dict['BGFilterDHistDPP_set'] = True
     else:
