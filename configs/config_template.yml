@@ -136,15 +136,6 @@ proc: # liguard processing configurations
                 Van: [1, 1, 0]
                 Truck: [1, 0, 1]
                 Bus: [0, 1, 1]
-        NNCluster2Object:
-            enabled: False
-            activate_on_key_set: 'current_point_cloud_numpy'
-            priority: 5
-            point_nn_bbox_est_checkpoint_path: 'checkpoints/point_nn_bbox_est.pth'
-            point_nn_bbox_est_num_points: 128
-            class_colors:
-                Car: [0,1,0]
-                Pedestrian: [1, 0, 0]
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
             priority: 6 # priority of process - lower is higher
