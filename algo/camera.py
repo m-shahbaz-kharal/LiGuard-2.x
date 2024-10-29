@@ -2,32 +2,34 @@
 
 import numpy as np
 from gui.logger_gui import Logger
+from algo.utils import AlgoType, make_key, get_algo_params
 
-def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
+algo_type = AlgoType.camera
+
+def project_point_cloud_points(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Projects the points from a point cloud onto an image.
 
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->camera.py->project_point_cloud_points]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'project_point_cloud_points'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # Check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->camera.py->project_point_cloud_points]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     
     if "current_image_numpy" not in data_dict:
-        logger.log('[alog->camera.py->project_point_cloud_points]: current_image_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_image_numpy not found in data_dict', Logger.ERROR)
         return
     
     if 'current_calib_data' not in data_dict:
-        logger.log('[algo->camera.pyproject_point_cloud_points]: current_calib_data not found in data_dict', Logger.ERROR)
+        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
         return
     
     # Extract required calibration data
@@ -75,19 +77,18 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict):
     # Update the image with the projected lidar points
     data_dict['current_image_numpy'][pixel_coords_valid[:, 1], pixel_coords_valid[:, 0]] = np.column_stack((pixel_depths_valid, np.zeros_like(pixel_depths_valid), np.zeros_like(pixel_depths_valid)))
 
-def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict):
+def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Runs the Ultralytics YOLOv5 object detection algorithm on the current image.
 
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->camera.py->UltralyticsYOLOv5]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'UltralyticsYOLOv5'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     if 'current_image_numpy' not in data_dict:
         logger.log('[algo->camera.py->UltralyticsYOLOv5]: current_image_numpy not found in data_dict', Logger.ERROR)
@@ -97,19 +98,16 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict):
     import torch
 
     # algo name and keys used in algo
-    algo_name = 'UltralyticsYOLOv5'
-    model_key = f'{algo_name}_model'
-    tgt_cls_key = f'{algo_name}_target_classes'
-    
-    # get params
-    params = cfg_dict['proc']['camera'][algo_name]
+    model_key = make_key(algo_name, 'model')
+    tgt_cls_key = make_key(algo_name, 'target_classes')
 
     # check if model is already loaded
     if model_key not in data_dict:
-        logger.log(f'[algo->camera.py->UltralyticsYOLOv5]: Loading model', Logger.INFO)
+        logger.log('Loading YOLOv5 model', Logger.INFO)
         data_dict[model_key] = torch.hub.load('ultralytics/yolov5', params['model'], pretrained=True, _verbose=False)
         vk_dict = {v.capitalize():k for (k,v) in data_dict[model_key].names.items()}
         data_dict[tgt_cls_key] = [vk_dict[key] for key in params['class_colors']]
+        logger.log(f'Loaded YOLOv5 model with target classes: {data_dict[tgt_cls_key]}', Logger.INFO)
     else:
         result = data_dict[model_key](data_dict['current_image_path']).xywh[0].detach().cpu().numpy()
         xywh = result[:, :4].astype(int)
@@ -138,8 +136,3 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict):
             if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
             label = {'class': obj_class_str, 'bbox_2d':bbox_2d}
             data_dict['current_label_list'].append(label)
-
-            
-
-
-    

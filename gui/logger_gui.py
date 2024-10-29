@@ -4,6 +4,8 @@ import os
 import time
 import yaml
 
+import inspect
+
 class Logger:
     # Logging levels
     DEBUG = 0
@@ -89,6 +91,8 @@ class Logger:
         Returns:
             None
         """
+        stack = inspect.stack()
+        message = f'[{stack[2].function}->{stack[1].function}]: {message}'
 
         # Write to log file
         txt = f'{time.strftime("%Y-%m-%d %H:%M:%S")} [{Logger.__level_string__[level]}] {message}\n'

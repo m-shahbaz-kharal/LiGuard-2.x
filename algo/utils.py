@@ -3,6 +3,49 @@ This file contains utility functions that are used by the algorithms in the pipe
 '''
 
 from gui.logger_gui import Logger
+from enum import Enum, auto
+
+class AlgoType(Enum):
+    """
+    An enumeration of the categories of algorithms.
+    """
+    pre = auto()
+    lidar = auto()
+    camera = auto()
+    calib = auto()
+    label = auto()
+    post = auto()
+
+def make_key(algo_name: str, key: str) -> str:
+    """
+    Creates a standard key for the data dictionary used in LiGuard.
+    
+    Args:
+        algo_name (str): The name of the algorithm.
+        key (str): The key to create.
+    
+    Returns:
+        str: The created key.
+    """
+    return f'{algo_name}_{key}'
+
+def get_algo_params(cfg_dict: dict, algo_type: AlgoType, algo_name: str, logger: Logger) -> dict:
+    """
+    Gets the configuration parameters for the specified algorithm.
+    
+    Args:
+        cfg_dict (dict): The dictionary containing the configuration data.
+        algo_type (AlgoType): The category of the algorithm.
+        algo_name (str): The name of the algorithm.
+        logger (Logger): The logger object for logging messages.
+    
+    Returns:
+        dict: The configuration parameters for the specified algorithm.
+    """
+    if algo_name not in cfg_dict['proc'][algo_type.name]:
+        logger.log(f'"{algo_name}" not found in cfg_dict["proc"]["{algo_type.name}"]', Logger.ERROR)
+        return {}
+    return cfg_dict['proc'][algo_type.name][algo_name]
 
 def gather_point_clouds(data_dict: dict, cfg_dict: dict, key: str, count: int, global_index_key: str = None):
     """

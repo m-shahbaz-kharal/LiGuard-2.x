@@ -1,10 +1,13 @@
-# contains more generic post-processing algorithms for the data
+# contains post-processing algorithms for the data
 
 from gui.logger_gui import Logger
+from algo.utils import AlgoType, make_key, get_algo_params
 
-def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict):
+algo_type = AlgoType.post
+
+def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Fuse bbox_2d information among ModalityA and ModalityB.
+    Fuses bbox_2d information among ModalityA and ModalityB.
 
     Requirements:
     - bbox_2d in current_label_list, predicted by an arbitrary ModalityA's <algo_src>.
@@ -14,35 +17,26 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict):
     - It uses KD-Tree to find the nearest bbox_2d from ModalityA's <algo_src> and ModalityB's <algo_src>.
     - It assigns the class based on the highest confidence score.
     - It assigns the depth based on the highest confidence score.
-    - TODO: figure out more methods to enhance bbox fusion.
 
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->Fuse2DPredictedBBoxes]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'Fuse2DPredictedBBoxes'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->post.py->Fuse2DPredictedBBoxes]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
     if 'current_calib_data' not in data_dict:
-        logger.log('[algo->post.py->Fuse2DPredictedBBoxes]: current_calib_data not found in data_dict', Logger.ERROR)
+        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
     
     # imports
     import numpy as np
     from scipy.spatial import KDTree
-
-    # algo name and dict keys
-    algo_name = 'Fuse2DPredictedBBoxes'
-
-    # get params
-    params = cfg_dict['proc']['post'][algo_name]
 
     # ---------------------- KDTree Matching ---------------------- #
     # Extract info from bbox_2d from modality a and b
@@ -67,10 +61,10 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict):
                 
 
     if len(mod_a_list) == 0:
-        logger.log(f"[algo->post.py->Fuse2DPredictedBBoxes]: No bbox_2d found from ModalityA's <algo_src>", Logger.DEBUG)
+        logger.log('No bbox_2d found from ModalityA\'s <algo_src>', Logger.DEBUG)
         return
     if len(mod_b_list) == 0:
-        logger.log(f"[algo->post.py->Fuse2DPredictedBBoxes]: No bbox_2d found from ModalityB's <algo_src>", Logger.DEBUG)
+        logger.log('No bbox_2d found from ModalityB\'s <algo_src>', Logger.DEBUG)
         return
 
     # Create a KDTree for xy_center points of bbox_2d from ModalityA <algo_src>
@@ -155,9 +149,9 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict):
             if 'text_info' not in mod_b_label: mod_b_label['text_info'] = text_info
             else: mod_b_label['text_info'] += f' | {text_info}'
 
-def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
+def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Get past trajectory of objects using KDTree matching.
+    Generates past trajectory of objects using KDTree matching.
 
     Requirements:
     - bbox_3d dict in data_dict['current_label_list'][<index>].
@@ -169,17 +163,15 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->GenerateKDTreePastTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'GenerateKDTreePastTrajectory'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->post.py->GenerateKDTreePastTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
 
     # imports
@@ -188,16 +180,12 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     from scipy.optimize import linear_sum_assignment
 
     # algo name and dict keys
-    algo_name = 'GenerateKDTreePastTrajectory'
-    processed_frames_key = f'{algo_name}_processed_frames'
-    bbox_history_window_key = f'{algo_name}_last_bbox_3d_labels'
-
-    # get params
-    params = cfg_dict['proc']['post'][algo_name]
+    processed_frames_key = make_key(algo_name, 'processed_frames')
+    bbox_history_window_key = make_key(algo_name, 'bbox_history_window')
 
     # check if the current frame is already processed
     if processed_frames_key in data_dict and data_dict['current_frame_index'] in data_dict[processed_frames_key]:
-        logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
+        logger.log(f'Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
         return
     
     current_bbox_3d_labels = []
@@ -208,7 +196,7 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     
     # if no bbox_3d found in current frame, skip
     if len(current_bbox_3d_labels) == 0:
-        logger.log(f'[algo->post.py->GenerateKDTreePastTrajectory]: No bbox_3d found in current frame, skipping ...', Logger.DEBUG)
+        logger.log('No bbox_3d found in current frame', Logger.DEBUG)
         return
     
     # create history window if it does not exist
@@ -276,9 +264,9 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict):
     data_dict[bbox_history_window_key].insert(0, current_bbox_3d_labels)
     data_dict[bbox_history_window_key] = data_dict[bbox_history_window_key][:params['history_size']]
 
-def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
+def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Predict future trajectory using cubic spline interpolation.
+    Generates future trajectory using cubic spline interpolation.
 
     Requirements:
     - past_trajectory dict in data_dict['current_label_list'][<index>]['bbox_3d'].
@@ -290,28 +278,20 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->GenerateCubicSplineFutureTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'GenerateCubicSplineFutureTrajectory'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->post.py->GenerateCubicSplineFutureTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
 
     # imports
     import numpy as np
     from scipy.interpolate import CubicSpline
-
-    # algo name and dict keys
-    algo_name = 'GenerateCubicSplineFutureTrajectory'
-
-    # get params
-    params = cfg_dict['proc']['post'][algo_name]
 
     # ---------------------- Cubic Spline Interpolation ---------------------- #
     for label_dict in data_dict['current_label_list']:
@@ -338,9 +318,9 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict):
         else: label_dict['text_info'] += f' | traj+: locked'
     # ---------------------- Cubic Spline Interpolation ---------------------- #
 
-def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
+def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Predict future trajectory using polynomial fit.
+    Generates future trajectory using polynomial fit.
 
     Requirements:
     - past_trajectory dict in data_dict['current_label_list'][<index>]['bbox_3d'].
@@ -352,28 +332,20 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->GeneratePolyFitFutureTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'GeneratePolyFitFutureTrajectory'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->post.py->GeneratePolyFitFutureTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
 
     # imports
     import numpy as np
     from numpy.polynomial import Polynomial
-
-    # algo name and dict keys
-    algo_name = 'GeneratePolyFitFutureTrajectory'
-
-    # get params
-    params = cfg_dict['proc']['post'][algo_name]
 
     # ---------------------- Polynomial Fit ---------------------- #
     for label_dict in data_dict['current_label_list']:
@@ -400,9 +372,9 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict):
         else: label_dict['text_info'] += f' | traj+: locked'
     # ---------------------- Polynomial Fit ---------------------- #
 
-def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict):
+def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Generate velocity from trajectory.
+    Generates velocity from trajectory.
 
     Requirements:
     - past_trajectory dict in data_dict['current_label_list'][<index>]['bbox_3d'].
@@ -414,32 +386,26 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict):
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->GenerateVelocityFromTrajectory]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'GenerateVelocityFromTrajectory'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->post.py->GenerateVelocityFromTrajectory]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
 
     # imports
     import numpy as np
 
-    # algo name and dict keys
-    algo_name = 'GenerateVelocityFromTrajectory'
-    processed_frames_key = f'{algo_name}_processed_frames'
-
-    # get params
-    params = cfg_dict['proc']['post'][algo_name]
+    # dict keys
+    processed_frames_key = make_key(algo_name, 'processed_frames')
 
     # check if the current frame is already processed
     if processed_frames_key in data_dict and data_dict['current_frame_index'] in data_dict[processed_frames_key]:
-        logger.log(f'[algo->post.py->GenerateVelocityFromTrajectory]: Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
+        logger.log(f'Frame {data_dict["current_frame_index"]} already processed, skipping ...', Logger.WARNING)
         return
     
     # ---------------------- Velocity Calculation ---------------------- #
@@ -463,30 +429,28 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict):
     if processed_frames_key not in data_dict: data_dict[processed_frames_key] = [data_dict['current_frame_index']]
     else: data_dict[processed_frames_key].append(data_dict['current_frame_index'])
 
-def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
+def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Create a per-object PCDet dataset by extracting object point clouds and labels from the input data.
+    Creates a per-object PCDet dataset by extracting object point clouds and labels from the input data.
 
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->create_per_object_pcdet_dataset]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'create_per_object_pcdet_dataset'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_point_cloud_numpy' not in data_dict:
-        logger.log('[algo->post.py->create_per_object_pcdet_dataset]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     if "current_label_list" not in data_dict:
-        logger.log('[algo->post.py->create_per_object_pcdet_dataset]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
     if "current_label_path" not in data_dict:
-        logger.log('[algo->post.py->create_per_object_pcdet_dataset]: current_label_path not found in data_dict', Logger.ERROR)
+        logger.log('current_label_path not found in data_dict', Logger.ERROR)
         return
     
     # imports
@@ -517,8 +481,9 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
         # Create an oriented bounding box
         try: rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
         except:
-            logger.log(f'[algo->post.py->create_per_object_pcdet_dataset]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
+            logger.log(f'Error in creating oriented bounding box for object {idx}', Logger.ERROR)
             continue
+        
         # Get points within the bounding box
         inside_points = rotated_bbox.get_point_indices_within_bounding_box(o3d.utility.Vector3dVector(current_point_cloud_numpy[:, :3]))
         object_point_cloud = current_point_cloud_numpy[inside_points]
@@ -543,20 +508,28 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict):
             else: lbl_str += 'Unknown'
             f.write(lbl_str)
 
-def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->create_pcdet_dataset]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
+    """
+    Creates a PCDet dataset by extracting point clouds and labels from the input data.
+
+    Args:
+        data_dict (dict): A dictionary containing the required data.
+        cfg_dict (dict): A dictionary containing configuration parameters.
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
+    """
+    # get name and params
+    algo_name = 'create_pcdet_dataset'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if 'current_point_cloud_numpy' not in data_dict:
-        logger.log('[algo->post.py->create_pcdet_dataset]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     if "current_label_list" not in data_dict:
-        logger.log('[algo->post.py->create_pcdet_dataset]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
     if "current_label_path" not in data_dict:
-        logger.log('[algo->post.py->create_pcdet_dataset]: current_label_path not found in data_dict', Logger.ERROR)
+        logger.log('current_label_path not found in data_dict', Logger.ERROR)
         return
     
     # imports
@@ -597,30 +570,22 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict):
     lbl_path = os.path.join(lbl_output_dir, os.path.basename(current_label_path))
     with open(lbl_path, 'w') as f: f.write(lbl_str)
 
-def visualize_in_vr(data_dict: dict, cfg_dict: dict):
+def visualize_in_vr(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
-    Visualize outputs in the VR environment.
+    Visualizes outputs in the VR environment.
 
     Args:
         data_dict (dict): A dictionary containing the required data.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->post.py->visualize_in_vr]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
-
-    # algo name
+    # get name and params
     algo_name = 'visualize_in_vr'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # dict keys
-    server_socket_key = f'{algo_name}_server_socket'
-    client_socket_key = f'{algo_name}_client_socket'
-
-    # get params
-    params = cfg_dict['proc']['post'][algo_name]
+    server_socket_key = make_key(algo_name, 'server_socket')
+    client_socket_key = make_key(algo_name, 'client_socket')
 
     # imports
     import socket
@@ -636,7 +601,7 @@ def visualize_in_vr(data_dict: dict, cfg_dict: dict):
         server_socket.bind((params['server_ip'], params['server_port']))
         server_socket.listen(1)
         data_dict[server_socket_key] = server_socket
-        logger.log(f'[algo->post.py->visualize_in_vr]: Server socket created', Logger.DEBUG)
+        logger.log(f'Server socket created at {params["server_ip"]}:{params["server_port"]}', Logger.DEBUG)
     
     # accept a client connection
     if client_socket_key not in data_dict:
@@ -644,14 +609,14 @@ def visualize_in_vr(data_dict: dict, cfg_dict: dict):
         try:
             client_socket, addr = server_socket.accept()
             data_dict[client_socket_key] = client_socket
-            logger.log(f'[algo->post.py->visualize_in_vr]: Client connected from {addr}', Logger.DEBUG)
+            logger.log(f'Client connected from {addr}', Logger.DEBUG)
         except socket.timeout: pass
     
     else:
         if 'current_point_cloud_numpy' in data_dict:
             # receive an int32 value, convert to int
             req = struct.unpack('I', data_dict[client_socket_key].recv(4))[0]
-            logger.log(f'[algo->post.py->visualize_in_vr]: Received request: {req}', Logger.DEBUG)
+            logger.log(f'Received request: {req}', Logger.DEBUG)
             if req == 0: return # do nothing
             if req == 1:
                 points = np.asarray(data_dict['current_point_cloud_numpy'][:, :3], dtype=np.float32)
@@ -661,4 +626,4 @@ def visualize_in_vr(data_dict: dict, cfg_dict: dict):
             elif req == 2: # close the client socket
                 data_dict[client_socket_key].close()
                 data_dict.pop(client_socket_key)
-                logger.log(f'[algo->post.py->visualize_in_vr]: Client disconnected', Logger.DEBUG)
+                logger.log(f'Client disconnected', Logger.DEBUG)

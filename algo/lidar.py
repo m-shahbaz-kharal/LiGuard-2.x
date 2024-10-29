@@ -6,31 +6,31 @@ import sys
 import numpy as np
 
 from gui.logger_gui import Logger
+from algo.utils import AlgoType, make_key, get_algo_params
 
-def rotate(data_dict: dict, cfg_dict: dict):
+algo_type = AlgoType.lidar
+
+def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Rotate the point cloud data by the specified angles.
 
     Args:
         data_dict (dict): A dictionary containing the data.
         cfg_dict (dict): A dictionary containing the configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
+    # get name and params
+    algo_name = 'rotate'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->rotate]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
-
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->rotate]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     
     # get point cloud and rotation angles
     pcd = data_dict['current_point_cloud_numpy']
-    angles = cfg_dict['proc']['lidar']['rotate']['angles']
+    angles = params['angles']
     angles_rad = np.deg2rad(angles)
     
     # calculate rotation matrix
@@ -41,31 +41,28 @@ def rotate(data_dict: dict, cfg_dict: dict):
     # rotate the point cloud
     data_dict['current_point_cloud_numpy'] = np.dot(pcd[:, :3], rotation_matrix.T)
 
-def crop(data_dict: dict, cfg_dict: dict):
+def crop(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Crop the point cloud data based on the specified limits.
 
     Args:
         data_dict (dict): A dictionary containing the data.
         cfg_dict (dict): A dictionary containing the configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->crop]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'crop'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->crop]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     
     # get point cloud and crop limits
     pcd = data_dict['current_point_cloud_numpy']
-    min_xyz = cfg_dict['proc']['lidar']['crop']['min_xyz']
-    max_xyz = cfg_dict['proc']['lidar']['crop']['max_xyz']
+    min_xyz = params['min_xyz']
+    max_xyz = params['max_xyz']
     
     # create conditions for cropping
     x_condition = np.logical_and(min_xyz[0] <= pcd[:, 0], pcd[:, 0] <= max_xyz[0])
@@ -76,31 +73,28 @@ def crop(data_dict: dict, cfg_dict: dict):
     data_dict['current_point_cloud_numpy'] = pcd[x_condition & y_condition & z_condition]
     data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.float32)
     
-def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
+def project_image_pixel_colors(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Projects the colors of image pixels onto the point cloud.
 
     Args:
         data_dict (dict): A dictionary containing the required data for the operation.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->project_image_pixel_colors]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'project_image_pixel_colors'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->project_image_pixel_colors]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     if "current_image_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->project_image_pixel_colors]: current_image_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_image_numpy not found in data_dict', Logger.ERROR)
         return
     if "current_calib_data" not in data_dict:
-        logger.log('[algo->lidar.py->project_image_pixel_colors]: current_calib_data not found in data_dict', Logger.ERROR)
+        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
         return
     
     # Extract required data
@@ -126,46 +120,38 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict):
     # Update the point cloud colors in data_dict corresponding to the valid pixel coordinates
     data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[normalized_pixel_coords_2d[valid_coords][:, 1], normalized_pixel_coords_2d[valid_coords][:, 0]] / 255.0
     
-def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
+def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Apply Background Filter using Dynamic Histogram Point Process (DHistDPP) algorithm.
 
     Args:
         data_dict (dict): A dictionary containing data for processing.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->BGFilterDHistDPP]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'BGFilterDHistDPP'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger).copy()
+    live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
     
     # imports
     from algo.non_nn.DHistDPP import calc_DHistDPP_params, save_DHistDPP_params, load_DHistDPP_params, make_DHistDPP_filter
     from algo.utils import gather_point_clouds, skip_frames, combine_gathers
     from pcd.utils import get_fixed_sized_point_cloud
 
-    # algo name
-    algo_name = 'BGFilterDHistDPP'
-
     # dict keys
-    query_frames_key = f'{algo_name}_query_frames'
-    skip_frames_key = f'{algo_name}_skip_frames'
-    params_key = f'{algo_name}_params'
-    filter_key = f'{algo_name}_filter'
-    filter_loaded_key = f'{algo_name}_filter_loaded'
-
-    # get params
-    params = cfg_dict['proc']['lidar']['BGFilterDHistDPP'].copy()
-    live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
+    query_frames_key = make_key(algo_name, 'query_frames')
+    skip_frames_key = make_key(algo_name, 'skip_frames')
+    params_key = make_key(algo_name, 'params')
+    filter_key = make_key(algo_name, 'filter')
+    filter_loaded_key = make_key(algo_name, 'filter_loaded')
     
     # generate keys for query and skip frames
-    all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(params['number_of_frame_gather_iters'])]
-    all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(params['number_of_skip_frames_after_each_iter'])]
+    all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(get_algo_params(cfg_dict, algo_name, 'number_of_frame_gather_iters', logger))]
+    all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(get_algo_params(cfg_dict, algo_name, 'number_of_skip_frames_after_each_iter', logger))]
 
     # load filter if exists
-    if filter_loaded_key not in data_dict and params['load_filter']:
+    if filter_loaded_key not in data_dict and get_algo_params(cfg_dict, algo_name, 'load_filter', logger):
         # add params to data_dict
         data_dict[params_key] = params
         
@@ -173,12 +159,12 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
-            logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter loaded from {params["filter_path"]}.', Logger.INFO)
-            data_dict['BGFilterDHistDPP_set'] = True
+            logger.log(f'Filter loaded from {params["filter_path"]}', Logger.INFO)
+            data_dict[f'{algo_name}_set'] = True
         else:
             data_dict[filter_loaded_key] = False
-            logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
-            data_dict['BGFilterDHistDPP_set'] = False
+            logger.log(f'Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+            data_dict[f'{algo_name}_set'] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -196,16 +182,16 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
         # generate filter
-        logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Generating filter', Logger.INFO)
+        logger.log('Generating filter', Logger.INFO)
         
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         filter_params = calc_DHistDPP_params(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
         data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
+        logger.log(f'Filter generated', Logger.INFO)
         # save filter
         filter_saved_path = save_DHistDPP_params(filter_params, params['filter_path'])
-        cfg_dict['proc']['lidar']['BGFilterDHistDPP']['filter_path'] = filter_saved_path
-        logger.log(f'[algo->lidar.py->BGFilterDHistDPP]: Filter generated and saved in {filter_saved_path}.', Logger.INFO)
-        data_dict['BGFilterDHistDPP_set'] = True
+        logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
+        data_dict[f'{algo_name}_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -216,7 +202,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
-            data_dict['BGFilterDHistDPP_set'] = False
+            data_dict[f'{algo_name}_set'] = False
             return
     
     # if filter exists, apply it
@@ -224,40 +210,31 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict):
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
-def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
+def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Applies Background Filter using Spatio-Temporal Density Filtering (BGFilterSTDF) to the point cloud data.
 
     Args:
         data_dict (dict): A dictionary containing the input data and intermediate results.
         cfg_dict (dict): A dictionary containing the configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->BGFilterSTDF]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'BGFilterSTDF'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger).copy()
+    live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
 
     # imports
     from algo.non_nn.STDF import calc_STDF_params, save_STDF_params, load_STDF_params, make_STDF_filter
     from algo.utils import gather_point_clouds, skip_frames, combine_gathers
     from pcd.utils import get_fixed_sized_point_cloud
     
-    # algo name
-    algo_name = 'BGFilterSTDF'
-
     # dict keys
-    query_frames_key = f'{algo_name}_query_frames'
-    skip_frames_key = f'{algo_name}_skip_frames'
-    params_key = f'{algo_name}_params'
-    filter_key = f'{algo_name}_filter'
-    filter_loaded_key = f'{algo_name}_filter_loaded'
-
-    # get params
-    params = cfg_dict['proc']['lidar']['BGFilterSTDF'].copy()
-    live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
+    query_frames_key = make_key(algo_name, 'query_frames')
+    skip_frames_key = make_key(algo_name, 'skip_frames')
+    params_key = make_key(algo_name, 'params')
+    filter_key = make_key(algo_name, 'filter')
+    filter_loaded_key = make_key(algo_name, 'filter_loaded')
     
     # generate keys for query and skip frames
     all_query_frames_keys = [f'{query_frames_key}_{i}' for i in range(params['number_of_frame_gather_iters'])]
@@ -272,12 +249,12 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
-            logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter loaded from {params["filter_path"]}.', Logger.INFO)
-            data_dict['BGFilterSTDF_set'] = True
+            logger.log(f'Filter loaded from {params["filter_path"]}', Logger.INFO)
+            data_dict[f'{algo_name}_set'] = True
         else:
             data_dict[filter_loaded_key] = False
-            logger.log(f'[algo->lidar.py->BGFilterSTDF]: Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
-            data_dict['BGFilterSTDF_set'] = False
+            logger.log(f'Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+            data_dict[f'{algo_name}_set'] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -294,15 +271,15 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         assert len(data_dict[query_frames_key]) == params['number_of_frame_gather_iters'] * params['number_of_frames_in_each_gather_iter']
         
         # generate filter
-        logger.log(f'[algo->lidar.py->BGFilterSTDF]: Generating filter', Logger.INFO)
+        logger.log('Generating filter', Logger.INFO)
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         filter_params = calc_STDF_params(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
         data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
+        logger.log('Filter generated', Logger.INFO)
         # save filter
         filter_saved_path = save_STDF_params(filter_params, params['filter_path'])
-        cfg_dict['proc']['lidar']['BGFilterSTDF']['filter_path'] = filter_saved_path
-        logger.log(f'[algo->lidar.py->BGFilterSTDF]: Filter generated and saved in {filter_saved_path}.', Logger.INFO)
-        data_dict['BGFilterSTDF_set'] = True
+        logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
+        data_dict[f'{algo_name}_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -313,7 +290,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
-            data_dict['BGFilterSTDF_set'] = False
+            data_dict[f'{algo_name}_set'] = False
             return
     
     # if filter exists, apply it
@@ -322,7 +299,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict):
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
-def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
+def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Perform TEPP DBSCAN clustering on the current point cloud.
 
@@ -332,30 +309,25 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     Args:
         data_dict (dict): A dictionary containing data for the algorithm.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
-    
+    # get name and params
+    algo_name = 'Clusterer_TEPP_DBSCAN'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+
     # clear previous key set
-    if 'Clusterer_TEPP_DBSCAN_set' in data_dict: data_dict.pop('Clusterer_TEPP_DBSCAN_set')
+    if f'{algo_name}_set' in data_dict: data_dict.pop(f'{algo_name}_set')
     
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
-    if cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']['activate_on_key_set'] not in data_dict: return
+    if params['activate_on_key_set'] not in data_dict: return
     
     try: DBSCAN = __import__('dbscan', fromlist=['DBSCAN']).DBSCAN
     except:
-        logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: dbscan package not found, please install the `dbscan` package using `pip install dbscan`.', Logger.ERROR)
+        logger.log('DBSCAN module not found, please see install_docs.md', Logger.ERROR)
         return
-    
-    # get params
-    params = cfg_dict['proc']['lidar']['Clusterer_TEPP_DBSCAN']
 
     # perform clustering
     labels, _ = DBSCAN(data_dict['current_point_cloud_numpy'], params['eps'], params['min_samples'])
@@ -363,40 +335,34 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict):
     # create 'current_label_list' if not exists
     if 'current_label_list' not in data_dict:
         data_dict['current_label_list'] = []
-        logger.log('[algo->lidar.py->Clusterer_TEPP_DBSCAN]: current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
+        logger.log('current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
     
     # update label list
     for label in np.unique(labels):
         if label == -1: continue
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
-    data_dict['Clusterer_TEPP_DBSCAN_set'] = True
+    data_dict[f'{algo_name}_set'] = True
 
-def O3D_DBSCAN(data_dict: dict, cfg_dict: dict):
+def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     DBSCAN clustering available in Open3D library.
 
     Args:
         data_dict (dict): A dictionary containing data for processing.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
     """
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->O3D_DBSCAN]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'O3D_DBSCAN'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # clear previous key set
     if 'O3D_DBSCAN_set' in data_dict: data_dict.pop('O3D_DBSCAN_set')
     
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->O3D_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('[{log_str}->O3D_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
-    if cfg_dict['proc']['lidar']['O3D_DBSCAN']['activate_on_key_set'] not in data_dict: return
-    
-    # get params
-    params = cfg_dict['proc']['lidar']['O3D_DBSCAN']
+    if params['activate_on_key_set'] not in data_dict: return
 
     # perform clustering
     import open3d as o3d
@@ -407,7 +373,7 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict):
     # create 'current_label_list' if not exists
     if 'current_label_list' not in data_dict:
         data_dict['current_label_list'] = []
-        logger.log('[algo->lidar.py->O3D_DBSCAN]: current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
+        logger.log('current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
 
     # update label list
     for label in np.unique(labels):
@@ -415,40 +381,32 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict):
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
     data_dict['O3D_DBSCAN_set'] = True
 
-def Cluster2Object(data_dict: dict, cfg_dict: dict):
+def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Converts lidar clusters to object labels and adds them to the current label list.
 
     Args:
         data_dict (dict): A dictionary containing data for processing.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->Cluster2Object]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'Cluster2Object'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->Cluster2Object]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->lidar.py->Cluster2Object]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
-    if cfg_dict['proc']['lidar']['Cluster2Object']['activate_on_key_set'] not in data_dict: return
+    if params['activate_on_key_set'] not in data_dict: return
 
     # imports
     import open3d as o3d
-
-    # algo name and keys used in algo
-    algo_name = 'Cluster2Object'
     
-    # get params
-    params = cfg_dict['proc']['lidar'][algo_name]
-    
+    # iterate over clusters and convert them to objects
     for label_dict in data_dict['current_label_list']:
         if 'lidar_cluster' not in label_dict: continue
         
@@ -492,7 +450,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         if selected_obj_class in params['class_colors']:
             rgb_color = np.array(params['class_colors'][selected_obj_class], dtype=np.float32)
         else:
-            logger.log(f'[algo->lidar.py->Cluster2Object]: class color not found for class: {selected_obj_class}, using default color', Logger.WARNING)
+            logger.log(f'Color not found for class {selected_obj_class}. Setting to black', Logger.WARNING)
             rgb_color = np.array([0, 0, 0], dtype=np.float32)
 
         # generate label
@@ -516,7 +474,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict):
         label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
         data_dict['current_label_list'].append(label)
 
-def PointPillarDetection(data_dict: dict, cfg_dict: dict):
+def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Perform object detection using the PointPillar algorithm.
 
@@ -529,32 +487,23 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
     Args:
         data_dict (dict): A dictionary containing the required data for processing.
         cfg_dict (dict): A dictionary containing the configuration parameters.
-
-    Returns:
-        None
     """
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->PointPillarDetection]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
-    
+    # get name and params
+    algo_name = 'PointPillarDetection'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[algo->lidar.py->PointPillarDetection]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('[{log_str}->PointPillarDetection]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
+    if params['activate_on_key_set'] not in data_dict: return
     
-    if cfg_dict['proc']['lidar']['PointPillarDetection']['activate_on_key_set'] not in data_dict: return
-    
-
     # algo name and keys used in algo
-    algo_name = 'PointPillarDetection'
-    model_key = f'{algo_name}_model'
-    class_ids_key = f'{algo_name}_class_ids'
-    ids_class_key = f'{algo_name}_ids_class'
-    pcd_limit_range_key = f'{algo_name}_pcd_limit_range'
-    class_color_key = f'{algo_name}_class_color'
-    
-    # get params
-    params = cfg_dict['proc']['lidar'][algo_name]
+    model_key = make_key(algo_name, 'model')
+    class_ids_key = make_key(algo_name, 'class_ids')
+    ids_class_key = make_key(algo_name, 'ids_class')
+    pcd_limit_range_key = make_key(algo_name, 'pcd_limit_range')
+    class_color_key = make_key(algo_name, 'class_color')
     
     # imports
     import torch
@@ -608,34 +557,29 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
         if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
         data_dict['current_label_list'].append(label)
 
-def gen_bbox_2d(data_dict: dict, cfg_dict: dict):
+def gen_bbox_2d(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Generate 2D bounding boxes from 3D bounding boxes.
 
     Args:
         data_dict (dict): A dictionary containing the required data for processing.
         cfg_dict (dict): A dictionary containing the configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->lidar.py->gen_bbox_2d]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'gen_bbox_2d'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
     if 'current_label_list' not in data_dict:
-        logger.log('[algo->lidar.py->gen_bbox_2d]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
     if 'current_calib_data' not in data_dict:
-        logger.log('[algo->lidar.py->gen_bbox_2d]: current_calib_data not found in data_dict', Logger.ERROR)
+        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
         return
     
     # imports
     import open3d as o3d
-    
-    # get params
-    params = cfg_dict['proc']['lidar']['gen_bbox_2d']
     
     # get calibration data
     calib_data = data_dict['current_calib_data']

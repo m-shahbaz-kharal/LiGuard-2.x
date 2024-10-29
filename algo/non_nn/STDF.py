@@ -61,12 +61,7 @@ def make_STDF_filter(point_cloud: np.ndarray, # Nx3 or Nx4,
     return mask
 
 def save_STDF_params(filter_params, filename):
-    if os.path.exists(filename):
-        filename = filename.split('.')[0]
-        filename = filename + '_' + time.strftime("%Y%m%d-%H%M%S") + '.pkl'
-    else:
-        filename = filename.split('.')[0]
-        filename = filename + '.pkl'
+    filename = filename.split('.')[0] + '.pkl'
     with open(filename, 'wb') as f: pickle.dump(filter_params, f)
     return filename
 

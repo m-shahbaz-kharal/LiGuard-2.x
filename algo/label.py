@@ -4,36 +4,36 @@ import numpy as np
 import open3d as o3d
 
 from gui.logger_gui import Logger
-from typing import Dict, List
 import numpy as np
 
-def remove_out_of_bound_labels(data_dict: Dict[str, any], cfg_dict: Dict[str, any]):
+from algo.utils import AlgoType, make_key, get_algo_params
+
+algo_type = AlgoType.label
+
+def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Remove labels that are out of the specified bounding box.
 
     Args:
         data_dict (Dict[str, any]): A dictionary containing data and logger.
         cfg_dict (Dict[str, any]): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->label.py->remove_out_of_bound_labels]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'remove_out_of_bound_labels'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if "current_label_list" not in data_dict:
-        logger.log('[algo->label.py->remove_out_of_bound_labels]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
     
-    # get params
-    params = cfg_dict['proc']['label']['remove_out_of_bound_labels']
+    # get param values
     use_lidar_range = params['use_lidar_range']
     use_image_size = params['use_image_size']
 
     if not (use_lidar_range or use_image_size):
-        logger.log('[algo->label.py->remove_out_of_bound_labels]: Both use_lidar_range and use_image_size are False. At least one of them should be True.', Logger.ERROR)
+        logger.log('Both use_lidar_range and use_image_size are False. No operation to perform.', Logger.WARNING)
         return
 
     if use_lidar_range:
@@ -44,14 +44,14 @@ def remove_out_of_bound_labels(data_dict: Dict[str, any], cfg_dict: Dict[str, an
             pcd_min_xyz = np.min(data_dict['current_point_cloud_numpy'][:, 0:3], axis=0)
             pcd_max_xyz = np.max(data_dict['current_point_cloud_numpy'][:, 0:3], axis=0)
         else:
-            logger.log('[algo->label.py->remove_out_of_bound_labels]: use_lidar_range is True but current_point_cloud_numpy not found in data_dict.', Logger.ERROR)
+            logger.log('use_lidar_range is True but current_point_cloud_numpy not found in data_dict.', Logger.ERROR)
             return
     
     if use_image_size and 'current_image_numpy' in data_dict:
         img_min_xy = np.array([0, 0], dtype=np.float32)
         img_max_xy = data_dict['current_image_numpy'].shape[:2][::-1]
     else:
-        logger.log('[algo->label.py->remove_out_of_bound_labels]: use_image_size is True but current_image_numpy not found in data_dict.', Logger.ERROR)
+        logger.log('use_image_size is True but current_image_numpy not found in data_dict.', Logger.ERROR)
         return
 
     # Get label list and bounding box limits
@@ -87,27 +87,25 @@ def remove_out_of_bound_labels(data_dict: Dict[str, any], cfg_dict: Dict[str, an
     # Update the label list in data_dict
     data_dict['current_label_list'] = output
 
-def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
+def remove_less_point_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Remove labels with fewer points than the specified threshold.
 
     Args:
         data_dict (dict): A dictionary containing data related to labels and point cloud.
         cfg_dict (dict): A dictionary containing configuration parameters.
-
-    Returns:
-        None
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # Get logger object from data_dict
-    if 'logger' in data_dict: logger:Logger = data_dict['logger']
-    else: print('[algo->label.py->remove_less_point_labels]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
+    # get name and params
+    algo_name = 'remove_less_point_labels'
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
     if "current_label_list" not in data_dict:
-        logger.log('[algo->label.py->remove_less_point_labels]: current_label_list not found in data_dict', Logger.ERROR)
+        logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
     if 'current_point_cloud_numpy' not in data_dict:
-        logger.log('[algo->label.py->remove_less_point_labels]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     
     # Get label list and point cloud
@@ -128,7 +126,7 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
         # create an OrientedBoundingBox object
         try: rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
         except:
-            logger.log(f'[algo->label.py->remove_less_point_labels]: failed to create an OrientedBoundingBox, skipping ...', Logger.WARNING)
+            logger.log('Failed to create OrientedBoundingBox object', Logger.ERROR)
             continue
         inside_points = rotated_bbox.get_point_indices_within_bounding_box(o3d.utility.Vector3dVector(point_cloud[:, 0:3]))
         # check if the number of points inside the bounding box is greater than the threshold give in the configuration
@@ -136,4 +134,3 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict):
 
     # update the label list in data_dict
     data_dict['current_label_list'] = output
-
