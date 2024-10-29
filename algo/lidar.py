@@ -585,7 +585,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
         if torch.cuda.is_available(): pc_torch = pc_torch.cuda()
         result_filter = data_dict[model_key](batched_pts=[pc_torch], mode='test')[0]
 
-    bbox_3des = result_filter['bbox_3des']
+    bbox_3des = result_filter['lidar_bboxes']
     labels, scores = result_filter['labels'], result_filter['scores']
 
     for i in range(len(labels)):
@@ -594,7 +594,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict):
         xyz_center = bbox_3d[:3]
         xyz_center[2] += bbox_3d[5] / 2
         xyz_extent = bbox_3d[3:6]
-        xyz_euler_angles = np.array([0, 0, bbox_3d[6]], dtype=np.float32)
+        xyz_euler_angles = np.array([0, 0, -bbox_3d[6]], dtype=np.float32)
         obj_class = data_dict[ids_class_key][labels[i]]
         rgb_color = np.array(data_dict[class_color_key][obj_class], dtype=np.float32)
 
