@@ -28,7 +28,7 @@ def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
     # get point cloud and rotation angles
     pcd = data_dict['current_point_cloud_numpy']
     angles = params['angles']
-    angles_rad = np.deg2rad(angles)
+    angles_rad = np.deg2rad(angles).astype(np.float32)
     
     # calculate rotation matrix
     rotation_matrix = np.array([[np.cos(angles_rad[1]) * np.cos(angles_rad[2]), np.cos(angles_rad[1]) * np.sin(angles_rad[2]), -np.sin(angles_rad[1])],
@@ -36,7 +36,9 @@ def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
                                 [np.cos(angles_rad[0]) * np.sin(angles_rad[1]) * np.cos(angles_rad[2]) + np.sin(angles_rad[0]) * np.sin(angles_rad[2]), np.cos(angles_rad[0]) * np.sin(angles_rad[1]) * np.sin(angles_rad[2]) - np.sin(angles_rad[0]) * np.cos(angles_rad[2]), np.cos(angles_rad[0]) * np.cos(angles_rad[1])]])
     
     # rotate the point cloud
-    data_dict['current_point_cloud_numpy'] = np.dot(pcd[:, :3], rotation_matrix.T)
+    rotated_pcd = np.dot(pcd[:, :3], rotation_matrix.T)
+    rotated_pcd = np.hstack((rotated_pcd, pcd[:, 3:]))
+    data_dict['current_point_cloud_numpy'] = rotated_pcd
 
 def crop(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
