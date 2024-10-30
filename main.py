@@ -1,4 +1,6 @@
 import os
+import traceback
+
 import open3d.visualization.gui as gui
 
 from gui.config_gui import BaseConfiguration as BaseConfigurationGUI
@@ -148,16 +150,16 @@ class LiGuard:
             try:
                 self.pcd_io = PCD_File_IO(cfg)
                 self.logger.log('PCD_File_IO created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('PCD_File_IO creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'PCD_File_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.pcd_io = None
         # if sensors are enabled
         elif cfg['sensors']['lidar']['enabled']:
             try:
                 self.pcd_io = PCD_Sensor_IO(cfg)
                 self.logger.log('PCD_Sensor_IO created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('PCD_Sensor_IO creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'PCD_Sensor_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.pcd_io = None
         else: self.pcd_io = None
         # get the total number of pcd frames
@@ -172,8 +174,8 @@ class LiGuard:
                     self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
                     self.pcd_visualizer.load_view_status()
                     self.logger.log('PointCloudVisualizer created', Logger.DEBUG)
-                except Exception as e:
-                    self.logger.log('PointCloudVisualizer creation failed:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'PointCloudVisualizer creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                     self.pcd_visualizer = None
         # manage image reading
         if self.img_io != None: self.img_io.close()
@@ -182,16 +184,16 @@ class LiGuard:
             try:
                 self.img_io = IMG_File_IO(cfg)
                 self.logger.log('IMG_File_IO created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('IMG_File_IO creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'IMG_File_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.img_io = None
         # if sensors are enabled
         elif cfg['sensors']['camera']['enabled']:
             try:
                 self.img_io = IMG_Sensor_IO(cfg)
                 self.logger.log('IMG_Sensor_IO created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('IMG_Sensor_IO creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'IMG_Sensor_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.img_io = None
         else: self.img_io = None
         # get the total number of image frames
@@ -204,8 +206,8 @@ class LiGuard:
                 if self.img_visualizer != None: self.img_visualizer.reset(cfg)
                 else: self.img_visualizer = ImageVisualizer(self.app, cfg)
                 self.logger.log('ImageVisualizer created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('ImageVisualizer creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'ImageVisualizer creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.img_visualizer = None
 
         # manage calibration reading
@@ -214,8 +216,8 @@ class LiGuard:
             try:
                 self.clb_io = CLB_File_IO(cfg)
                 self.logger.log('CLB_File_IO created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('CLB_File_IO creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'CLB_File_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.clb_io = None
         else: self.clb_io = None
         # get the total number of calibration frames
@@ -228,8 +230,8 @@ class LiGuard:
             try:
                 self.lbl_io = LBL_File_IO(cfg, self.clb_io.__getitem__ if self.clb_io else None)
                 self.logger.log('LBL_File_IO created', Logger.DEBUG)
-            except Exception as e:
-                self.logger.log('LBL_File_IO creation failed:\n{e}', Logger.CRITICAL)
+            except Exception:
+                self.logger.log(f'LBL_File_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.lbl_io = None
         else: self.lbl_io = None
         # get the total number of label frames
@@ -252,8 +254,8 @@ class LiGuard:
                     priority = cfg['proc']['pre'][proc]['priority']
                     process = __import__('algo.pre', fromlist=[proc]).__dict__[proc]
                     self.pre_processes[priority] = process
-                except Exception as e:
-                    self.logger.log('pre_processes creation failed for {proc}:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'pre_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.pre_processes = [self.pre_processes[priority] for priority in sorted(self.pre_processes.keys())]
         self.logger.log('enabled pre_processes: {self.pre_processes}', Logger.DEBUG)
         
@@ -267,8 +269,8 @@ class LiGuard:
                     priority = cfg['proc']['lidar'][proc]['priority']
                     process = __import__('algo.lidar', fromlist=[proc]).__dict__[proc]
                     self.lidar_processes[priority] = process
-                except Exception as e:
-                    self.logger.log('lidar_processes creation failed for {proc}:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'lidar_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.lidar_processes = [self.lidar_processes[priority] for priority in sorted(self.lidar_processes.keys())]
         self.logger.log('enabled lidar_processes: {self.lidar_processes}', Logger.DEBUG)
         
@@ -282,8 +284,8 @@ class LiGuard:
                     priority = cfg['proc']['camera'][proc]['priority']
                     process = __import__('algo.camera', fromlist=[proc]).__dict__[proc]
                     self.camera_processes[priority] = process
-                except Exception as e:
-                    self.logger.log('camera_processes creation failed for {proc}:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'camera_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.camera_processes = [self.camera_processes[priority] for priority in sorted(self.camera_processes.keys())]
         self.logger.log('enabled camera_processes: {self.camera_processes}', Logger.DEBUG)
 
@@ -297,8 +299,8 @@ class LiGuard:
                     priority = cfg['proc']['calib'][proc]['priority']
                     process = __import__('algo.calib', fromlist=[proc]).__dict__[proc]
                     self.calib_processes[priority] = process
-                except Exception as e:
-                    self.logger.log('calib_processes creation failed for {proc}:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'calib_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.calib_processes = [self.calib_processes[priority] for priority in sorted(self.calib_processes.keys())]
         self.logger.log('enabled calib_processes: {self.calib_processes}', Logger.DEBUG)
 
@@ -312,8 +314,8 @@ class LiGuard:
                     priority = cfg['proc']['label'][proc]['priority']
                     process = __import__('algo.label', fromlist=[proc]).__dict__[proc]
                     self.label_processes[priority] = process
-                except Exception as e:
-                    self.logger.log('label_processes creation failed for {proc}:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'label_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.label_processes = [self.label_processes[priority] for priority in sorted(self.label_processes.keys())]
         self.logger.log('enabled label_processes: {self.label_processes}', Logger.DEBUG)
         
@@ -327,8 +329,8 @@ class LiGuard:
                     priority = cfg['proc']['post'][proc]['priority']
                     process = __import__('algo.post', fromlist=[proc]).__dict__[proc]
                     self.post_processes[priority] = process
-                except Exception as e:
-                    self.logger.log('post_processes creation failed for {proc}:\n{e}', Logger.CRITICAL)
+                except Exception:
+                    self.logger.log(f'post_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
             
         self.post_processes = [self.post_processes[priority] for priority in sorted(self.post_processes.keys())]
         self.logger.log('enabled post_processes: {self.post_processes}', Logger.DEBUG)
@@ -367,7 +369,7 @@ class LiGuard:
                     self.data_dict['current_point_cloud_numpy'] = current_point_cloud_numpy
                     profiler.end_target('pcd_io')
                 elif 'current_point_cloud_numpy' in self.data_dict:
-                    self.logger.log(f'[main.py->LiGuard->start]: current_point_cloud_numpy found in data_dict while pcd_io is None, removing ...', Logger.DEBUG)
+                    self.logger.log(f'current_point_cloud_numpy found in data_dict while pcd_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_point_cloud_numpy')
                 
                 if self.img_io:
@@ -377,7 +379,7 @@ class LiGuard:
                     self.data_dict['current_image_numpy'] = current_image_numpy
                     profiler.end_target('img_io')
                 elif 'current_image_numpy' in self.data_dict:
-                    self.logger.log(f'[main.py->LiGuard->start]: current_image_numpy found in data_dict while img_io is None, removing ...', Logger.DEBUG)
+                    self.logger.log(f'current_image_numpy found in data_dict while img_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_image_numpy')
 
                 if self.clb_io:
@@ -387,7 +389,7 @@ class LiGuard:
                     self.data_dict['current_calib_data'] = current_calib_data
                     profiler.end_target('clb_io')
                 elif 'current_calib_data' in self.data_dict:
-                    self.logger.log(f'[main.py->LiGuard->start]: current_calib_data found in data_dict while clb_io is None, removing ...', Logger.DEBUG)
+                    self.logger.log(f'current_calib_data found in data_dict while clb_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_calib_data')
                 
                 if self.lbl_io:
@@ -397,12 +399,12 @@ class LiGuard:
                     self.data_dict['current_label_list'] = current_label_list
                     profiler.end_target('lbl_io')
                 elif 'current_label_list' in self.data_dict:
-                    self.logger.log(f'[main.py->LiGuard->start]: current_label_list found in data_dict while lbl_io is None, removing ...', Logger.DEBUG)
+                    self.logger.log(f'current_label_list found in data_dict while lbl_io is None, removing ...', Logger.DEBUG)
                     self.data_dict.pop('current_label_list')
 
                 # if non of the data sources are available, exit the app in 5 seconds
                 if not any([self.pcd_io, self.img_io, self.clb_io, self.lbl_io]):
-                    self.logger.log(f'[main.py->LiGuard->start]: no data source is available, exiting in 5 seconds...', Logger.CRITICAL)
+                    self.logger.log(f'no data source is available, exiting in 5 seconds...', Logger.CRITICAL)
                     time.sleep(5)
                     break
 
@@ -412,9 +414,9 @@ class LiGuard:
                         profiler.add_target(f'pre_{proc}')
                         proc(self.data_dict, cfg, self.logger)
                         profiler.end_target(f'pre_{proc}')
-                    except Exception as e:
+                    except Exception:
                         profiler.end_target(f'pre_{proc}')
-                        self.logger.log(f'[main.py->LiGuard->start]: pre_processes failed for {proc}:\n{e}', Logger.ERROR)
+                        self.logger.log(f'pre_processes failed for {proc}:\n{traceback.format_exc()}', Logger.ERROR)
             
                 if self.pcd_io:
                     for proc in self.lidar_processes:
@@ -422,45 +424,45 @@ class LiGuard:
                             profiler.add_target(f'lidar_{proc}')
                             proc(self.data_dict, cfg, self.logger)
                             profiler.end_target(f'lidar_{proc}')
-                        except Exception as e:
+                        except Exception:
                             profiler.end_target(f'lidar_{proc}')
-                            self.logger.log(f'[main.py->LiGuard->start]: lidar_processes failed for {proc}:\n{e}', Logger.ERROR)
+                            self.logger.log(f'lidar_processes failed for {proc}:\n{traceback.format_exc()}', Logger.ERROR)
                 if self.img_io:
                     for proc in self.camera_processes:
                         try:
                             profiler.add_target(f'camera_{proc}')
                             proc(self.data_dict, cfg, self.logger)
                             profiler.end_target(f'camera_{proc}')
-                        except Exception as e:
+                        except Exception:
                             profiler.end_target(f'camera_{proc}')
-                            self.logger.log(f'[main.py->LiGuard->start]: camera_processes failed for {proc}:\n{e}', Logger.ERROR)
+                            self.logger.log(f'camera_processes failed for {proc}:\n{traceback.format_exc()}', Logger.ERROR)
                 if self.clb_io:
                     for proc in self.calib_processes:
                         try:
                             profiler.add_target(f'calib_{proc}')
                             proc(self.data_dict, cfg, self.logger)
                             profiler.end_target(f'calib_{proc}')
-                        except Exception as e:
+                        except Exception:
                             profiler.end_target(f'calib_{proc}')
-                            self.logger.log(f'[main.py->LiGuard->start]: calib_processes failed for {proc}:\n{e}', Logger.ERROR)
+                            self.logger.log(f'calib_processes failed for {proc}:\n{traceback.format_exc()}', Logger.ERROR)
                 if self.lbl_io:
                     for proc in self.label_processes:
                         try:
                             profiler.add_target(f'label_{proc}')
                             proc(self.data_dict, cfg, self.logger)
                             profiler.end_target(f'label_{proc}')
-                        except Exception as e:
+                        except Exception:
                             profiler.end_target(f'label_{proc}')
-                            self.logger.log(f'[main.py->LiGuard->start]: label_processes failed for {proc}:\n{e}', Logger.ERROR)
+                            self.logger.log(f'label_processes failed for {proc}:\n{traceback.format_exc()}', Logger.ERROR)
                 
                 for proc in self.post_processes:
                     try:
                         profiler.add_target(f'post_{proc}')
                         proc(self.data_dict, cfg, self.logger)
                         profiler.end_target(f'post_{proc}')
-                    except Exception as e:
+                    except Exception:
                         profiler.end_target(f'post_{proc}')
-                        self.logger.log(f'[main.py->LiGuard->start]: post_processes failed for {proc}:\n{e}', Logger.ERROR)
+                        self.logger.log(f'post_processes failed for {proc}:\n{traceback.format_exc()}', Logger.ERROR)
 
                 # update the visualizers
                 if self.pcd_io:
@@ -487,7 +489,7 @@ class LiGuard:
                         profiler.end_target('img_visualizer_save_current_view')
 
                 if cfg['visualization']['enabled'] == False:
-                    self.logger.log(f'[main.py->LiGuard->start]: Processed frame {self.data_dict["current_frame_index"]}', Logger.INFO)
+                    self.logger.log(f'Processed frame {self.data_dict["current_frame_index"]}', Logger.INFO)
                 profiler.end_target('Total Time / Step')
                     
             else:
@@ -516,7 +518,7 @@ class LiGuard:
         
         # close app
         self.app.quit()
-        self.logger('LiGuard exited safely.', Logger.INFO)
+        self.logger.log('LiGuard exited safely.', Logger.INFO)
         
 def main():
     LiGuard()
