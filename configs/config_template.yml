@@ -92,19 +92,16 @@ proc: # liguard processing configurations
             load_filter: False # set True to load filter
         Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
             enabled: False # set True to cluster point cloud using TEPP DBSCAN
-            activate_on_key_set: 'current_point_cloud_numpy' # activates as soon as this key is available in data_dict, it can be set by any other process to activate this process
             priority: 4 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
         O3D_DBSCAN: # DBSCAN point clustering algorithm in Open3D
             enabled: False # set True to cluster point cloud using Open3D DBSCAN
-            activate_on_key_set: 'current_point_cloud_numpy' # activates as soon as this key is available in data_dict, it can be set by any other process to activate this process
             priority: 4 # priority of process - lower is higher
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
         Cluster2Object:
             enabled: False
-            activate_on_key_set: 'current_point_cloud_numpy'
             priority: 5
             ground_level: -3.2
             max_foot_level: 1.4
@@ -141,9 +138,9 @@ proc: # liguard processing configurations
             priority: 6 # priority of process - lower is higher
         PointPillarDetection:
             enabled: False
-            activate_on_key_set: 'current_point_cloud_numpy'
             priority: 7
             path_to_github_repo: 'algo/nn/PointPillars' # clone https://github.com/zhulf0804/PointPillars to this path and install the requirements
+            pretrained_ckpt_file: 'epoch_160.pth' # full name of checkpoint file under algo/nn/PointPillars/pretrained
             score_threshold: 0.5
         gen_bbox_2d:
             enabled: False
@@ -155,7 +152,6 @@ proc: # liguard processing configurations
             priority: 1 # priority of process - lower is higher
         UltralyticsYOLOv5:
             enabled: False
-            activate_on_key_set: 'current_image_numpy'
             priority: 2
             model: 'yolov5s' # can be yolov5s, yolov5m, yolov5l, yolov5x https://pytorch.org/hub/ultralytics_yolov5
             class_colors: # in RGB format 

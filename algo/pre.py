@@ -1,6 +1,6 @@
+import inspect
 from gui.logger_gui import Logger
 from algo.utils import AlgoType, make_key, get_algo_params
-
 algo_type = AlgoType.pre
 
 def remove_nan_inf_allzero_from_pcd(data_dict: dict, cfg_dict: dict, logger: Logger):
@@ -13,7 +13,7 @@ def remove_nan_inf_allzero_from_pcd(data_dict: dict, cfg_dict: dict, logger: Log
         logger (Logger): A logger object for logging messages.
     """
     # get name and params
-    algo_name = 'visualize_in_vr'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -45,7 +45,7 @@ def manual_calibration(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (Logger): A logger object for logging messages
     """
     # get name and params
-    algo_name = 'manual_calibration'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # imports

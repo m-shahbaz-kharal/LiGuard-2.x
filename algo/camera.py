@@ -1,10 +1,9 @@
-# contains the image processing algorithms
-
-import numpy as np
+import inspect
 from gui.logger_gui import Logger
 from algo.utils import AlgoType, make_key, get_algo_params
-
 algo_type = AlgoType.camera
+
+import numpy as np
 
 def project_point_cloud_points(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
@@ -16,7 +15,7 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'project_point_cloud_points'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # Check if required data is present in data_dict
@@ -87,11 +86,11 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'UltralyticsYOLOv5'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     if 'current_image_numpy' not in data_dict:
-        logger.log('[algo->camera.py->UltralyticsYOLOv5]: current_image_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_image_numpy not found in data_dict', Logger.ERROR)
         return
     
     # imports

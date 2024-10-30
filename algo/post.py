@@ -1,8 +1,6 @@
-# contains post-processing algorithms for the data
-
+import inspect
 from gui.logger_gui import Logger
 from algo.utils import AlgoType, make_key, get_algo_params
-
 algo_type = AlgoType.post
 
 def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
@@ -24,7 +22,7 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'Fuse2DPredictedBBoxes'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -166,7 +164,7 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'GenerateKDTreePastTrajectory'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -281,7 +279,7 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict, logger:
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'GenerateCubicSplineFutureTrajectory'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -335,7 +333,7 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Log
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'GeneratePolyFitFutureTrajectory'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -389,7 +387,7 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict, logger: Logg
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'GenerateVelocityFromTrajectory'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -439,7 +437,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'create_per_object_pcdet_dataset'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -518,7 +516,7 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'create_pcdet_dataset'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -580,7 +578,7 @@ def visualize_in_vr(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'visualize_in_vr'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # dict keys

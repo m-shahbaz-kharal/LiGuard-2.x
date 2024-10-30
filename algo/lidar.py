@@ -1,14 +1,11 @@
-# contains point-cloud processing algorithms
+import inspect
+from gui.logger_gui import Logger
+from algo.utils import AlgoType, make_key, get_algo_params
+algo_type = AlgoType.lidar
 
 import os
 import sys
-
 import numpy as np
-
-from gui.logger_gui import Logger
-from algo.utils import AlgoType, make_key, get_algo_params
-
-algo_type = AlgoType.lidar
 
 def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
@@ -20,7 +17,7 @@ def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'rotate'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
@@ -51,7 +48,7 @@ def crop(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'crop'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # check if required data is present in data_dict
@@ -83,7 +80,7 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'project_image_pixel_colors'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
@@ -130,7 +127,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'BGFilterDHistDPP'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger).copy()
     live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
     
@@ -160,11 +157,9 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
             data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
             logger.log(f'Filter loaded from {params["filter_path"]}', Logger.INFO)
-            data_dict[f'{algo_name}_set'] = True
         else:
             data_dict[filter_loaded_key] = False
             logger.log(f'Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
-            data_dict[f'{algo_name}_set'] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -191,7 +186,6 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         # save filter
         filter_saved_path = save_DHistDPP_params(filter_params, params['filter_path'])
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
-        data_dict[f'{algo_name}_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -202,7 +196,6 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
-            data_dict[f'{algo_name}_set'] = False
             return
     
     # if filter exists, apply it
@@ -220,7 +213,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'BGFilterSTDF'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger).copy()
     live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
 
@@ -250,11 +243,9 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
             data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
             logger.log(f'Filter loaded from {params["filter_path"]}', Logger.INFO)
-            data_dict[f'{algo_name}_set'] = True
         else:
             data_dict[filter_loaded_key] = False
             logger.log(f'Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
-            data_dict[f'{algo_name}_set'] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -279,7 +270,6 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         # save filter
         filter_saved_path = save_STDF_params(filter_params, params['filter_path'])
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
-        data_dict[f'{algo_name}_set'] = True
     else:
         # recompute filter if non-live-editable params are changed
         condition = False
@@ -290,7 +280,6 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         if condition:
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
-            data_dict[f'{algo_name}_set'] = False
             return
     
     # if filter exists, apply it
@@ -312,17 +301,13 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'Clusterer_TEPP_DBSCAN'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # clear previous key set
-    if f'{algo_name}_set' in data_dict: data_dict.pop(f'{algo_name}_set')
     
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
         logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
-    if params['activate_on_key_set'] not in data_dict: return
     
     try: DBSCAN = __import__('dbscan', fromlist=['DBSCAN']).DBSCAN
     except:
@@ -341,7 +326,6 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     for label in np.unique(labels):
         if label == -1: continue
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
-    data_dict[f'{algo_name}_set'] = True
 
 def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
@@ -353,17 +337,13 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'O3D_DBSCAN'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-    
-    # clear previous key set
-    if 'O3D_DBSCAN_set' in data_dict: data_dict.pop('O3D_DBSCAN_set')
     
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
         logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
-    if params['activate_on_key_set'] not in data_dict: return
 
     # perform clustering
     import open3d as o3d
@@ -380,7 +360,6 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     for label in np.unique(labels):
         if label == -1: continue
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
-    data_dict['O3D_DBSCAN_set'] = True
 
 def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
@@ -392,7 +371,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'Cluster2Object'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # check if required data is present in data_dict
@@ -402,7 +381,6 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
     if 'current_label_list' not in data_dict:
         logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
-    if params['activate_on_key_set'] not in data_dict: return
 
     # imports
     import open3d as o3d
@@ -491,14 +469,13 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'PointPillarDetection'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
         logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
-    if params['activate_on_key_set'] not in data_dict: return
     
     # algo name and keys used in algo
     model_key = make_key(algo_name, 'model')
@@ -524,7 +501,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         from algo.nn.PointPillars.model import PointPillars
 
         data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
-        model_path = os.path.abspath(os.path.join(path, 'pretrained/epoch_160.pth'))
+        model_path = os.path.abspath(os.path.join(path, 'pretrained', params['pretrained_ckpt_file']))
         if torch.cuda.is_available():
             data_dict[model_key].cuda()
             data_dict[model_key].load_state_dict(torch.load(model_path))
@@ -569,7 +546,7 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'gen_bbox_2d'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict

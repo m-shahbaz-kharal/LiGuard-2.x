@@ -1,14 +1,10 @@
-# contains the algorithms that are used to manipulate both the read and predicted labels
+import inspect
+from gui.logger_gui import Logger
+from algo.utils import AlgoType, make_key, get_algo_params
+algo_type = AlgoType.label
 
 import numpy as np
 import open3d as o3d
-
-from gui.logger_gui import Logger
-import numpy as np
-
-from algo.utils import AlgoType, make_key, get_algo_params
-
-algo_type = AlgoType.label
 
 def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
@@ -20,7 +16,7 @@ def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'remove_out_of_bound_labels'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
@@ -97,7 +93,7 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
-    algo_name = 'remove_less_point_labels'
+    algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
 
     # Check if required data is present in data_dict
