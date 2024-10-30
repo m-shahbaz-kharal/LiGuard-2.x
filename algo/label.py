@@ -130,7 +130,7 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
             continue
         inside_points = rotated_bbox.get_point_indices_within_bounding_box(o3d.utility.Vector3dVector(point_cloud[:, 0:3]))
         # check if the number of points inside the bounding box is greater than the threshold give in the configuration
-        if len(inside_points) >= cfg_dict['proc']['label']['remove_less_point_labels']['min_points']: output.append(lbl_dict)
+        if len(inside_points) >= params['min_points']: output.append(lbl_dict)
 
     # update the label list in data_dict
     data_dict['current_label_list'] = output
