@@ -1,7 +1,3 @@
-'''
-This file contains utility functions that are used by the algorithms in the pipeline.
-'''
-
 from gui.logger_gui import Logger
 from enum import Enum, auto
 
