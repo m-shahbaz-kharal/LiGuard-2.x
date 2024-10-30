@@ -4,7 +4,6 @@ import time
 import threading
 
 calib_dir = os.path.dirname(os.path.realpath(__file__))
-
 supported_calib_types = [clb_handler.split('_')[1].replace('.py','') for clb_handler in os.listdir(calib_dir) if 'handler' in clb_handler]
 
 class FileIO:

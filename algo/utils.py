@@ -62,7 +62,7 @@ def gather_point_clouds(data_dict: dict, cfg_dict: dict, key: str, count: int, g
     gathering_not_started = key not in data_dict
     if gathering_not_started:
         data_dict[key] = []
-        logger.log(f'[algo->utils.py->gather_point_clouds[{key}]]: Gathering {count} point clouds', Logger.INFO)
+        logger.log(f'Gathering {count} point clouds into data_dict["{key}"]', Logger.INFO)
     
     if global_index_key is None:
         global_index_key = f'{key}_gathered_frames_indices'
@@ -100,7 +100,7 @@ def combine_gathers(data_dict: dict, cfg_dict: dict, key: str, gather_keys: list
     combining_not_started = key not in data_dict
     if combining_not_started:
         data_dict[key] = []
-        logger.log(f'[algo->utils.py->combine_gathers[{key}]]: Combining {len(gather_keys)} gathers', Logger.INFO)
+        logger.log(f'Combining {len(gather_keys)} gathers into data_dict["{key}"]', Logger.INFO)
         for gather_key in gather_keys:
             data_dict[key].extend(data_dict[gather_key])
 
@@ -126,7 +126,7 @@ def skip_frames(data_dict: dict, cfg_dict: dict, key: str, skip: int, global_ind
     skipping_not_started = key not in data_dict
     if skipping_not_started:
         data_dict[key] = 0
-        logger.log(f'[algo->utils.py->skip_frames[{key}]]: Skipping {skip} frames', Logger.INFO)
+        logger.log(f'Skipping {skip} frames', Logger.INFO)
     
     if global_index_key is None:
         global_index_key = f'{key}_skipped_frames_indices'

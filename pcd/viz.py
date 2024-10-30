@@ -142,7 +142,7 @@ class PointCloudVisualizer:
         if 'logger' in data_dict: logger:Logger = data_dict['logger']
         else: print('[CRITICAL ERROR]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
         if "current_point_cloud_numpy" not in data_dict:
-            logger.log(f'[pcd->viz.py->PointCloudVisualizer->update]: current_point_cloud_numpy not found in data_dict', Logger.DEBUG)
+            logger.log(f'current_point_cloud_numpy not found in data_dict', Logger.DEBUG)
             return
         self.point_cloud.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, 0:3])
         if 'current_point_cloud_point_colors' in data_dict:

@@ -116,7 +116,7 @@ class ImageVisualizer:
         else: print('[CRITICAL ERROR]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
 
         if "current_image_numpy" not in data_dict:
-            logger.log(f'[img->viz.py->ImageVisualizer->update]: current_image_numpy not found in data_dict', Logger.DEBUG)
+            logger.log(f'current_image_numpy not found in data_dict', Logger.DEBUG)
             return
         self.img = o3d.geometry.Image(data_dict['current_image_numpy'])
         self.__add_geometry__('image', self.img, False)
