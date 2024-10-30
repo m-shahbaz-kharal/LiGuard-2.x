@@ -361,7 +361,7 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[{log_str}->O3D_DBSCAN]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     if params['activate_on_key_set'] not in data_dict: return
 
@@ -496,7 +496,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
 
     # check if required data is present in data_dict
     if "current_point_cloud_numpy" not in data_dict:
-        logger.log('[{log_str}->PointPillarDetection]: current_point_cloud_numpy not found in data_dict', Logger.ERROR)
+        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
         return
     if params['activate_on_key_set'] not in data_dict: return
     
