@@ -8,10 +8,10 @@ import ast
 class BaseConfiguration:
     def get_callbacks_dict():
         """
-        Returns a dictionary containing callback functions for different actions.
+        Generates a template dictionary containing keys for applicable callback function names to be used as `BaseConfiguration` class's `callbacks` argument.
 
         Returns:
-            dict: A dictionary with keys representing different actions and values as empty lists.
+            dict: A dictionary with keys representing applicable callback actions and values as empty lists.
         """
         return {
             'new_config': [],       # List to store callback functions for 'new_config' action
@@ -21,32 +21,26 @@ class BaseConfiguration:
             'apply_config': [],     # List to store callback functions for 'apply_config' action
             'quit_config': []       # List to store callback functions for 'quit_config' action
         }
-    def get_callbacks_dict():
-        return {'new_config': [],
-                'open_config': [],
-                'save_config': [],
-                'save_as_config': [],
-                'apply_config': [],
-                'quit_config': []}
         
     def __init__(self, app: gui.Application, callbacks = get_callbacks_dict()):
         """
         Initializes the ConfigGUI class.
 
-        Parameters:
-        - app (gui.Application): The application object.
-        - callbacks (dict): A dictionary of callbacks.
-
-        Returns:
-        - None
+        Args:
+            app (gui.Application): The application object.
+            callbacks (dict): A dictionary containing the callbacks for the GUI.
         """
         self.app = app
-        
-        self.mwin = app.create_window("Configuration", 480, 1080, x=0, y=30)
-        self.em = self.mwin.theme.font_size
         self.callbacks = callbacks
+
+        # Create a window for the configuration GUI
+        self.mwin = app.create_window("Configuration", 480, 1080, x=0, y=30)
+        # Define the em unit
+        self.em = self.mwin.theme.font_size
+        # Set the close callback
         self.mwin.set_on_close(self.__quit_config__)
         
+        # Initialize the layout
         self.__init__layout__()
         
     def __init__layout__(self):
@@ -142,22 +136,45 @@ class BaseConfiguration:
         with open(cfg_path, 'w') as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
             
-    def __update_config_gui_from_cfg__(self, item, container, parent_keys=[], margin=0.2):
+    def __update_gui_from_cfg__(self, item, container, parent_keys=[], margin=0.2):
+        """
+        This function recursively generates the GUI from the configuration dictionary based on the item types.
+        """
         G = self.generated_config_gui_dict
         if type(item) == dict:
             for key in item.keys():
                 label_text = key
                 if type(item[key]) == dict:
                     collapsable_container = gui.CollapsableVert(label_text, self.em * 0.2, gui.Margins(self.em * margin, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-                    self.__update_config_gui_from_cfg__(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
+                    self.__update_gui_from_cfg__(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
                     container.add_child(collapsable_container)
                 elif type(item[key]) in [str, int, float]:
                     sub_container = gui.Horiz()
                     sub_container.add_child(gui.Label(label_text + ":"))
                     global_key = ".".join(parent_keys + [key])
                     G[global_key] = {'view': gui.TextEdit(), 'type': type(item[key])}
-                    G[global_key]['view'].text_value = str(item[key])
                     sub_container.add_child(G[global_key]['view'])
+                    if str(item[key]).startswith('dir_path'):
+                        G[global_key]['view'].text_value = str(item[key]).split('|')[1]
+                        dir_path_view = G[global_key]['view']
+                        browse_button = gui.Button("...")
+                        def set_text_value(view, path):
+                            view.text_value = path
+                            self.__close_dialog__()
+                        browse_button.set_on_clicked(lambda: self.__show_path_dialog__(f"Select Directory for {label_text.upper()}", gui.FileDialog.OPEN_DIR, dir_path_view.text_value, "", "", lambda path: set_text_value(dir_path_view, path)))
+                        sub_container.add_child(browse_button)
+                    elif str(item[key]).startswith('file_path'):
+                        G[global_key]['view'].text_value = str(item[key]).split('|')[1]
+                        file_path_view = G[global_key]['view']
+                        browse_button = gui.Button("...")
+                        def set_text_value(view, path):
+                            view.text_value = path
+                            self.__close_dialog__()
+                        browse_button.set_on_clicked(lambda: self.__show_path_dialog__(f"Select File for {label_text.upper()}", gui.FileDialog.OPEN, file_path_view.text_value, "", "", lambda path: set_text_value(file_path_view, path)))
+                        sub_container.add_child(browse_button)
+                    else:
+                        G[global_key]['view'].text_value = str(item[key])
+                    sub_container.add_stretch()
                     container.add_child(sub_container)
                 elif type(item[key]) == list:
                     sub_container = gui.Horiz()
@@ -209,13 +226,20 @@ class BaseConfiguration:
                         # Raise an exception
                         raise Exception("Unsupported type: {}".format(type(item[key])))
                 
-    def __show_issue_dialog__(self):
+    def __show_issue_dialog__(self, issue_text):
         # create a dialog
         dialog = gui.Dialog("Configuration GUI")
-        horiz = gui.Horiz(0, gui.Margins(self.em * 0.6, self.em * 0.6, self.em * 0.6, self.em * 0.4))
-        horiz.add_child(gui.Label(self.issue_text))
-        dialog.add_child(horiz)
+        vert = gui.Vert(0, gui.Margins(self.em * 0.6, self.em * 0.6, self.em * 0.6, self.em * 0.4))
+        
+        msg_label = gui.Label(f'Error: {issue_text}')
+        vert.add_child(msg_label)
+        
+        ok_button = gui.Button("OK")
+        vert.add_child(ok_button)
+        ok_button.set_on_clicked(lambda: self.__close_dialog__())
+        
         # show the dialog
+        dialog.add_child(vert)
         self.__show_dialog__(dialog)
 
     def __show_dialog__(self, dialog):
@@ -229,28 +253,28 @@ class BaseConfiguration:
         self.mwin.close_dialog()
 
     def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value'):
+        # Create a dialog and base layout
         dialog = gui.Dialog(title)
-        
         layout = gui.Vert(0.25 * self.em, gui.Margins(1 * self.em))
 
+        # First row containing Label and Input widget
         h_layout = gui.Horiz(0, gui.Margins(self.em * 0.6, self.em * 0.6, self.em * 0.6, self.em * 0.4))
         
         label = gui.Label(query)
         h_layout.add_child(label)
-        
         self.input_dialog_key = key
         self.input_dialog_widget = ans_base_type(ans_type)
         self.input_dialog_widget_value_variable = value_variable
         h_layout.add_child(self.input_dialog_widget)
-        
         layout.add_child(h_layout)
         
+        # Second row containing OK button
         ok_button = gui.Button("OK")
         ok_button.set_on_clicked(self.__on_input_okay__)
-        
         layout.add_child(ok_button)
+
+        # Add the layout to the dialog and show the dialog
         dialog.add_child(layout)
-        
         self.__show_dialog__(dialog)
 
     def __on_input_okay__(self):
@@ -260,77 +284,103 @@ class BaseConfiguration:
     def get_input_dialog_value(self, key):
         if hasattr(self, 'cfg') and key in self.cfg: return self.cfg.pop(key)
         return None
+    
+    def __show_path_dialog__(self, title: str, mode: gui.FileDialog.Mode, initial_path: str, filter_type: str, filter_name: str = '', on_done = lambda path: print(path)):
+        path_dialog = gui.FileDialog(mode, title, self.mwin.theme)
+        if filter_type != "": path_dialog.add_filter(filter_type, filter_name)
+        path_dialog.set_on_cancel(lambda: self.__close_dialog__())
+        path_dialog.set_on_done(lambda path: on_done(path))
+        path_dialog.set_path(initial_path)
+        self.__show_dialog__(path_dialog)
         
     def __new_config__(self):
-        # Load the default configuration
+        # Load the default configuration template and set a default configuration file name to the current timestamp
         self.cfg = self.load_config(os.path.join('configs', 'config_template.yml'))
         self.config_file_path_textedit.text_value = os.path.join('configs', time.strftime("%Y%m%d-%H%M%S") + ".yml")
-        cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+
         # Generate the configuration GUI from the configuration dictionary
-        self.__update_config_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
+        cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+        self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
         self.generated_config.set_widget(cfg_gui)
         
+        # Call the callback functions for the 'new_config' action
         for callback in self.callbacks['new_config']: callback(self.cfg)
-            
+
     def __open_config__(self):
-        # Define the function to load the configuration file and close the dialog
+        # Define the function to load the configuration file, update GUI, and close the dialog
         def load_cfg_and_close_dialog(cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
             self.__close_dialog__()
-            
-            self.cfg = self.load_config(cfg_path)
-            cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-            self.__update_config_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
-            self.generated_config.set_widget(cfg_gui)
+            try:
+                self.cfg = self.load_config(cfg_path)
+                cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+                self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
+                self.generated_config.set_widget(cfg_gui)
+            except:
+                self.__show_issue_dialog__('Failed to load configuration file.')
 
-        # Open the configuration file
-        read_config_file_dialog = gui.FileDialog(gui.FileDialog.OPEN, "Load Configuration", self.mwin.theme)
-        read_config_file_dialog.add_filter(".yml", "LiGuard Configuration (.yml)")
-        read_config_file_dialog.set_on_cancel(lambda: self.__close_dialog__())
-        read_config_file_dialog.set_on_done(lambda path: load_cfg_and_close_dialog(path))
-        self.__show_dialog__(read_config_file_dialog)
+        # Open the configuration file by asking the user for the path
+        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, "", ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)
         
-        for callback in self.callbacks['open_config']: callback(self.cfg)
+        # If the configuration is loaded successfully
+        if hasattr(self, 'cfg'):
+            # Call the callback functions for the 'open_config' action
+            for callback in self.callbacks['open_config']: callback(self.cfg)
     
     def __save_config__(self):
+        # Update the configuration from the GUI and save it to the specified path
         try:
-            # Update the configuration from the GUI
             self.__update_cfg_from_gui__(self.cfg, ['cfg'])
             self.save_config(self.cfg, self.config_file_path_textedit.text_value)
         except:
-            # If an exception occurs, set the issue text and show the issue dialog
-            self.issue_text = "Failed to save configuration file."
-            self.__show_issue_dialog__()
-            time.sleep(self.cfg['threads']['vis_sleep'])
-            self.__close_dialog__()
-        # Call the callback functions for the 'save_config' action
-        for callback in self.callbacks['save_config']: callback(self.cfg)
+            self.__show_issue_dialog__('Failed to save configuration file.')
+        
+        # If the configuration is saved successfully
+        if hasattr(self, 'cfg'):
+            # Call the callback functions for the 'save_config' action
+            for callback in self.callbacks['save_config']: callback(self.cfg)
+        else:
+            self.__show_issue_dialog__('No configuration to save.')
             
     def __save_as_config__(self):
+        # Define the function to get configuration from GUI, save to the specified path, and close the dialog
         def save_cfg_and_close_dialog(cfg, cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
             self.__update_cfg_from_gui__(self.cfg, ['cfg'])
             self.save_config(cfg, cfg_path)
             self.__close_dialog__()
-            
+
+        # If the configuration exists
         if hasattr(self, 'cfg'):
-            # Save the configuration to the specified path
-            save_as_config_file_dialog = gui.FileDialog(gui.FileDialog.SAVE, "Save Configuration", self.mwin.theme)
-            save_as_config_file_dialog.add_filter(".yml", "LiGuard Configuration (.yml)")
-            save_as_config_file_dialog.set_on_cancel(lambda: self.__close_dialog__())
-            save_as_config_file_dialog.set_on_done(lambda path: save_cfg_and_close_dialog(self.cfg, path))
-            self.__show_dialog__(save_as_config_file_dialog)
-        
-        # Call the callback functions for the 'save_as_config' action
-        for callback in self.callbacks['save_as_config']: callback(self.cfg)
+            # Save the configuration by asking the user for the path
+            self.__show_path_dialog__("Save Configuration", gui.FileDialog.SAVE, "", ".yml", "LiGuard Configuration (.yml)", lambda cfg_path: save_cfg_and_close_dialog(self.cfg, cfg_path))
+            
+            # Call the callback functions for the 'save_as_config' action
+            for callback in self.callbacks['save_as_config']: callback(self.cfg)
+        else:
+            self.__show_issue_dialog__('No configuration to save.')
             
     def __apply_config__(self):
-        self.__update_cfg_from_gui__(self.cfg, ['cfg'])
-        # Call the callback functions for the 'apply_config' action
-        for callback in self.callbacks['apply_config']: callback(self.cfg)
+        # If the configuration exists
+        if hasattr(self, 'cfg'):
+            # Update the configuration from the GUI
+            self.__update_cfg_from_gui__(self.cfg, ['cfg'])
+        
+            # Call the callback functions for the 'apply_config' action
+            for callback in self.callbacks['apply_config']: callback(self.cfg)
+        else:
+            self.__show_issue_dialog__('No configuration to apply.')
         
     def __quit_config__(self):
         print("Quitting...")
-        # Call the callback functions for the 'quit_config' action
-        for callback in self.callbacks['quit_config']: callback(self.cfg)
+
+        # If the configuration exists
+        if hasattr(self, 'cfg'):
+            # Call the callback functions for the 'quit_config' action
+            for callback in self.callbacks['quit_config']: callback(self.cfg)
+        else:
+            # Still call the callback functions for the 'quit_config' action to signal exit
+            for callback in self.callbacks['quit_config']: callback(None)
+
+        # Required by gui.Window.set_on_close
         return True

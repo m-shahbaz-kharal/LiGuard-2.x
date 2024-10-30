@@ -498,12 +498,12 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[pcd_limit_range_key] = np.array(min_xyz + max_xyz, dtype=np.float32)
         data_dict[class_color_key] = {'Pedestrian': [1, 0, 0], 'Cyclist': [0, 0, 1], 'Car': [0, 1, 0]}
 
-        path = os.path.abspath(os.path.join(data_dict['root_path'], params['path_to_github_repo']))
+        path = params['path_to_github_repo']
         if path not in sys.path: sys.path.append(path)
         from algo.nn.PointPillars.model import PointPillars
 
         data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
-        model_path = os.path.abspath(os.path.join(path, 'pretrained', params['pretrained_ckpt_file']))
+        model_path = params['pretrained_ckpt_file']
         if torch.cuda.is_available():
             data_dict[model_key].cuda()
             data_dict[model_key].load_state_dict(torch.load(model_path))
