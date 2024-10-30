@@ -350,6 +350,7 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     Args:
         data_dict (dict): A dictionary containing data for processing.
         cfg_dict (dict): A dictionary containing configuration parameters.
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
     algo_name = 'O3D_DBSCAN'
@@ -487,6 +488,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
     Args:
         data_dict (dict): A dictionary containing the required data for processing.
         cfg_dict (dict): A dictionary containing the configuration parameters.
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
     # get name and params
     algo_name = 'PointPillarDetection'
