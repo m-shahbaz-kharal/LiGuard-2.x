@@ -1,7 +1,3 @@
-[submodule "algo/nn/PointNN"]
-	path = algo/nn/PointNN
-	url = https://github.com/m-shahbaz-kharal/PointNN
-
 [submodule "algo/nn/PointPillars"]
 	path = algo/nn/PointPillars
 	url = https://github.com/zhulf0804/PointPillars
