@@ -50,16 +50,21 @@ class Profiler:
         avg_durations = [self.targets[target]['avg_duration'] for target in targets]
 
         plt.figure(figsize=(10, 6))
-        plt.bar(targets, avg_durations)
+        plt.barh(targets, avg_durations)
         plt.xlabel('Targets')
         plt.ylabel('Average Duration')
+        plt.tight_layout(pad=10.0)
         plt.title('Average Durations of Targets')
         plt.xticks(rotation='vertical')  # Rotate the x-axis labels vertically
 
         plt.show()
 
 if __name__ == '__main__':
-    x = Profiler('LiGuardMainLoopProfile')
-    x.load('test_configs/LiGuardMainLoopProfile')
+    import argparse
+    parser = argparse.ArgumentParser('A simple utility for profiling code.')
+    parser.add_argument('profile', type=str, help='The path to the .profile file.')
+    args = parser.parse_args()
+    x = Profiler('')
+    x.load(args.profile)
     x.compile()
     x.plot_durations()
