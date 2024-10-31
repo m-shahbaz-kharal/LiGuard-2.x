@@ -13,10 +13,6 @@ def Handler(calib_path: str):
 
     Returns:
         dict: A dictionary containing the calibration parameters.
-
-    Raises:
-        None
-
     """
 
     if os.path.exists(calib_path) == False: return None
