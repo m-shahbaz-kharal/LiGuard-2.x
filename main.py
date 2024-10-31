@@ -256,7 +256,7 @@ class LiGuard:
                 except Exception:
                     self.logger.log(f'pre_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.pre_processes = [self.pre_processes[priority] for priority in sorted(self.pre_processes.keys())]
-        self.logger.log(f'enabled pre_processes: {self.pre_processes}', Logger.DEBUG)
+        self.logger.log(f'enabled pre_processes: {[f.__name__ for f in self.pre_processes]}', Logger.DEBUG)
         
         # lidar processes
         self.lidar_processes = dict()
@@ -271,7 +271,7 @@ class LiGuard:
                 except Exception:
                     self.logger.log(f'lidar_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.lidar_processes = [self.lidar_processes[priority] for priority in sorted(self.lidar_processes.keys())]
-        self.logger.log(f'enabled lidar_processes: {self.lidar_processes}', Logger.DEBUG)
+        self.logger.log(f'enabled lidar_processes: {[f.__name__ for f in self.lidar_processes]}', Logger.DEBUG)
         
         # camera processes
         self.camera_processes = dict()
@@ -286,7 +286,7 @@ class LiGuard:
                 except Exception:
                     self.logger.log(f'camera_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.camera_processes = [self.camera_processes[priority] for priority in sorted(self.camera_processes.keys())]
-        self.logger.log(f'enabled camera_processes: {self.camera_processes}', Logger.DEBUG)
+        self.logger.log(f'enabled camera_processes: {[f.__name__ for f in self.camera_processes]}', Logger.DEBUG)
 
         # calib processes
         self.calib_processes = dict()
@@ -301,7 +301,7 @@ class LiGuard:
                 except Exception:
                     self.logger.log(f'calib_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.calib_processes = [self.calib_processes[priority] for priority in sorted(self.calib_processes.keys())]
-        self.logger.log(f'enabled calib_processes: {self.calib_processes}', Logger.DEBUG)
+        self.logger.log(f'enabled calib_processes: {[f.__name__ for f in self.calib_processes]}', Logger.DEBUG)
 
         # label processes
         self.label_processes = dict()
@@ -316,7 +316,7 @@ class LiGuard:
                 except Exception:
                     self.logger.log(f'label_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
         self.label_processes = [self.label_processes[priority] for priority in sorted(self.label_processes.keys())]
-        self.logger.log(f'enabled label_processes: {self.label_processes}', Logger.DEBUG)
+        self.logger.log(f'enabled label_processes: {[f.__name__ for f in self.label_processes]}', Logger.DEBUG)
         
         # post processes
         self.post_processes = dict()
@@ -332,7 +332,7 @@ class LiGuard:
                     self.logger.log(f'post_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
             
         self.post_processes = [self.post_processes[priority] for priority in sorted(self.post_processes.keys())]
-        self.logger.log(f'enabled post_processes: {self.post_processes}', Logger.DEBUG)
+        self.logger.log(f'enabled post_processes: {[f.__name__ for f in self.post_processes]}', Logger.DEBUG)
         
     def start(self, cfg):
         # start the LiGuard
