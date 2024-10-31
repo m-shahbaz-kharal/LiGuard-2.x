@@ -1,9 +1,15 @@
 import open3d.visualization.gui as gui
 
 import os
+import sys
 import time
 import yaml
 import ast
+
+application_root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+def get_abs_path(path:str) -> str:
+    if not os.path.isabs(path): path = os.path.join(application_root_dir, path)
+    return os.path.abspath(path)
 
 class BaseConfiguration:
     def get_callbacks_dict():
@@ -153,27 +159,20 @@ class BaseConfiguration:
                     sub_container.add_child(gui.Label(label_text + ":"))
                     global_key = ".".join(parent_keys + [key])
                     G[global_key] = {'view': gui.TextEdit(), 'type': type(item[key])}
+                    G[global_key]['view'].text_value = str(item[key])
                     sub_container.add_child(G[global_key]['view'])
-                    if str(item[key]).startswith('dir_path'):
-                        G[global_key]['view'].text_value = str(item[key]).split('|')[1]
-                        dir_path_view = G[global_key]['view']
+                    if key.endswith('_dir') or key.endswith('_file'):
                         browse_button = gui.Button("...")
-                        def set_text_value(view, path):
-                            view.text_value = path
-                            self.__close_dialog__()
-                        browse_button.set_on_clicked(lambda: self.__show_path_dialog__(f"Select Directory for {label_text.upper()}", gui.FileDialog.OPEN_DIR, dir_path_view.text_value, "", "", lambda path: set_text_value(dir_path_view, path)))
+                        def create_browse_dialog(title=label_text, path_edit=G[global_key]['view']):
+                            def on_done(path):
+                                path_edit.text_value = path
+                                self.__close_dialog__()
+                            dialog_title = f"Select {title.upper()}"
+                            mode = gui.FileDialog.OPEN_DIR if title.endswith('_dir') else gui.FileDialog.OPEN
+                            initial_path = get_abs_path(path_edit.text_value)
+                            self.__show_path_dialog__(dialog_title, mode, initial_path, "", on_done=on_done)
+                        browse_button.set_on_clicked(create_browse_dialog)
                         sub_container.add_child(browse_button)
-                    elif str(item[key]).startswith('file_path'):
-                        G[global_key]['view'].text_value = str(item[key]).split('|')[1]
-                        file_path_view = G[global_key]['view']
-                        browse_button = gui.Button("...")
-                        def set_text_value(view, path):
-                            view.text_value = path
-                            self.__close_dialog__()
-                        browse_button.set_on_clicked(lambda: self.__show_path_dialog__(f"Select File for {label_text.upper()}", gui.FileDialog.OPEN, file_path_view.text_value, "", "", lambda path: set_text_value(file_path_view, path)))
-                        sub_container.add_child(browse_button)
-                    else:
-                        G[global_key]['view'].text_value = str(item[key])
                     sub_container.add_stretch()
                     container.add_child(sub_container)
                 elif type(item[key]) == list:
@@ -225,6 +224,16 @@ class BaseConfiguration:
                     else:
                         # Raise an exception
                         raise Exception("Unsupported type: {}".format(type(item[key])))
+                    
+    def __show_dialog__(self, dialog):
+        if not hasattr(self, 'showing_dialog'): self.showing_dialog = True
+        elif self.showing_dialog: self.__close_dialog__()
+        self.showing_dialog = True
+        self.mwin.show_dialog(dialog)
+        
+    def __close_dialog__(self):
+        self.showing_dialog = False
+        self.mwin.close_dialog()
                 
     def __show_issue_dialog__(self, issue_text):
         # create a dialog
@@ -241,16 +250,6 @@ class BaseConfiguration:
         # show the dialog
         dialog.add_child(vert)
         self.__show_dialog__(dialog)
-
-    def __show_dialog__(self, dialog):
-        if not hasattr(self, 'showing_dialog'): self.showing_dialog = True
-        elif self.showing_dialog: self.__close_dialog__()
-        self.showing_dialog = True
-        self.mwin.show_dialog(dialog)
-        
-    def __close_dialog__(self):
-        self.showing_dialog = False
-        self.mwin.close_dialog()
 
     def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value'):
         # Create a dialog and base layout
@@ -270,16 +269,15 @@ class BaseConfiguration:
         
         # Second row containing OK button
         ok_button = gui.Button("OK")
-        ok_button.set_on_clicked(self.__on_input_okay__)
+        def ok_button_callback():
+            self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
+            self.__close_dialog__()
+        ok_button.set_on_clicked(ok_button_callback)
         layout.add_child(ok_button)
 
         # Add the layout to the dialog and show the dialog
         dialog.add_child(layout)
         self.__show_dialog__(dialog)
-
-    def __on_input_okay__(self):
-        self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
-        self.__close_dialog__()
 
     def get_input_dialog_value(self, key):
         if hasattr(self, 'cfg') and key in self.cfg: return self.cfg.pop(key)
@@ -289,8 +287,8 @@ class BaseConfiguration:
         path_dialog = gui.FileDialog(mode, title, self.mwin.theme)
         if filter_type != "": path_dialog.add_filter(filter_type, filter_name)
         path_dialog.set_on_cancel(lambda: self.__close_dialog__())
-        path_dialog.set_on_done(lambda path: on_done(path))
-        path_dialog.set_path(initial_path)
+        path_dialog.set_on_done(on_done)
+        if os.path.exists(initial_path): path_dialog.set_path(initial_path)
         self.__show_dialog__(path_dialog)
         
     def __new_config__(self):
@@ -320,7 +318,7 @@ class BaseConfiguration:
                 self.__show_issue_dialog__('Failed to load configuration file.')
 
         # Open the configuration file by asking the user for the path
-        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, "", ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)
+        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, get_abs_path(''), ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)
         
         # If the configuration is loaded successfully
         if hasattr(self, 'cfg'):
@@ -353,7 +351,7 @@ class BaseConfiguration:
         # If the configuration exists
         if hasattr(self, 'cfg'):
             # Save the configuration by asking the user for the path
-            self.__show_path_dialog__("Save Configuration", gui.FileDialog.SAVE, "", ".yml", "LiGuard Configuration (.yml)", lambda cfg_path: save_cfg_and_close_dialog(self.cfg, cfg_path))
+            self.__show_path_dialog__("Save Configuration", gui.FileDialog.SAVE, get_abs_path(''), ".yml", "LiGuard Configuration (.yml)", lambda cfg_path: save_cfg_and_close_dialog(self.cfg, cfg_path))
             
             # Call the callback functions for the 'save_as_config' action
             for callback in self.callbacks['save_as_config']: callback(self.cfg)

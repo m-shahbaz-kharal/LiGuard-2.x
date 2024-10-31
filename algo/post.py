@@ -1,4 +1,5 @@
 import inspect
+from gui.config_gui import get_abs_path
 from gui.logger_gui import Logger
 from algo.utils import AlgoType, make_key, get_algo_params
 algo_type = AlgoType.post
@@ -462,7 +463,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
     current_label_path = data_dict['current_label_path']
     
     # Create output directories if they do not exist
-    output_path = os.path.join(cfg_dict['data']['outputs_dir'], 'post', 'per_object_pcdet_dataset')
+    output_path = os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), 'post', 'per_object_pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')
@@ -540,7 +541,7 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     current_label_path = data_dict['current_label_path']
     
     # Create output directories if they do not exist
-    output_path = os.path.join(cfg_dict['data']['outputs_dir'], 'post', 'pcdet_dataset')
+    output_path = os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), 'post', 'pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')

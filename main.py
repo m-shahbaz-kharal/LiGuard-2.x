@@ -3,7 +3,7 @@ import traceback
 
 import open3d.visualization.gui as gui
 
-from gui.config_gui import BaseConfiguration as BaseConfigurationGUI
+from gui.config_gui import BaseConfiguration as BaseConfigurationGUI, get_abs_path
 from gui.logger_gui import Logger
 from profiler import Profiler
 
@@ -58,7 +58,6 @@ class LiGuard:
         self.is_playing = False # if the frames are playing
         # initialize the data dictionary
         self.data_dict = dict()
-        self.data_dict['root_path'] = os.path.abspath(os.path.curdir)
         self.data_dict['logger'] = self.logger
         self.data_dict['current_frame_index'] = 0
         self.data_dict['previous_frame_index'] = -1
@@ -111,22 +110,22 @@ class LiGuard:
         need_reset = False
         need_level_change = False
         if not hasattr(self, 'last_data_path'):
-            self.last_data_path = cfg['data']['path']
+            self.last_data_path = get_abs_path(cfg['data']['main_dir'])
             need_reset = True
-        if self.last_data_path != cfg['data']['path']: need_reset = True
+        if self.last_data_path != get_abs_path(cfg['data']['main_dir']): need_reset = True
         if not hasattr(self, 'last_logging_level'):
             self.last_logging_level = cfg['logging']['level']
             need_level_change = True
         if self.last_logging_level != cfg['logging']['level']: need_level_change = True
         if not hasattr(self, 'last_logging_path'):
-            self.last_logging_path = cfg['logging']['path']
+            self.last_logging_path = get_abs_path(cfg['logging']['logs_dir'])
             need_reset = True
-        if self.last_logging_path != cfg['logging']['path']: need_reset = True
+        if self.last_logging_path != get_abs_path(cfg['logging']['logs_dir']): need_reset = True
         
         # Reset the logger if the data path or logging level has changed
         if need_reset:
-            self.last_data_path = cfg['data']['path']
-            self.last_logging_path = cfg['logging']['path']
+            self.last_data_path = get_abs_path(cfg['data']['main_dir'])
+            self.last_logging_path = get_abs_path(cfg['logging']['logs_dir'])
             logger.reset(cfg)
         # Change the logging level if it has changed
         if need_level_change:
@@ -134,7 +133,7 @@ class LiGuard:
             logger.change_level(cfg['logging']['level'])
 
         # Make sure the required directories exist
-        if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(cfg['data']['outputs_dir'], exist_ok=True)
+        if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(get_abs_path(cfg['data']['outputs_dir']), exist_ok=True)
 
         # unlock the keyboard keys right, left, and space
         keyboard.unhook_all()
@@ -352,7 +351,7 @@ class LiGuard:
             
             # check if user has jumped to a frame
             jump = self.config.get_input_dialog_value('jump_to_frame')
-            if jump: self.data_dict['current_frame_index'] = int(jump)
+            if jump and (jump >= 0 and jump <= self.data_dict['maximum_frame_index']): self.data_dict['current_frame_index'] = jump
             # check if the frame has changed
             frame_changed = self.data_dict['previous_frame_index'] != self.data_dict['current_frame_index']
             
@@ -522,5 +521,5 @@ class LiGuard:
         
 def main():
     LiGuard()
-
+    print('LiGuard exited successfully.')
 main()

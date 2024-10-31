@@ -1,4 +1,5 @@
 import inspect
+from gui.config_gui import get_abs_path
 from gui.logger_gui import Logger
 from algo.utils import AlgoType, make_key, get_algo_params
 algo_type = AlgoType.lidar
@@ -154,14 +155,14 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         # add params to data_dict
         data_dict[params_key] = params
         
-        filter_params = load_DHistDPP_params(params['filter_path'])
+        filter_params = load_DHistDPP_params(os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
-            logger.log(f'Filter loaded from {params["filter_path"]}', Logger.INFO)
+            logger.log(f'Filter loaded from {params["filter_file"]}', Logger.INFO)
         else:
             data_dict[filter_loaded_key] = False
-            logger.log(f'Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+            logger.log(f'Failed to load filter from {params["filter_file"]}. Calculating ...', Logger.WARNING)
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -186,7 +187,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
         logger.log(f'Filter generated', Logger.INFO)
         # save filter
-        filter_saved_path = save_DHistDPP_params(filter_params, params['filter_path'])
+        filter_saved_path = save_DHistDPP_params(filter_params, os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
@@ -240,14 +241,14 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         # add params to data_dict
         data_dict[params_key] = params
         
-        filter_params = load_STDF_params(params['filter_path'])
+        filter_params = load_STDF_params(os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
-            logger.log(f'Filter loaded from {params["filter_path"]}', Logger.INFO)
+            logger.log(f'Filter loaded from {params["filter_file"]}', Logger.INFO)
         else:
             data_dict[filter_loaded_key] = False
-            logger.log(f'Failed to load filter from {params["filter_path"]}. Calculating ...', Logger.WARNING)
+            logger.log(f'Failed to load filter from {params["filter_file"]}. Calculating ...', Logger.WARNING)
     
     # generate filter if not exists
     if filter_key not in data_dict:
@@ -270,7 +271,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
         logger.log('Filter generated', Logger.INFO)
         # save filter
-        filter_saved_path = save_STDF_params(filter_params, params['filter_path'])
+        filter_saved_path = save_STDF_params(filter_params, os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
@@ -498,12 +499,12 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[pcd_limit_range_key] = np.array(min_xyz + max_xyz, dtype=np.float32)
         data_dict[class_color_key] = {'Pedestrian': [1, 0, 0], 'Cyclist': [0, 0, 1], 'Car': [0, 1, 0]}
 
-        path = params['path_to_github_repo']
+        path = get_abs_path(params['github_repo_dir'])
         if path not in sys.path: sys.path.append(path)
         from algo.nn.PointPillars.model import PointPillars
 
         data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
-        model_path = params['pretrained_ckpt_file']
+        model_path = get_abs_path(params['ckpt_file'])
         if torch.cuda.is_available():
             data_dict[model_key].cuda()
             data_dict[model_key].load_state_dict(torch.load(model_path))

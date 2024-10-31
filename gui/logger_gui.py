@@ -1,6 +1,7 @@
 import open3d.visualization.gui as gui
 
 import os
+from gui.config_gui import get_abs_path
 import time
 import yaml
 
@@ -49,15 +50,12 @@ class Logger:
         Returns:
             None
         """
+        path = get_abs_path(cfg['logging']['logs_dir'])
         level = cfg['logging']['level']
-        path = cfg['logging']['path']
         
-        if not os.path.exists(path):
-            if '.txt' in path: os.makedirs(os.path.dirname(path), exist_ok=True)
-            else: os.makedirs(path, exist_ok=True)
+        if not os.path.exists(path): os.makedirs(path, exist_ok=True)
         
-        if os.path.isdir(path): self.log_file_path = os.path.join(path, time.strftime("log_%Y%m%d-%H%M%S") + ".txt")
-        else: self.log_file_path = path
+        self.log_file_path = os.path.join(path, time.strftime("log_%Y%m%d-%H%M%S") + ".txt")
 
         if level < Logger.DEBUG or level > Logger.CRITICAL:
             level = Logger.DEBUG

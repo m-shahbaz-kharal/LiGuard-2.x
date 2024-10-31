@@ -1,4 +1,5 @@
 import os
+from gui.config_gui import get_abs_path
 import glob
 import time
 import threading
@@ -39,7 +40,7 @@ class FileIO:
     """
     def __init__(self, cfg: dict, calib_reader: callable):
         self.cfg = cfg
-        self.lbl_dir = os.path.join(cfg['data']['path'], cfg['data']['label_subdir'])
+        self.lbl_dir = os.path.join(get_abs_path(cfg['data']['main_dir']), cfg['data']['label_subdir'])
         self.lbl_type = cfg['data']['label']['lbl_type']
         self.lbl_start_idx = cfg['data']['start']['label']
         self.global_zero = cfg['data']['start']['global_zero']

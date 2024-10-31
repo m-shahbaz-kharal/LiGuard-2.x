@@ -1,18 +1,13 @@
-import open3d as o3d
-import numpy as np
 import os
+from gui.config_gui import get_abs_path
 import glob
 import time
 import threading
+
+import numpy as np
+import open3d as o3d
 
 supported_file_types = ['.bin', '.npy', '.ply', '.pcd']
-
-import os
-import glob
-import threading
-import time
-import numpy as np
-import open3d as o3d
 
 class FileIO:
     """
@@ -37,7 +32,7 @@ class FileIO:
 
     def __init__(self, cfg: dict):
         self.cfg = cfg     
-        self.pcd_dir = os.path.join(cfg['data']['path'], cfg['data']['lidar_subdir'])
+        self.pcd_dir = os.path.join(get_abs_path(cfg['data']['main_dir']), cfg['data']['lidar_subdir'])
         self.pcd_type = cfg['data']['lidar']['pcd_type']
         self.pcd_start_idx = cfg['data']['start']['lidar']
         self.global_zero = cfg['data']['start']['global_zero']

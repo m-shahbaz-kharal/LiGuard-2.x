@@ -1,8 +1,10 @@
-import cv2
 import os
+from gui.config_gui import get_abs_path
 import glob
 import time
 import threading
+
+import cv2
 
 class FileIO:
     """
@@ -36,7 +38,7 @@ class FileIO:
 
     def __init__(self, cfg: dict):
         self.cfg = cfg
-        self.img_dir = os.path.join(cfg['data']['path'], cfg['data']['camera_subdir'])
+        self.img_dir = os.path.join(get_abs_path(cfg['data']['main_dir']), cfg['data']['camera_subdir'])
         self.img_type = cfg['data']['camera']['img_type']
         self.img_start_idx = cfg['data']['start']['camera']
         self.global_zero = cfg['data']['start']['global_zero']
