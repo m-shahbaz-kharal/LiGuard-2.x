@@ -527,18 +527,15 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     if "current_label_list" not in data_dict:
         logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
-    if "current_label_path" not in data_dict:
-        logger.log('current_label_path not found in data_dict', Logger.ERROR)
-        return
     
     # imports
     import os
     import numpy as np
 
     # Get required data from data_dict
+    current_point_cloud_path = data_dict['current_point_cloud_path']
     current_point_cloud_numpy = data_dict['current_point_cloud_numpy']
     current_label_list = data_dict['current_label_list']
-    current_label_path = data_dict['current_label_path']
     
     # Create output directories if they do not exist
     output_path = os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), 'post', 'pcdet_dataset')
@@ -548,7 +545,7 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     os.makedirs(lbl_output_dir, exist_ok=True)
 
     # Save the point cloud
-    npy_path = os.path.join(pcd_output_dir, os.path.basename(current_label_path).replace('.txt', '.npy'))
+    npy_path = os.path.join(pcd_output_dir, os.path.basename(current_point_cloud_path).split('.')[0] + '.npy')
     np.save(npy_path, current_point_cloud_numpy)
     
     lbl_str = ''
@@ -566,7 +563,8 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
         lbl_str += '\n'
 
     # Save the label
-    lbl_path = os.path.join(lbl_output_dir, os.path.basename(current_label_path))
+    point_cloud_file_base_name = os.path.basename(current_point_cloud_path).split('.')[0]
+    lbl_path = os.path.join(lbl_output_dir, point_cloud_file_base_name + '.txt')
     with open(lbl_path, 'w') as f: f.write(lbl_str)
 
 def visualize_in_vr(data_dict: dict, cfg_dict: dict, logger: Logger):

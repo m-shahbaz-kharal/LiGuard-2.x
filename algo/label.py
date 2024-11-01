@@ -44,12 +44,13 @@ def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
             logger.log('use_lidar_range is True but current_point_cloud_numpy not found in data_dict.', Logger.ERROR)
             return
     
-    if use_image_size and 'current_image_numpy' in data_dict:
-        img_min_xy = np.array([0, 0], dtype=np.float32)
-        img_max_xy = data_dict['current_image_numpy'].shape[:2][::-1]
-    else:
-        logger.log('use_image_size is True but current_image_numpy not found in data_dict.', Logger.ERROR)
-        return
+    if use_image_size:
+        if 'current_image_numpy' in data_dict:
+            img_min_xy = np.array([0, 0], dtype=np.float32)
+            img_max_xy = data_dict['current_image_numpy'].shape[:2][::-1]
+        else:
+            logger.log('use_image_size is True but current_image_numpy not found in data_dict.', Logger.ERROR)
+            return
 
     # Get label list and bounding box limits
     lbl_list = data_dict['current_label_list']

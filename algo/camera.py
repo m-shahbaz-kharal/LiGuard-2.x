@@ -103,7 +103,7 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict, logger: Logger):
 
     # check if model is already loaded
     if model_key not in data_dict:
-        logger.log(f'Loading {params['model']} model', Logger.INFO)
+        logger.log(f'Loading {params["model"]} model', Logger.INFO)
         data_dict[model_key] = torch.hub.load('ultralytics/yolov5', params['model'], pretrained=True, _verbose=False)
         vk_dict = {v.capitalize():k for (k,v) in data_dict[model_key].names.items()}
         data_dict[tgt_cls_key] = [vk_dict[key] for key in params['class_colors']]
