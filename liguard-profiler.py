@@ -59,7 +59,7 @@ class Profiler:
 
         plt.show()
 
-if __name__ == '__main__':
+def main():
     import argparse
     parser = argparse.ArgumentParser('A simple utility for profiling code.')
     parser.add_argument('profile', type=str, help='The path to the .profile file.')
@@ -68,3 +68,6 @@ if __name__ == '__main__':
     x.load(args.profile)
     x.compile()
     x.plot_durations()
+
+if __name__ == '__main__':
+    main()
