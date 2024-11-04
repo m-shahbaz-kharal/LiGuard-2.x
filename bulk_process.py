@@ -44,7 +44,7 @@ def dict2proc2dict(source_queue, cfg, logger, processes, target_queue):
         source_queue.task_done()
     target_queue.put(None)
 
-def main(args):
+def bulk_process(args):
     import yaml
     with open(args.config) as f:cfg = yaml.safe_load(f)
     logger = Logger()
@@ -198,7 +198,7 @@ def main(args):
 
     logger.log('Processing complete.', Logger.INFO)
 
-if __name__ == '__main__':
+def main():
     banner = \
     """
     #########################################################
@@ -231,4 +231,7 @@ if __name__ == '__main__':
     parser.add_argument('config', type=str, help='Path to the configuration (.yml) file.')
     parser.add_argument('--max_queue_size', type=int, default=10, help='Maximum size of the queues.')
     args = parser.parse_args()
-    main(args)
+    bulk_process(args)
+
+if __name__ == '__main__':
+    main()
