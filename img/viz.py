@@ -7,8 +7,6 @@ import numpy as np
 
 from gui.logger_gui import Logger
 
-import pygetwindow as gw
-
 class ImageVisualizer:
     """
     A class for visualizing images and bounding boxes using Open3D.
@@ -42,17 +40,6 @@ class ImageVisualizer:
             os.makedirs(self.image_save_path, exist_ok=True)
         # reset
         self.reset(cfg, True)
-
-    def __is_focused__(self):
-        """
-        Checks if the visualizer is focused.
-
-        Returns:
-            bool: True if the visualizer is focused, False otherwise.
-        """
-        window = gw.getWindowsWithTitle('Image Feed')
-        if window: return window[0].isActive
-        return False
         
     def reset(self, cfg, reset_bounding_box=False):
         """

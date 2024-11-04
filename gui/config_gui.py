@@ -152,6 +152,7 @@ class BaseConfiguration:
                 label_text = key
                 if type(item[key]) == dict:
                     collapsable_container = gui.CollapsableVert(label_text, self.em * 0.2, gui.Margins(self.em * margin, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+                    collapsable_container.set_is_open(False)
                     self.__update_gui_from_cfg__(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
                     container.add_child(collapsable_container)
                 elif type(item[key]) in [str, int, float]:

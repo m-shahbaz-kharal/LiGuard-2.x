@@ -65,12 +65,6 @@ class LiGuard:
         
         # start the application loop
         self.app.run()
-
-    def __is_focused__(self):
-        is_any_focused = False
-        if self.pcd_visualizer: is_any_focused = is_any_focused or self.pcd_visualizer.__is_focused__()
-        if self.img_visualizer: is_any_focused = is_any_focused or self.img_visualizer.__is_focused__()
-        return is_any_focused
         
     # handle the key events of right, left, and space keys
     def handle_key_event(self, event:keyboard.KeyboardEvent):

@@ -21,7 +21,7 @@ data: # dataset configurations
         enabled: False # set True to read images from disk
         img_type: '.png' # most image types are supported
     calib:
-        enabled: True # set True to read calibration files from disk
+        enabled: False # set True to read calibration files from disk
         clb_type: 'kitti' # can be kitti or sustechpoints
     label:
         enabled: False # set True to read labels from disk
