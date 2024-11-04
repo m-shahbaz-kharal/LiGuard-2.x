@@ -1,5 +1,5 @@
 import os
-from gui.config_gui import get_abs_path
+from src.gui.config_gui import get_abs_path
 import glob
 import time
 import threading
@@ -33,7 +33,7 @@ class FileIO:
         # Check if the calibration type is supported
         if self.clb_type not in supported_calib_types: raise NotImplementedError("Calib type not supported. Supported file types: " + ', '.join(supported_calib_types) + ".")
         # Import the calibration handler
-        h = __import__('calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
+        h = __import__('src.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
         self.clb_ext, self.reader = h.calib_file_extension, h.Handler
         
         # read all the calibration files

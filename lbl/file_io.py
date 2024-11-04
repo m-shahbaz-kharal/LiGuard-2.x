@@ -1,5 +1,5 @@
 import os
-from gui.config_gui import get_abs_path
+from src.gui.config_gui import get_abs_path
 import glob
 import time
 import threading
@@ -49,7 +49,7 @@ class FileIO:
         # Check if the label type is supported
         if self.lbl_type not in supported_label_types: raise NotImplementedError("Label type not supported. Supported file types: " + ', '.join(supported_label_types) + ".")
         # Import the handler for the label type
-        h = __import__('lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
+        h = __import__('src.lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
         self.lbl_ext, self.reader = h.label_file_extension, h.Handler
         self.clb_reader = calib_reader
         

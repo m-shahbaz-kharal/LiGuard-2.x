@@ -1,5 +1,5 @@
 import os
-from gui.config_gui import get_abs_path
+from src.gui.config_gui import get_abs_path
 import glob
 import time
 import threading

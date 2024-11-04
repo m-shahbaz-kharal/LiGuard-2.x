@@ -1,11 +1,11 @@
 import os
-from gui.config_gui import get_abs_path
+from src.gui.config_gui import get_abs_path
 
 import open3d as o3d
 import cv2
 import numpy as np
 
-from gui.logger_gui import Logger
+from src.gui.logger_gui import Logger
 
 class ImageVisualizer:
     """

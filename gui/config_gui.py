@@ -6,7 +6,7 @@ import time
 import yaml
 import ast
 
-application_root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+application_root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def get_abs_path(path:str) -> str:
     if not os.path.isabs(path): path = os.path.join(application_root_dir, path)
     return os.path.abspath(path)
@@ -294,6 +294,7 @@ class BaseConfiguration:
         
     def __new_config__(self):
         # Load the default configuration template and set a default configuration file name to the current timestamp
+        print(get_abs_path(''))
         self.cfg = self.load_config(os.path.join(get_abs_path(''), 'configs', 'config_template.yml'))
         self.config_file_path_textedit.text_value = os.path.join(get_abs_path(''), 'configs', time.strftime("%Y%m%d-%H%M%S") + ".yml")
 

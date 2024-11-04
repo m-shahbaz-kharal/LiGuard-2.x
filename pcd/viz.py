@@ -1,12 +1,12 @@
 import os
-from gui.config_gui import get_abs_path
+from src.gui.config_gui import get_abs_path
 
 import open3d as o3d
 import numpy as np
 
-from pcd.utils import create_pcd
+from src.pcd.utils import create_pcd
 
-from gui.logger_gui import Logger
+from src.gui.logger_gui import Logger
 
 import open3d as o3d
 import numpy as np

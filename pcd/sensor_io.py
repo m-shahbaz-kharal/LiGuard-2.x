@@ -33,7 +33,7 @@ class SensorIO:
         self.pcd_count = cfg['data']['count']
         
         # Import the appropriate handler based on the manufacturer and model
-        handler = __import__('pcd.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
+        handler = __import__('src.pcd.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         
         self.handle = handler(self.cfg)
         self.reader = self.handle.reader
