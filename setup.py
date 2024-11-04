@@ -1,12 +1,14 @@
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 
-def install_pointpillars_if_deep_detectors_cuda_is_installed():
-    import subprocess
-    import sys
-    
-    if 'deep-detectors-cuda' in sys.argv:
-        subprocess.run("git clone https://github.com/zhulf0804/PointPillars algo/nn/PointPillars", shell=True, check=True)
-        subprocess.run("cd algo/nn/PointPillars/ops && python setup.py develop", shell=True, check=True)
+class CustomInstallCMD(install):
+    def run(self):
+        super().run()
+        import subprocess
+        import sys
+        if 'deep-detectors-cuda' in sys.argv:
+            subprocess.run("git clone https://github.com/zhulf0804/PointPillars algo/nn/PointPillars", shell=True, check=True)
+            subprocess.run("cd algo/nn/PointPillars/ops && python setup.py develop", shell=True, check=True)
 
 setup(
     name="LiGuard",
@@ -44,7 +46,7 @@ setup(
         "scipy==1.12.0",
     ],
     cmdclass={
-        'install': install_pointpillars_if_deep_detectors_cuda_is_installed,
+        'install': CustomInstallCMD,
     },
     extras_require={
         "sensor-sdks": [
