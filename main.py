@@ -519,4 +519,5 @@ def main():
         print('LiGuard exited successfully.')
     except Exception:
         print(f'LiGuard exited with an error:\n{traceback.format_exc()}')
-main()
+
+if __name__ == '__main__': main()
