@@ -294,8 +294,8 @@ class BaseConfiguration:
         
     def __new_config__(self):
         # Load the default configuration template and set a default configuration file name to the current timestamp
-        self.cfg = self.load_config(os.path.join('configs', 'config_template.yml'))
-        self.config_file_path_textedit.text_value = os.path.join('configs', time.strftime("%Y%m%d-%H%M%S") + ".yml")
+        self.cfg = self.load_config(os.path.join(get_abs_path(''), 'configs', 'config_template.yml'))
+        self.config_file_path_textedit.text_value = os.path.join(get_abs_path(''), 'configs', time.strftime("%Y%m%d-%H%M%S") + ".yml")
 
         # Generate the configuration GUI from the configuration dictionary
         cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
