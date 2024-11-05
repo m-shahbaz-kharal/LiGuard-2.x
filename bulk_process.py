@@ -42,7 +42,7 @@ def dict2proc2dict(source_queue, cfg, logger, processes, target_queue):
         for process in processes: process(data, cfg, logger)
         if target_queue: target_queue.put(data)
         source_queue.task_done()
-    target_queue.put(None)
+    if target_queue: target_queue.put(None)
 
 def bulk_process(args):
     import yaml
@@ -182,14 +182,19 @@ def bulk_process(args):
     postprocess_thread.start()
 
     # cleanup
-    pcd_io_thread.join()
-    img_io_thread.join()
-    clb_io_thread.join()
-    lbl_io_thread.join()
-    pcd_io_to_data_dict_thread.join()
-    img_io_to_data_dict_thread.join()
-    clb_io_to_data_dict_thread.join()
-    lbl_io_to_data_dict_thread.join()
+    if pcd_reader:
+        pcd_io_thread.join()
+        pcd_io_to_data_dict_thread.join()
+    if img_reader:
+        img_io_thread.join()
+        img_io_to_data_dict_thread.join()
+    if clb_reader:
+        clb_io_thread.join()
+        clb_io_to_data_dict_thread.join()
+    if lbl_reader:
+        lbl_io_thread.join()
+        lbl_io_to_data_dict_thread.join()
+    
     data_dict_thread.join()
     preprocess_thread.join()
     lidar_thread.join()
