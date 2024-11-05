@@ -1,4 +1,4 @@
-from src.gui.logger_gui import Logger
+from liguard.gui.logger_gui import Logger
 from enum import Enum, auto
 
 class AlgoType(Enum):

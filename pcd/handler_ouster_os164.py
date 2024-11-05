@@ -21,7 +21,7 @@ class Handler:
     """
 
     def __init__(self, cfg: dict):
-        try: ouster = __import__('src.ouster', fromlist=['client'])
+        try: ouster = __import__('liguard.ouster', fromlist=['client'])
         except:
             print("Ouster-SDK not installed, please install it using 'pip install ouster-sdk'.")
             return

@@ -1,13 +1,13 @@
 import os
-from src.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import get_abs_path
 import yaml
 
-from src.pcd.file_io import FileIO as PCD_File_IO
-from src.img.file_io import FileIO as IMG_File_IO
-from src.calib.file_io import FileIO as CLB_File_IO
-from src.lbl.file_io import FileIO as LBL_File_IO
+from liguard.pcd.file_io import FileIO as PCD_File_IO
+from liguard.img.file_io import FileIO as IMG_File_IO
+from liguard.calib.file_io import FileIO as CLB_File_IO
+from liguard.lbl.file_io import FileIO as LBL_File_IO
 
-from src.gui.logger_gui import Logger
+from liguard.gui.logger_gui import Logger
 
 import threading
 from queue import Queue
@@ -117,7 +117,7 @@ def bulk_process(args):
     for proc in cfg['proc']['pre']:
         if not cfg['proc']['pre'][proc]['enabled']: continue
         priority = cfg['proc']['pre'][proc]['priority']
-        process = __import__('src.algo.pre', fromlist=[proc]).__dict__[proc]
+        process = __import__('liguard.algo.pre', fromlist=[proc]).__dict__[proc]
         pre_processes_dict[priority] = process
     pre_processes = [pre_processes_dict[priority] for priority in sorted(pre_processes_dict.keys())]
 
@@ -125,7 +125,7 @@ def bulk_process(args):
     for proc in cfg['proc']['lidar']:
         if not cfg['proc']['lidar'][proc]['enabled']: continue
         priority = cfg['proc']['lidar'][proc]['priority']
-        process = __import__('src.algo.lidar', fromlist=[proc]).__dict__[proc]
+        process = __import__('liguard.algo.lidar', fromlist=[proc]).__dict__[proc]
         lidar_processes_dict[priority] = process
     lidar_processes = [lidar_processes_dict[priority] for priority in sorted(lidar_processes_dict.keys())]
 
@@ -133,7 +133,7 @@ def bulk_process(args):
     for proc in cfg['proc']['camera']:
         if not cfg['proc']['camera'][proc]['enabled']: continue
         priority = cfg['proc']['camera'][proc]['priority']
-        process = __import__('src.algo.camera', fromlist=[proc]).__dict__[proc]
+        process = __import__('liguard.algo.camera', fromlist=[proc]).__dict__[proc]
         camera_processes_dict[priority] = process
     camera_processes = [camera_processes_dict[priority] for priority in sorted(camera_processes_dict.keys())]
 
@@ -141,7 +141,7 @@ def bulk_process(args):
     for proc in cfg['proc']['calib']:
         if not cfg['proc']['calib'][proc]['enabled']: continue
         priority = cfg['proc']['calib'][proc]['priority']
-        process = __import__('src.algo.calib', fromlist=[proc]).__dict__[proc]
+        process = __import__('liguard.algo.calib', fromlist=[proc]).__dict__[proc]
         calib_processes_dict[priority] = process
     calib_processes = [calib_processes_dict[priority] for priority in sorted(calib_processes_dict.keys())]
 
@@ -149,7 +149,7 @@ def bulk_process(args):
     for proc in cfg['proc']['label']:
         if not cfg['proc']['label'][proc]['enabled']: continue
         priority = cfg['proc']['label'][proc]['priority']
-        process = __import__('src.algo.label', fromlist=[proc]).__dict__[proc]
+        process = __import__('liguard.algo.label', fromlist=[proc]).__dict__[proc]
         label_processes_dict[priority] = process
     label_processes = [label_processes_dict[priority] for priority in sorted(label_processes_dict.keys())]
 
@@ -157,7 +157,7 @@ def bulk_process(args):
     for proc in cfg['proc']['post']:
         if not cfg['proc']['post'][proc]['enabled']: continue
         priority = cfg['proc']['post'][proc]['priority']
-        process = __import__('src.algo.post', fromlist=[proc]).__dict__[proc]
+        process = __import__('liguard.algo.post', fromlist=[proc]).__dict__[proc]
         post_processes_dict[priority] = process
     post_processes = [post_processes_dict[priority] for priority in sorted(post_processes_dict.keys())]
 

@@ -1,11 +1,11 @@
 import os
-from src.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import get_abs_path
 
 import open3d as o3d
 import cv2
 import numpy as np
 
-from src.gui.logger_gui import Logger
+from liguard.gui.logger_gui import Logger
 
 class ImageVisualizer:
     """

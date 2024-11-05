@@ -3,20 +3,20 @@ import traceback
 
 import open3d.visualization.gui as gui
 
-from src.gui.config_gui import BaseConfiguration as BaseConfigurationGUI, get_abs_path
-from src.gui.logger_gui import Logger
-from src.liguard_profiler import Profiler
+from liguard.gui.config_gui import BaseConfiguration as BaseConfigurationGUI, get_abs_path
+from liguard.gui.logger_gui import Logger
+from liguard.liguard_profiler import Profiler
 
-from src.pcd.file_io import FileIO as PCD_File_IO
-from src.pcd.sensor_io import SensorIO as PCD_Sensor_IO
-from src.pcd.viz import PointCloudVisualizer
+from liguard.pcd.file_io import FileIO as PCD_File_IO
+from liguard.pcd.sensor_io import SensorIO as PCD_Sensor_IO
+from liguard.pcd.viz import PointCloudVisualizer
 
-from src.img.file_io import FileIO as IMG_File_IO
-from src.img.sensor_io import SensorIO as IMG_Sensor_IO
-from src.img.viz import ImageVisualizer
+from liguard.img.file_io import FileIO as IMG_File_IO
+from liguard.img.sensor_io import SensorIO as IMG_Sensor_IO
+from liguard.img.viz import ImageVisualizer
 
-from src.calib.file_io import FileIO as CLB_File_IO
-from src.lbl.file_io import FileIO as LBL_File_IO
+from liguard.calib.file_io import FileIO as CLB_File_IO
+from liguard.lbl.file_io import FileIO as LBL_File_IO
 
 import keyboard, threading, time
 
@@ -245,7 +245,7 @@ class LiGuard:
             if enabled:
                 try:
                     priority = cfg['proc']['pre'][proc]['priority']
-                    process = __import__('src.algo.pre', fromlist=[proc]).__dict__[proc]
+                    process = __import__('liguard.algo.pre', fromlist=[proc]).__dict__[proc]
                     self.pre_processes[priority] = process
                 except Exception:
                     self.logger.log(f'pre_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -260,7 +260,7 @@ class LiGuard:
             if enabled:
                 try:
                     priority = cfg['proc']['lidar'][proc]['priority']
-                    process = __import__('src.algo.lidar', fromlist=[proc]).__dict__[proc]
+                    process = __import__('liguard.algo.lidar', fromlist=[proc]).__dict__[proc]
                     self.lidar_processes[priority] = process
                 except Exception:
                     self.logger.log(f'lidar_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -275,7 +275,7 @@ class LiGuard:
             if enabled:
                 try:
                     priority = cfg['proc']['camera'][proc]['priority']
-                    process = __import__('src.algo.camera', fromlist=[proc]).__dict__[proc]
+                    process = __import__('liguard.algo.camera', fromlist=[proc]).__dict__[proc]
                     self.camera_processes[priority] = process
                 except Exception:
                     self.logger.log(f'camera_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -290,7 +290,7 @@ class LiGuard:
             if enabled:
                 try:
                     priority = cfg['proc']['calib'][proc]['priority']
-                    process = __import__('src.algo.calib', fromlist=[proc]).__dict__[proc]
+                    process = __import__('liguard.algo.calib', fromlist=[proc]).__dict__[proc]
                     self.calib_processes[priority] = process
                 except Exception:
                     self.logger.log(f'calib_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -305,7 +305,7 @@ class LiGuard:
             if enabled:
                 try:
                     priority = cfg['proc']['label'][proc]['priority']
-                    process = __import__('src.algo.label', fromlist=[proc]).__dict__[proc]
+                    process = __import__('liguard.algo.label', fromlist=[proc]).__dict__[proc]
                     self.label_processes[priority] = process
                 except Exception:
                     self.logger.log(f'label_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -320,7 +320,7 @@ class LiGuard:
             if enabled:
                 try:
                     priority = cfg['proc']['post'][proc]['priority']
-                    process = __import__('src.algo.post', fromlist=[proc]).__dict__[proc]
+                    process = __import__('liguard.algo.post', fromlist=[proc]).__dict__[proc]
                     self.post_processes[priority] = process
                 except Exception:
                     self.logger.log(f'post_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)

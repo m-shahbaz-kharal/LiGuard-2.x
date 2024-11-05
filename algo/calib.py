@@ -1,7 +1,7 @@
 import inspect
-from src.gui.config_gui import get_abs_path
-from src.gui.logger_gui import Logger
-from src.algo.utils import AlgoType, make_key, get_algo_params
+from liguard.gui.config_gui import get_abs_path
+from liguard.gui.logger_gui import Logger
+from liguard.algo.utils import AlgoType, make_key, get_algo_params
 algo_type = AlgoType.calib
 
 def dummy(data_dict: dict, cfg_dict: dict, logger: Logger):

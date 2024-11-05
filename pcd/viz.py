@@ -1,12 +1,12 @@
 import os
-from src.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import get_abs_path
 
 import open3d as o3d
 import numpy as np
 
-from src.pcd.utils import create_pcd
+from liguard.pcd.utils import create_pcd
 
-from src.gui.logger_gui import Logger
+from liguard.gui.logger_gui import Logger
 
 import open3d as o3d
 import numpy as np

@@ -1,5 +1,5 @@
 import os
-from src.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import get_abs_path
 import glob
 import time
 import threading

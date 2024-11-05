@@ -46,7 +46,7 @@ class SensorIO:
         self.img_start_idx = cfg['data']['start']['camera']
         self.img_count = cfg['data']['count']
         # Import the handler for the sensor data
-        handler = __import__('src.img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
+        handler = __import__('liguard.img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         self.handle = handler(self.cfg)
         self.reader = self.handle.reader
         self.idx = -1

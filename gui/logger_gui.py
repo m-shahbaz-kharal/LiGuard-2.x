@@ -1,7 +1,7 @@
 import open3d.visualization.gui as gui
 
 import os
-from src.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import get_abs_path
 import time
 import yaml
 

@@ -1,7 +1,7 @@
 import inspect
-from src.gui.config_gui import get_abs_path
-from src.gui.logger_gui import Logger
-from src.algo.utils import AlgoType, make_key, get_algo_params
+from liguard.gui.config_gui import get_abs_path
+from liguard.gui.logger_gui import Logger
+from liguard.algo.utils import AlgoType, make_key, get_algo_params
 algo_type = AlgoType.lidar
 
 import os
@@ -135,9 +135,9 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
     live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
     
     # imports
-    from src.algo.non_nn.DHistDPP import calc_DHistDPP_params, save_DHistDPP_params, load_DHistDPP_params, make_DHistDPP_filter
-    from src.algo.utils import gather_point_clouds, skip_frames, combine_gathers
-    from src.pcd.utils import get_fixed_sized_point_cloud
+    from liguard.algo.non_nn.DHistDPP import calc_DHistDPP_params, save_DHistDPP_params, load_DHistDPP_params, make_DHistDPP_filter
+    from liguard.algo.utils import gather_point_clouds, skip_frames, combine_gathers
+    from liguard.pcd.utils import get_fixed_sized_point_cloud
 
     # dict keys
     query_frames_key = make_key(algo_name, 'query_frames')
@@ -221,9 +221,9 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
     live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
 
     # imports
-    from src.algo.non_nn.STDF import calc_STDF_params, save_STDF_params, load_STDF_params, make_STDF_filter
-    from src.algo.utils import gather_point_clouds, skip_frames, combine_gathers
-    from src.pcd.utils import get_fixed_sized_point_cloud
+    from liguard.algo.non_nn.STDF import calc_STDF_params, save_STDF_params, load_STDF_params, make_STDF_filter
+    from liguard.algo.utils import gather_point_clouds, skip_frames, combine_gathers
+    from liguard.pcd.utils import get_fixed_sized_point_cloud
     
     # dict keys
     query_frames_key = make_key(algo_name, 'query_frames')
@@ -501,7 +501,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
 
         path = get_abs_path(params['github_repo_dir'])
         if path not in sys.path: sys.path.append(path)
-        from src.algo.nn.PointPillars.model import PointPillars
+        from liguard.algo.nn.PointPillars.model import PointPillars
 
         data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
         model_path = get_abs_path(params['ckpt_file'])
