@@ -1,0 +1,119 @@
+# This is a LiGuard pipeline configuration file.
+
+data: # dataset configurations
+    main_dir: 'examples/sim_data' # root directory containing dataset
+    lidar_subdir: 'pointclouds' # subdirectory containing point clouds
+    camera_subdir: 'images' # subdirectory containing images
+    label_subdir: 'labels' # subdirectory containing labels
+    calib_subdir: 'calibs' # subdirectory containing calibration files
+    start: # index of first frame, only used if reading from disk; should be different for camera and lidar only if they are not synchronized
+        lidar: 0 # start frame index
+        camera: 0 # start frame index
+        label: 0 # start frame index
+        calib: 0 # start frame index
+        global_zero: 0 # first frame index in 0 to count-1 range
+    count: 5 # end frame number
+
+    lidar:
+        enabled: True # set True to read point clouds from disk
+        pcd_type: '.bin' # can be .bin or .npy
+    camera:
+        enabled: True # set True to read images from disk
+        img_type: '.png' # most image types are supported
+    calib:
+        enabled: True # set True to read calibration files from disk
+        clb_type: 'kitti' # can be kitti or sustechpoints
+    label:
+        enabled: False # set True to read labels from disk
+        lbl_type: 'kitti' # can be kitti, openpcdet, or sustechpoints
+    outputs_dir: 'examples/outputs/simple_crop_pipeline' # directory to save outputs
+
+sensors: # lidar and camera configurations
+    lidar: # lidar sensor configurations, at this point only Ouster lidars are supported, support for other lidars is coming soon
+        enabled: False # set True to stream point clouds from sensor, please set False if reading from disk
+        hostname: '192.168.1.2' # sensor ip address or hostname
+        manufacturer: 'Ouster' # sensor manufacturer
+        model: 'OS1-64' # sensor model
+        serial_number: '000000000000' # sensor serial number
+    camera: # camera sensor configurations, at this point only Flir cameras are supported, support for other cameras is coming soon
+        enabled: False # set True to stream point clouds from sensor, please set False if reading from disk
+        hostname: '192.168.1.3' # sensor ip address or hostname
+        manufacturer: 'Flir' # sensor manufacturer
+        model: 'BFS-PGE-16S2C-CS' # sensor model
+        serial_number: '00000000' # sensor serial number
+        camera_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0] # camera matrix (K)
+        distortion_coeffs: [0, 0, 0, 0, 0] # distortion coefficients (D)
+        T_lidar_camera: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]] # 4x4 transformation matrix from camera to lidar
+
+proc: # liguard processing configurations
+    pre:
+        remove_nan_inf_allzero_from_pcd: # remove nan points from point cloud
+            enabled: True # set True to remove nan points
+            priority: 1 # priority of process - lower is higher
+    lidar:
+        crop:
+            priority: 2 # priority of process - lower is higher
+            enabled: False # set True to crop point cloud
+            min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
+            max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
+        project_image_pixel_colors:
+            enabled: False # set True to paint point cloud with rgb
+            priority: 6 # priority of process - lower is higher
+    camera:
+        project_point_cloud_points: # project point cloud points to camera image
+            enabled: False # set True to project point cloud points to camera image
+            priority: 1 # priority of process - lower is higher
+    calib:
+        dummy: # dummy calibration process
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+    label:
+        remove_out_of_bound_labels: # crop out of bound bboxes
+            enabled: False # set True to crop labels
+            priority: 1 # priority of process - lower is higher
+            use_lidar_range: False # set True to crop using lidar crop
+            use_image_size: False # set True to crop using image size
+        remove_less_point_labels: # remove labels with no points
+            enabled: True # set True to remove labels
+            priority: 2 # priority of process - lower is higher
+            min_points: 6 # minimum number of points to consider a label valid
+    post:
+        create_per_object_pcdet_dataset: # create per object dataset in pcdet format
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+        create_pcdet_dataset: # create dataset in pcdet format
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+
+# ----------------------------------------------------------------------------------------------------
+# DONT REMOVE ANY VARIABLES BELOW THIS LINE, THEIR VALUES CAN BE CHANGED BUT REMOVAL WILL CAUSE ERRORS
+#-----------------------------------------------------------------------------------------------------
+visualization: # visualization parameters
+    enabled: True # set True to visualize
+    lidar:
+        space_color: [0, 0, 0] # color of non-point-cloud space
+        bound_color: [0, 0, 1] # point cloud range bound bbox color
+        point_size: 2.0 # rendered point size
+        draw_cluster: True # visualize clusters
+        draw_bbox_3d: True # visualize bounding boxes
+        draw_trajectory: True # visualize trajectory
+        save_images: False # save images
+    camera:
+        draw_bbox_2d: True # visualize 2D bounding boxes
+        draw_bbox_3d: True # visualize 3D bounding boxes
+        draw_trajectory: True # visualize trajectory
+        draw_text_info: True # visualize text
+        draw_extras: True # visualize extras
+        bbox_line_width: 2 # bbox line width
+        trajectory_line_width: 2 # trajectory line width
+        save_images: False # save images
+
+logging: # parameters for logger
+    level: 1 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL
+    logs_dir: 'logs' # path to save logs
+        
+threads: # don't change unless debugging
+    io_sleep: 0.01 # input/output threads sleep time in seconds
+    proc_sleep: 0.01 # processing threads sleep time in seconds
+    vis_sleep: 0.01 # visualization threads sleep time in seconds
+    net_sleep: 0.2 # network threads sleep time in seconds
