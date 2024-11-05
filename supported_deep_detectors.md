@@ -1,5 +1,5 @@
 # Supported Deep Object Detectors
-`LiGuard` supports various deep object detectors. To use these detectors, you need to install the `LiGuard` with either `deep-detectors-cuda` or `deep-detectors-cpu` extra dependencies.
+`LiGuard` supports various deep object detectors. To use these detectors, you need to install the `LiGuard` with either `deep-detectors-cuda` or `deep-detectors-cpu` extra tag.
 
 To install `LiGuard` with `deep-detectors-cuda` and `cuda` support, run:
 ```bash
@@ -11,14 +11,16 @@ or to install `LiGuard` with cpu support only, run:
 pip install LiGuard[deep-detectors-cpu]
 ```
 
-The following table lists the supported deep object detectors and their corresponding extra dependencies:
+The following table lists all the supported deep object detectors and their corresponding extra dependencies:
 
 ## Image Object Detectors
 | Detector | Extra Dependencies |
 |----------|--------------------|
-| YOLOv5   | `torch==1.13.1+cu117` |
+| YOLOv5 (cuda)  | `torch==1.13.1+cu117` |
+| YOLOv5 (cpu)   | `torch==1.13.1` |
 
 ## Point Cloud Object Detectors
 | Detector | Extra Dependencies |
 |----------|--------------------|
-| PointPillars | `torch==1.13.1+cu117` |
+| PointPillars (cuda) | `torch==1.13.1+cu117` |
+| PointPillars (cpu)  | `torch==1.13.1` |

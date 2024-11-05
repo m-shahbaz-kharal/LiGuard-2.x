@@ -6,7 +6,7 @@
 # Installation
 Requirements:
 - Windows 10 or later
-- Python 3.8, 3.9, 3.10, or 3.11
+- Python 3.8, 3.9, or 3.10
 
 Install `LiGuard` with pip (from PyPI):
 ```bash
