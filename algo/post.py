@@ -448,9 +448,6 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
     if "current_label_list" not in data_dict:
         logger.log('current_label_list not found in data_dict', Logger.ERROR)
         return
-    if "current_label_path" not in data_dict:
-        logger.log('current_label_path not found in data_dict', Logger.ERROR)
-        return
     
     # imports
     import os
@@ -458,9 +455,9 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
     import open3d as o3d
     
     # Get required data from data_dict
+    current_point_cloud_path = data_dict['current_point_cloud_path']
     current_point_cloud_numpy = data_dict['current_point_cloud_numpy']
     current_label_list = data_dict['current_label_list']
-    current_label_path = data_dict['current_label_path']
     
     # Create output directories if they do not exist
     output_path = os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), 'post', 'per_object_pcdet_dataset')
@@ -469,8 +466,10 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
     lbl_output_dir = os.path.join(output_path, 'label')
     os.makedirs(lbl_output_dir, exist_ok=True)
     
-    for idx, label_dict in enumerate(current_label_list):
+    idx = 0
+    for label_dict in current_label_list:
         if 'bbox_3d' not in label_dict: continue
+        
         # Get bounding box center, extent, and euler angles
         bbox_center = label_dict['bbox_3d']['xyz_center'].copy()
         bbox_extent = label_dict['bbox_3d']['xyz_extent']
@@ -480,7 +479,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
         # Create an oriented bounding box
         try: rotated_bbox = o3d.geometry.OrientedBoundingBox(bbox_center, R, bbox_extent)
         except:
-            logger.log(f'Error in creating oriented bounding box for object {idx}', Logger.ERROR)
+            logger.log(f'Error in creating oriented bounding box for object {idx}', Logger.WARNING)
             continue
         
         # Get points within the bounding box
@@ -493,11 +492,11 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
         object_point_cloud[:, :3] -= point_cloud_mean
         
         # Save the point cloud and label
-        npy_path = os.path.join(pcd_output_dir, os.path.basename(current_label_path).replace('.txt', f'{str(idx).zfill(4)}.npy'))
+        npy_path = os.path.join(pcd_output_dir, os.path.basename(current_point_cloud_path).split('.')[0] + f'_{str(idx).zfill(4)}.npy')
         np.save(npy_path, object_point_cloud)
         
         # Save the label
-        lbl_path = os.path.join(lbl_output_dir, os.path.basename(current_label_path).replace('.txt', f'{str(idx).zfill(4)}.txt'))
+        lbl_path = os.path.join(lbl_output_dir, os.path.basename(current_point_cloud_path).split('.')[0] + f'_{str(idx).zfill(4)}.txt')
         with open(lbl_path, 'w') as f:
             lbl_str = ''
             lbl_str += str(bbox_center[0]) + ' ' + str(bbox_center[1]) + ' ' + str(bbox_center[2]) + ' '
@@ -506,6 +505,8 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
             if 'class' in label_dict: lbl_str += label_dict['class']
             else: lbl_str += 'Unknown'
             f.write(lbl_str)
+        
+        idx += 1
 
 def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
