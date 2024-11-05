@@ -16,4 +16,4 @@ The following table lists the supported sensors and their corresponding extra de
 ## LIDAR Sensors
 | Detector | Extra Dependencies |
 |----------|--------------------|
-| Ouster LIDARs | `ouster-sdk==0.12.0` |
+| Ouster LIDARs | `ouster-sdk` |
