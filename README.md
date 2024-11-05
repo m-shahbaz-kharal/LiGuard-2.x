@@ -3,7 +3,7 @@
 
 `LiGuard` provides, out of the box, data readers for many common dataset formats including support for reading calibration and label data. Moreover, it provides built-in features ranging from basic data preprocessors to advanced object detection and tracking algorithms. Additionally, it offers a straightforward standard for adding custom functions or algorithms, allowing users to integrate unique components into their pipelines. Your contributions and collaborations are encouraged! Please visit [our GitHub repository](https://github.com/m-shahbaz-kharal/LiGuard-GUI) for more information.
 
-# Quick Start
+# Installation
 Requirements:
 - Windows 10 or later
 - Python 3.8, 3.9, 3.10, or 3.11
@@ -13,10 +13,21 @@ Install `LiGuard` with pip (from PyPI):
 pip install LiGuard
 ```
 
-Run `LiGuard`:
+* `LiGuard` also support various deep object detectors, see [Supported Deep Object Detectors](supported_deep_detectors.md) for more information.
+* `LiGuard` also supports various sensors to support live data streaming, see [Supported Sensors](supported_sensors.md) for more information.
+
+
+Run interactive `LiGuard` GUI:
 ```bash
-liguard
+liguard-gui
 ```
+
+or run `LiGuard` bulk data processor using specific configuration (created using `liguard-gui`):
+```bash
+liguard-blk path/to/config.yml
+```
+
+# Getting Started
 
 Create a simple LIDAR data processing pipeline:
 1. In the `Configuration` windows, click the `New` button to create a new configuration.
