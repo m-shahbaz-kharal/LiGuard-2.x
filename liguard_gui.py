@@ -147,7 +147,7 @@ class LiGuard:
                 self.logger.log(f'PCD_File_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.pcd_io = None
         # if sensors are enabled
-        elif cfg['sensors']['lidar']['enabled']:
+        elif 'sensors' in cfg and 'lidar' in cfg['sensors'] and cfg['sensors']['lidar']['enabled']:
             try:
                 self.pcd_io = PCD_Sensor_IO(cfg)
                 self.logger.log('PCD_Sensor_IO created', Logger.DEBUG)
@@ -181,7 +181,7 @@ class LiGuard:
                 self.logger.log(f'IMG_File_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.img_io = None
         # if sensors are enabled
-        elif cfg['sensors']['camera']['enabled']:
+        elif 'sensors' in cfg and 'camera' in cfg['sensors'] and cfg['sensors']['camera']['enabled']:
             try:
                 self.img_io = IMG_Sensor_IO(cfg)
                 self.logger.log('IMG_Sensor_IO created', Logger.DEBUG)
