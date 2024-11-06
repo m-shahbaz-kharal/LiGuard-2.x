@@ -513,7 +513,6 @@ class LiGuard:
         
         # close app
         self.app.quit()
-        self.logger.log('LiGuard exited safely.', Logger.INFO)
         
 def main():
     try:
