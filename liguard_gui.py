@@ -18,7 +18,7 @@ from liguard.img.viz import ImageVisualizer
 from liguard.calib.file_io import FileIO as CLB_File_IO
 from liguard.lbl.file_io import FileIO as LBL_File_IO
 
-import keyboard, threading, time
+import pynput, threading, time
 
 profiler = Profiler('main')
 
@@ -53,6 +53,7 @@ class LiGuard:
         
         # initialize the main lock
         self.lock = threading.Lock()
+        self.pynput_listener = None
         self.is_running = False # if the app is running
         self.is_focused = False # if the app is focused
         self.is_playing = False # if the frames are playing
@@ -67,26 +68,25 @@ class LiGuard:
         self.app.run()
         
     # handle the key events of right, left, and space keys
-    def handle_key_event(self, event:keyboard.KeyboardEvent):
-        if event.event_type == keyboard.KEY_DOWN:
-            with self.lock:
-                if event.name == 'right':
-                    self.is_playing = False
-                    if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
-                        self.data_dict['current_frame_index'] += 1
-                elif event.name == 'left':
-                    self.is_playing = False
-                    if self.data_dict['current_frame_index'] > 0:
-                        self.data_dict['current_frame_index'] -= 1
-                elif event.name == 'space':
-                    self.is_playing = not self.is_playing
-                elif event.name == 'delete':
-                    self.is_playing = False
-                    self.data_dict['current_frame_index'] = 0
-                    if self.pcd_visualizer: self.pcd_visualizer.load_view_status()
-                elif event.name == '[':
-                    self.is_playing = False
-                    self.config.show_input_dialog('Enter the frame index:', f'0-{self.data_dict["maximum_frame_index"]}', 'jump_to_frame')
+    def handle_key_event(self, key):
+        with self.lock:
+            if key == pynput.keyboard.Key.right:
+                self.is_playing = False
+                if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
+                    self.data_dict['current_frame_index'] += 1
+            elif key == pynput.keyboard.Key.left:
+                self.is_playing = False
+                if self.data_dict['current_frame_index'] > 0:
+                    self.data_dict['current_frame_index'] -= 1
+            elif key == pynput.keyboard.Key.space:
+                self.is_playing = not self.is_playing
+            elif key == pynput.keyboard.Key.delete:
+                self.is_playing = False
+                self.data_dict['current_frame_index'] = 0
+                if self.pcd_visualizer: self.pcd_visualizer.load_view_status()
+            elif key == pynput.keyboard.KeyCode(char='['):
+                self.is_playing = False
+                self.config.show_input_dialog('Enter the frame index:', f'0-{self.data_dict["maximum_frame_index"]}', 'jump_to_frame')
                     
     def reset(self, cfg):
         """
@@ -130,7 +130,7 @@ class LiGuard:
         if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(get_abs_path(cfg['data']['outputs_dir']), exist_ok=True)
 
         # unlock the keyboard keys right, left, and space
-        keyboard.unhook_all()
+        if self.pynput_listener: self.pynput_listener.stop()
         # pause at the start
         with self.lock: self.is_running = False
         # reset the frame index
@@ -333,7 +333,9 @@ class LiGuard:
         with self.lock: self.is_running = True
         
         # start key event handling
-        if self.pcd_visualizer or self.img_visualizer: keyboard.hook(self.handle_key_event)
+        if self.pcd_visualizer or self.img_visualizer:
+            self.pynput_listener = pynput.keyboard.Listener(on_press=self.handle_key_event)
+            self.pynput_listener.start()
         
         # the main loop
         while True:
@@ -352,7 +354,7 @@ class LiGuard:
             # if the frame has changed, update the data dictionary with the new frame data
             if frame_changed:
                 profiler.add_target('Total Time / Step')
-                self.logger.set_status_frame_idx(self.data_dict['current_frame_index'] + self.config.cfg['data']['start']['global_zero'])
+                self.logger.set_status_frame_idx(self.data_dict['current_frame_index'] + cfg['data']['start']['global_zero'])
                 self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
                 
                 if self.pcd_io:
@@ -498,7 +500,7 @@ class LiGuard:
         # stop the app
         with self.lock: self.is_running = False
         # unhook the keyboard keys
-        keyboard.unhook_all()
+        if self.pynput_listener: self.pynput_listener.stop()
         
         # close the data sources
         if self.pcd_io: self.pcd_io.close()
