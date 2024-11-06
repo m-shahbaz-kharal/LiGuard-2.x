@@ -133,9 +133,7 @@ class Logger:
 
         # Create a status strip
         self.status_container = gui.Horiz(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-        self.status_state = gui.Label("Ready")
         self.status_current_frame_idx = gui.Label("Frame Index: NA")
-        self.status_container.add_child(self.status_state)
         self.status_container.add_stretch()
         self.status_container.add_child(self.status_current_frame_idx)
         
@@ -152,10 +150,6 @@ class Logger:
         # Clear the log messages by recreeating the log container
         scroll_vert = gui.ScrollableVert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.log_container.set_widget(scroll_vert)
-
-    def set_status_state(self, state:str):
-        self.status_state.text = state
-        self.mwin.post_redraw()
 
     def set_status_frame_idx(self, idx:int):
         self.status_current_frame_idx.text = f'Frame Index: {idx}'
