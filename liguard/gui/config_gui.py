@@ -6,6 +6,7 @@ import time
 import yaml
 import ast
 
+user_home_dir = os.path.expanduser("~")
 application_root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def get_abs_path(path:str) -> str:
     if not os.path.isabs(path): path = os.path.join(application_root_dir, path)
@@ -170,8 +171,7 @@ class BaseConfiguration:
                                 self.__close_dialog__()
                             dialog_title = f"Select {title.upper()}"
                             mode = gui.FileDialog.OPEN_DIR if title.endswith('_dir') else gui.FileDialog.OPEN
-                            initial_path = get_abs_path(path_edit.text_value)
-                            self.__show_path_dialog__(dialog_title, mode, initial_path, "", on_done=on_done)
+                            self.__show_path_dialog__(dialog_title, mode, self.last_workspace_dir, "", on_done=on_done)
                         browse_button.set_on_clicked(create_browse_dialog)
                         sub_container.add_child(browse_button)
                     sub_container.add_stretch()
@@ -294,9 +294,10 @@ class BaseConfiguration:
         
     def __new_config__(self):
         # Load the default configuration template and set a default configuration file name to the current timestamp
-        print(get_abs_path(''))
-        self.cfg = self.load_config(os.path.join(get_abs_path(''), 'configs', 'config_template.yml'))
-        self.config_file_path_textedit.text_value = os.path.join(get_abs_path(''), 'configs', time.strftime("%Y%m%d-%H%M%S") + ".yml")
+        self.cfg = self.load_config(os.path.join(application_root_dir, 'resources', 'config_template.yml'))
+        self.last_workspace_dir = os.path.join(user_home_dir, 'liguard-default-workspace')
+        time_stamp = time.strftime("%Y%m%d-%H%M%S")
+        self.config_file_path_textedit.text_value = os.path.join(self.last_workspace_dir, f"{time_stamp}.yml")
 
         # Generate the configuration GUI from the configuration dictionary
         cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
@@ -310,53 +311,53 @@ class BaseConfiguration:
         # Define the function to load the configuration file, update GUI, and close the dialog
         def load_cfg_and_close_dialog(cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
+            self.last_workspace_dir = os.path.dirname(cfg_path)
             self.__close_dialog__()
             try:
                 self.cfg = self.load_config(cfg_path)
                 cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
                 self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
                 self.generated_config.set_widget(cfg_gui)
+                # Call the callback functions for the 'open_config' action
+                for callback in self.callbacks['open_config']: callback(self.cfg)
             except:
                 self.__show_issue_dialog__('Failed to load configuration file.')
 
+        # make sure the last workspace directory exists
+        if not hasattr(self, 'last_workspace_dir'):
+            self.last_workspace_dir = os.path.join(user_home_dir, 'liguard-default-workspace')
+
         # Open the configuration file by asking the user for the path
-        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, get_abs_path(''), ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)
-        
-        # If the configuration is loaded successfully
-        if hasattr(self, 'cfg'):
-            # Call the callback functions for the 'open_config' action
-            for callback in self.callbacks['open_config']: callback(self.cfg)
+        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, self.last_workspace_dir, ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)
     
     def __save_config__(self):
         # Update the configuration from the GUI and save it to the specified path
         try:
             self.__update_cfg_from_gui__(self.cfg, ['cfg'])
+            if not os.path.exists(self.last_workspace_dir): os.makedirs(self.last_workspace_dir)
             self.save_config(self.cfg, self.config_file_path_textedit.text_value)
-        except:
-            self.__show_issue_dialog__('Failed to save configuration file.')
-        
-        # If the configuration is saved successfully
-        if hasattr(self, 'cfg'):
             # Call the callback functions for the 'save_config' action
             for callback in self.callbacks['save_config']: callback(self.cfg)
-        else:
-            self.__show_issue_dialog__('No configuration to save.')
+        except:
+            self.__show_issue_dialog__('Failed to save configuration file.')
             
     def __save_as_config__(self):
         # Define the function to get configuration from GUI, save to the specified path, and close the dialog
         def save_cfg_and_close_dialog(cfg, cfg_path):
             self.config_file_path_textedit.text_value = cfg_path
+            self.last_workspace_dir = os.path.dirname(cfg_path)
             self.__update_cfg_from_gui__(self.cfg, ['cfg'])
             self.save_config(cfg, cfg_path)
             self.__close_dialog__()
+            # Call the callback functions for the 'save_as_config' action
+            for callback in self.callbacks['save_as_config']: callback(self.cfg)
 
         # If the configuration exists
         if hasattr(self, 'cfg'):
+            if not hasattr(self, 'last_workspace_dir'):
+                if not os.path.exists(self.last_workspace_dir): os.makedirs(self.last_workspace_dir)
             # Save the configuration by asking the user for the path
-            self.__show_path_dialog__("Save Configuration", gui.FileDialog.SAVE, get_abs_path(''), ".yml", "LiGuard Configuration (.yml)", lambda cfg_path: save_cfg_and_close_dialog(self.cfg, cfg_path))
-            
-            # Call the callback functions for the 'save_as_config' action
-            for callback in self.callbacks['save_as_config']: callback(self.cfg)
+            self.__show_path_dialog__("Save Configuration", gui.FileDialog.SAVE, self.last_workspace_dir, ".yml", "LiGuard Configuration (.yml)", lambda cfg_path: save_cfg_and_close_dialog(self.cfg, cfg_path))
         else:
             self.__show_issue_dialog__('No configuration to save.')
             

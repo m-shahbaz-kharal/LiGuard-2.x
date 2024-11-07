@@ -213,9 +213,9 @@ def main():
         | |    | | | |_ | | | |/ _` | '__/ _` |   / / | | | |
         | |____| | |__| | |_| | (_| | | | (_| |  / /_ | |_| |
         |______|_|\_____|\__,_|\__,_|_|  \__,_| |____(_)___/ 
-                                                Bulk Processor
+                                       Headless Bulk Processor
     ##########################################################
-    LiGuard's utility for bulk data processing.
+    LiGuard's utility for no-GUI bulk data processing.
     """
     print(banner)
     description = \
@@ -223,12 +223,12 @@ def main():
     Description:
     Once you have created a pipeline using LiGuard's interactive
     interface, you can take your configuration file (.yml) and use
-    this script to process entire datasets in bulk much faster. This
-    script processes the data faster by utilizing multiple threads and
-    removing GUI and other interactive elements.
+    this script to process entire datasets faster. This script processes
+    the data faster by utilizing multiple threads and removing GUI and
+    other interactive elements.
 
-    Note 1: This doesn't work with live sensor data streams.
-    Note 2: This doesn't work with multi-frame dependent algorithms
+    Note 1: Currently, this doesn't work with live sensor data streams.
+    Note 2: Currently, this doesn't work with multi-frame dependent algorithms
     such as calculating background filters using multiple frames (you can use a pre-calculated filter though), tracking, etc.
     """
     import argparse

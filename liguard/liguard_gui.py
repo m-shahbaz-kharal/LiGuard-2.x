@@ -4,6 +4,7 @@ import traceback
 import open3d.visualization.gui as gui
 
 from liguard.gui.config_gui import BaseConfiguration as BaseConfigurationGUI, get_abs_path
+from liguard.gui.config_gui import user_home_dir, application_root_dir
 from liguard.gui.logger_gui import Logger
 from liguard.liguard_profiler import Profiler
 
@@ -127,7 +128,7 @@ class LiGuard:
             logger.change_level(cfg['logging']['level'])
 
         # Make sure the required directories exist
-        if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(get_abs_path(cfg['data']['outputs_dir']), exist_ok=True)
+        if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(get_abs_path(cfg['data']['outputs_dir']))
 
         # unlock the keyboard keys right, left, and space
         if self.pynput_listener: self.pynput_listener.stop()
@@ -516,6 +517,11 @@ class LiGuard:
         
 def main():
     try:
+        default_workspace_dir = os.path.join(user_home_dir, 'liguard-default-workspace')
+        if not os.path.exists(default_workspace_dir):
+            os.makedirs(default_workspace_dir)
+            import shutil
+            shutil.copytree(os.path.join(application_root_dir, 'examples'), os.path.join(default_workspace_dir, 'examples'))
         LiGuard()
         print('LiGuard exited successfully.')
     except Exception:
