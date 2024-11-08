@@ -1,0 +1,14 @@
+# configuration for a function in LiGuard is defined in yaml format
+FUNCTION_NAME: # name of the function
+  enabled: False # bool -- adds the function to pipeline if True -- necessary parameter, don't remove
+  priority: 3 # int -- priority of process, lower is higher -- necessary parameter, don't remove
+  # parameters are defined as key-value pairs: param_name: param_value
+  # `param_name` should always be a string and `param_value` can be any of these types: int, float, bool, str, list, dict
+  # examples:
+  # threshold: 0.5
+  # do_average: true
+  # active_classes: ["class_1", "class_2"]
+  # score_weights: # a dictionary in yaml format
+  #   class_1: 0.4
+  #   class_2: 0.6
+  # ...

@@ -12,6 +12,12 @@ class AlgoType(Enum):
     label = auto()
     post = auto()
 
+def keys_required_in_data_dict(keys: list):
+    def decorator(func):
+        func.required_data = keys
+        return func
+    return decorator
+
 def make_key(algo_name: str, key: str) -> str:
     """
     Creates a standard key for the data dictionary used in LiGuard.

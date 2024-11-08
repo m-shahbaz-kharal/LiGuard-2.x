@@ -142,17 +142,59 @@ class BaseConfiguration:
         """
         with open(cfg_path, 'w') as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
+
+    def open_file_with_default_program(self, file_path):
+        import subprocess, platform
+        system_platform = platform.system()
+        if system_platform == "Windows": os.startfile(file_path) # windows
+        elif system_platform == "Darwin": subprocess.run(['open', file_path]) # macOS
+        else: subprocess.run(['xdg-open', file_path]) # linux
             
     def __update_gui_from_cfg__(self, item, container, parent_keys=[], margin=0.2):
         """
         This function recursively generates the GUI from the configuration dictionary based on the item types.
         """
         G = self.generated_config_gui_dict
+        algo_types = ['pre', 'lidar', 'camera', 'calib', 'label', 'post']
         if type(item) == dict:
             for key in item.keys():
                 label_text = key
                 if type(item[key]) == dict:
                     collapsable_container = gui.CollapsableVert(label_text, self.em * 0.2, gui.Margins(self.em * margin, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+                    if label_text in algo_types:
+                        def add_algo_button_callback(algo_type=label_text):
+                            import shutil
+                            algo_dir = os.path.join(self.last_workspace_dir, 'algo', algo_type)
+                            os.makedirs(algo_dir, exist_ok=True)
+                            def __input_dialog_callback__():
+                                func_name = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
+                                self.__close_dialog__()
+                                
+                                shutil.copy(os.path.join(application_root_dir, 'resources', 'algo_func_template.py'), os.path.join(algo_dir, f'{func_name}.py'))
+                                algo_txt = open(os.path.join(algo_dir, f'{func_name}.py')).read()
+                                algo_txt = algo_txt.replace('AGLO_TYPE', f'AlgoType.{algo_type.lower()}')
+                                algo_txt = algo_txt.replace('FUNCTION_NAME', func_name)
+                                with open(os.path.join(algo_dir, f'{func_name}.py'), 'w') as f: f.write(algo_txt)
+                                
+                                shutil.copy(os.path.join(application_root_dir, 'resources', 'algo_func_template.yml'), os.path.join(algo_dir, f'{func_name}.yml'))
+                                conf_txt = open(os.path.join(algo_dir, f'{func_name}.yml')).read()
+                                conf_txt = conf_txt.replace('FUNCTION_NAME', func_name)
+                                with open(os.path.join(algo_dir, f'{func_name}.yml'), 'w') as f: f.write(conf_txt)
+                                
+                                self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(algo_dir, f'{func_name}.py')))
+                                self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(algo_dir, f'{func_name}.yml')))
+                            self.show_input_dialog(title='Add New Function',
+                                                   query=f'name:',
+                                                   key=f'new_{algo_type}_function_name',
+                                                   ans_base_type=gui.TextEdit,
+                                                   ans_type=None,
+                                                   value_variable='text_value',
+                                                   default_value=f'my_custom_{algo_type}_function',
+                                                   custom_callback=__input_dialog_callback__)
+
+                        add_button = gui.Button(f"Add New {label_text} Function")
+                        add_button.set_on_clicked(add_algo_button_callback)
+                        collapsable_container.add_child(add_button)
                     collapsable_container.set_is_open(False)
                     self.__update_gui_from_cfg__(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
                     container.add_child(collapsable_container)
@@ -252,7 +294,7 @@ class BaseConfiguration:
         dialog.add_child(vert)
         self.__show_dialog__(dialog)
 
-    def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value'):
+    def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value', default_value=0, custom_callback=None):
         # Create a dialog and base layout
         dialog = gui.Dialog(title)
         layout = gui.Vert(0.25 * self.em, gui.Margins(1 * self.em))
@@ -263,7 +305,9 @@ class BaseConfiguration:
         label = gui.Label(query)
         h_layout.add_child(label)
         self.input_dialog_key = key
-        self.input_dialog_widget = ans_base_type(ans_type)
+        if ans_type: self.input_dialog_widget = ans_base_type(ans_type)
+        else: self.input_dialog_widget = ans_base_type()
+        setattr(self.input_dialog_widget, value_variable, default_value)
         self.input_dialog_widget_value_variable = value_variable
         h_layout.add_child(self.input_dialog_widget)
         layout.add_child(h_layout)
@@ -273,7 +317,8 @@ class BaseConfiguration:
         def ok_button_callback():
             self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
             self.__close_dialog__()
-        ok_button.set_on_clicked(ok_button_callback)
+        if custom_callback: ok_button.set_on_clicked(custom_callback)
+        else: ok_button.set_on_clicked(ok_button_callback)
         layout.add_child(ok_button)
 
         # Add the layout to the dialog and show the dialog
