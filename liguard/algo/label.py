@@ -1,12 +1,13 @@
 import inspect
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
-from liguard.algo.utils import AlgoType, make_key, get_algo_params
+from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AlgoType.label
 
 import numpy as np
 import open3d as o3d
 
+@algo_func(required_data=['current_label_list'])
 def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Remove labels that are out of the specified bounding box.
@@ -16,14 +17,19 @@ def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (Dict[str, any]): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if "current_label_list" not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in remove_out_of_bound_labels.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # get param values
     use_lidar_range = params['use_lidar_range']
@@ -85,6 +91,7 @@ def remove_out_of_bound_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
     # Update the label list in data_dict
     data_dict['current_label_list'] = output
 
+@algo_func(required_data=['current_label_list', 'current_point_cloud_numpy'])
 def remove_less_point_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Remove labels with fewer points than the specified threshold.
@@ -94,17 +101,19 @@ def remove_less_point_labels(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if "current_label_list" not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
-    if 'current_point_cloud_numpy' not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in remove_less_point_labels.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # Get label list and point cloud
     lbl_list = data_dict['current_label_list']

@@ -1,11 +1,12 @@
 import inspect
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
-from liguard.algo.utils import AlgoType, make_key, get_algo_params
+from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AlgoType.camera
 
 import numpy as np
 
+@algo_func(required_data=['current_point_cloud_numpy', 'current_calib_data'])
 def project_point_cloud_points(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Projects the points from a point cloud onto an image.
@@ -15,22 +16,19 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
-    # Check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
-    
-    if "current_image_numpy" not in data_dict:
-        logger.log('current_image_numpy not found in data_dict', Logger.ERROR)
-        return
-    
-    if 'current_calib_data' not in data_dict:
-        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
-        return
+    # check if required data is present in data_dict
+    for key in project_point_cloud_points.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # Extract required calibration data
     Tr_velo_to_cam = data_dict['current_calib_data']['Tr_velo_to_cam']
@@ -77,6 +75,7 @@ def project_point_cloud_points(data_dict: dict, cfg_dict: dict, logger: Logger):
     # Update the image with the projected lidar points
     data_dict['current_image_numpy'][pixel_coords_valid[:, 1], pixel_coords_valid[:, 0]] = np.column_stack((pixel_depths_valid, np.zeros_like(pixel_depths_valid), np.zeros_like(pixel_depths_valid)))
 
+@algo_func(required_data=['current_image_numpy'])
 def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Runs the Ultralytics YOLOv5 object detection algorithm on the current image.
@@ -86,13 +85,19 @@ def UltralyticsYOLOv5(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
-    if 'current_image_numpy' not in data_dict:
-        logger.log('current_image_numpy not found in data_dict', Logger.ERROR)
-        return
+    # check if required data is present in data_dict
+    for key in UltralyticsYOLOv5.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # imports
     import torch

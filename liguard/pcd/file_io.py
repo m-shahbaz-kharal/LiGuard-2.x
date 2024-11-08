@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -32,7 +32,7 @@ class FileIO:
 
     def __init__(self, cfg: dict):
         self.cfg = cfg     
-        self.pcd_dir = os.path.join(get_abs_path(cfg['data']['main_dir']), cfg['data']['lidar_subdir'])
+        self.pcd_dir = os.path.join(resolve_for_default_workspace(cfg['data']['main_dir']), cfg['data']['lidar_subdir'])
         self.pcd_type = cfg['data']['lidar']['pcd_type']
         self.pcd_start_idx = cfg['data']['start']['lidar']
         self.global_zero = cfg['data']['start']['global_zero']

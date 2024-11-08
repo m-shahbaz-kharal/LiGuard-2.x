@@ -6,10 +6,14 @@ import time
 import yaml
 import ast
 
-user_home_dir = os.path.expanduser("~")
-application_root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-def get_abs_path(path:str) -> str:
+def resolve_for_application_root(path:str) -> str:
+    application_root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     if not os.path.isabs(path): path = os.path.join(application_root_dir, path)
+    return os.path.abspath(path)
+
+def resolve_for_default_workspace(path:str) -> str:
+    default_workspace_dir = os.path.join(os.path.expanduser("~"), 'liguard-default-workspace')
+    if not os.path.isabs(path): path = os.path.join(default_workspace_dir, path)
     return os.path.abspath(path)
 
 class BaseConfiguration:
@@ -170,13 +174,13 @@ class BaseConfiguration:
                                 func_name = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
                                 self.__close_dialog__()
                                 
-                                shutil.copy(os.path.join(application_root_dir, 'resources', 'algo_func_template.py'), os.path.join(algo_dir, f'{func_name}.py'))
+                                shutil.copy(os.path.join(resolve_for_application_root(''), 'resources', 'algo_func_template.py'), os.path.join(algo_dir, f'{func_name}.py'))
                                 algo_txt = open(os.path.join(algo_dir, f'{func_name}.py')).read()
                                 algo_txt = algo_txt.replace('AGLO_TYPE', f'AlgoType.{algo_type.lower()}')
                                 algo_txt = algo_txt.replace('FUNCTION_NAME', func_name)
                                 with open(os.path.join(algo_dir, f'{func_name}.py'), 'w') as f: f.write(algo_txt)
                                 
-                                shutil.copy(os.path.join(application_root_dir, 'resources', 'algo_func_template.yml'), os.path.join(algo_dir, f'{func_name}.yml'))
+                                shutil.copy(os.path.join(resolve_for_application_root(''), 'resources', 'algo_func_template.yml'), os.path.join(algo_dir, f'{func_name}.yml'))
                                 conf_txt = open(os.path.join(algo_dir, f'{func_name}.yml')).read()
                                 conf_txt = conf_txt.replace('FUNCTION_NAME', func_name)
                                 with open(os.path.join(algo_dir, f'{func_name}.yml'), 'w') as f: f.write(conf_txt)
@@ -339,8 +343,8 @@ class BaseConfiguration:
         
     def __new_config__(self):
         # Load the default configuration template and set a default configuration file name to the current timestamp
-        self.cfg = self.load_config(os.path.join(application_root_dir, 'resources', 'config_template.yml'))
-        self.last_workspace_dir = os.path.join(user_home_dir, 'liguard-default-workspace')
+        self.cfg = self.load_config(os.path.join(resolve_for_application_root(''), 'resources', 'config_template.yml'))
+        self.last_workspace_dir = resolve_for_default_workspace('')
         time_stamp = time.strftime("%Y%m%d-%H%M%S")
         self.config_file_path_textedit.text_value = os.path.join(self.last_workspace_dir, f"{time_stamp}.yml")
 
@@ -370,7 +374,7 @@ class BaseConfiguration:
 
         # make sure the last workspace directory exists
         if not hasattr(self, 'last_workspace_dir'):
-            self.last_workspace_dir = os.path.join(user_home_dir, 'liguard-default-workspace')
+            self.last_workspace_dir = resolve_for_default_workspace('')
 
         # Open the configuration file by asking the user for the path
         self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, self.last_workspace_dir, ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)

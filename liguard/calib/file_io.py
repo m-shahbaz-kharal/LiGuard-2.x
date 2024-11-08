@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -24,7 +24,7 @@ class FileIO:
         """
         # get params from config
         self.cfg = cfg
-        self.clb_dir = os.path.join(get_abs_path(cfg['data']['main_dir']), cfg['data']['calib_subdir'])
+        self.clb_dir = os.path.join(resolve_for_default_workspace(cfg['data']['main_dir']), cfg['data']['calib_subdir'])
         self.clb_type = cfg['data']['calib']['clb_type']
         self.clb_start_idx = cfg['data']['start']['calib']
         self.global_zero = cfg['data']['start']['global_zero']

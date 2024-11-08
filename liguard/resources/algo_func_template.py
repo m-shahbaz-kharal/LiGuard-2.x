@@ -1,13 +1,13 @@
 #########################################################################################################################
 # usually, the following imports are common for all the algorithms, so it is recommended to not remove them
 import inspect
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
-from liguard.algo.utils import AlgoType, keys_required_in_data_dict, make_key, get_algo_params
+from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AGLO_TYPE
 #########################################################################################################################
 
-@keys_required_in_data_dict([]) # add required keys in the list -- necessary decorator, don't remove
+@algo_func([]) # add required keys in the list -- necessary decorator, don't remove
 # following keys are standard to `LiGuard`:
 # `current_point_cloud_path`, `current_point_cloud_numpy`, `current_image_path`, `current_image_numpy`, `current_calib_path`, `current_calib_data`, `current_label_path`, `current_label_list`
 # one or more of the `LiGuard` standard keys can be added to `keys_required_in_data_dict` decorator, for example:

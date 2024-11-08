@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import yaml
 
 from liguard.pcd.file_io import FileIO as PCD_File_IO
@@ -54,7 +54,8 @@ def bulk_process(args):
     logger.reset(cfg)
 
     # create dirs
-    if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(get_abs_path(cfg['data']['outputs_dir']), exist_ok=True)
+    data_outputs_dir = resolve_for_default_workspace(cfg['data']['outputs_dir'])
+    os.makedirs(data_outputs_dir, exist_ok=True)
     
     # reader queues
     pcd_input_queue = Queue(maxsize=args.max_queue_size)

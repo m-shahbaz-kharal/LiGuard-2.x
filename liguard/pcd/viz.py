@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 
 import open3d as o3d
 import numpy as np
@@ -31,7 +31,7 @@ class PointCloudVisualizer:
         # init
         # create necessary paths
         if cfg['visualization']['lidar']['save_images']:
-            self.lidar_save_path = os.path.join(get_abs_path(cfg['data']['outputs_dir']), 'pcd_viz')
+            self.lidar_save_path = os.path.join(resolve_for_default_workspace(cfg['data']['outputs_dir']), 'pcd_viz')
             os.makedirs(self.lidar_save_path, exist_ok=True)
         # reset
         self.reset(cfg, True)
@@ -271,7 +271,7 @@ class PointCloudVisualizer:
         Saves the view status (parameters of looking camera) of the visualizer.
         """
         if self.win_created:
-            save_path = os.path.join(get_abs_path(self.cfg['data']['outputs_dir']), 'view_status.txt')
+            save_path = os.path.join(resolve_for_default_workspace(self.cfg['data']['outputs_dir']), 'view_status.txt')
             with open(save_path, 'w') as file: file.write(str(self.viz.get_view_status()))
     
     def load_view_status(self):
@@ -279,7 +279,7 @@ class PointCloudVisualizer:
         Loads the view status (parameters of looking camera) of the visualizer from the configuration.
         """
         try:
-            load_path = os.path.join(get_abs_path(self.cfg['data']['outputs_dir']), 'view_status.txt')
+            load_path = os.path.join(resolve_for_default_workspace(self.cfg['data']['outputs_dir']), 'view_status.txt')
             with open(load_path, 'r') as file: self.viz.set_view_status(file.read())
         except: pass
 

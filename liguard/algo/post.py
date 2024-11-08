@@ -1,9 +1,10 @@
 import inspect
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
-from liguard.algo.utils import AlgoType, make_key, get_algo_params
+from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AlgoType.post
 
+@algo_func(required_data=['current_label_list', 'current_calib_data'])
 def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Fuses bbox_2d information among ModalityA and ModalityB.
@@ -22,16 +23,19 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
-    if 'current_calib_data' not in data_dict:
-        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
+    
+    # check if required data is present in data_dict
+    for key in Fuse2DPredictedBBoxes.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # imports
     import numpy as np
@@ -148,6 +152,7 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
             if 'text_info' not in mod_b_label: mod_b_label['text_info'] = text_info
             else: mod_b_label['text_info'] += f' | {text_info}'
 
+@algo_func(required_data=['current_label_list'])
 def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Generates past trajectory of objects using KDTree matching.
@@ -164,14 +169,19 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in GenerateKDTreePastTrajectory.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
 
     # imports
     import numpy as np
@@ -263,6 +273,7 @@ def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger
     data_dict[bbox_history_window_key].insert(0, current_bbox_3d_labels)
     data_dict[bbox_history_window_key] = data_dict[bbox_history_window_key][:params['history_size']]
 
+@algo_func(required_data=['current_label_list'])
 def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Generates future trajectory using cubic spline interpolation.
@@ -279,14 +290,19 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict, logger:
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in GenerateCubicSplineFutureTrajectory.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
 
     # imports
     import numpy as np
@@ -317,6 +333,7 @@ def GenerateCubicSplineFutureTrajectory(data_dict: dict, cfg_dict: dict, logger:
         else: label_dict['text_info'] += f' | traj+: locked'
     # ---------------------- Cubic Spline Interpolation ---------------------- #
 
+@algo_func(required_data=['current_label_list'])
 def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Generates future trajectory using polynomial fit.
@@ -333,14 +350,19 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Log
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in GeneratePolyFitFutureTrajectory.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
 
     # imports
     import numpy as np
@@ -371,6 +393,7 @@ def GeneratePolyFitFutureTrajectory(data_dict: dict, cfg_dict: dict, logger: Log
         else: label_dict['text_info'] += f' | traj+: locked'
     # ---------------------- Polynomial Fit ---------------------- #
 
+@algo_func(required_data=['current_label_list'])
 def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Generates velocity from trajectory.
@@ -387,14 +410,19 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict, logger: Logg
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in GenerateVelocityFromTrajectory.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
 
     # imports
     import numpy as np
@@ -428,6 +456,7 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict, logger: Logg
     if processed_frames_key not in data_dict: data_dict[processed_frames_key] = [data_dict['current_frame_index']]
     else: data_dict[processed_frames_key].append(data_dict['current_frame_index'])
 
+@algo_func(required_data=['current_point_cloud_numpy', 'current_label_list'])
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Creates a per-object PCDet dataset by extracting object point clouds and labels from the input data.
@@ -437,17 +466,19 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_point_cloud_numpy' not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
-    if "current_label_list" not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in create_per_object_pcdet_dataset.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # imports
     import os
@@ -460,7 +491,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
     current_label_list = data_dict['current_label_list']
     
     # Create output directories if they do not exist
-    output_path = os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), 'post', 'per_object_pcdet_dataset')
+    output_path = os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), 'post', 'per_object_pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')
@@ -508,6 +539,7 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
         
         idx += 1
 
+@algo_func(required_data=['current_point_cloud_numpy', 'current_label_list'])
 def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Creates a PCDet dataset by extracting point clouds and labels from the input data.
@@ -517,17 +549,19 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # Check if required data is present in data_dict
-    if 'current_point_cloud_numpy' not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
-    if "current_label_list" not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    
+    # check if required data is present in data_dict
+    for key in create_pcdet_dataset.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # imports
     import os
@@ -539,7 +573,7 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     current_label_list = data_dict['current_label_list']
     
     # Create output directories if they do not exist
-    output_path = os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), 'post', 'pcdet_dataset')
+    output_path = os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), 'post', 'pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')
@@ -568,6 +602,7 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     lbl_path = os.path.join(lbl_output_dir, point_cloud_file_base_name + '.txt')
     with open(lbl_path, 'w') as f: f.write(lbl_str)
 
+@algo_func(required_data=['current_point_cloud_numpy', 'current_label_list'])
 def visualize_in_vr(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Visualizes outputs in the VR environment.
@@ -577,19 +612,29 @@ def visualize_in_vr(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
-    # dict keys
-    server_socket_key = make_key(algo_name, 'server_socket')
-    client_socket_key = make_key(algo_name, 'client_socket')
-
+    
+    # check if required data is present in data_dict
+    for key in visualize_in_vr.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
+    
     # imports
     import socket
     import struct
     import open3d as o3d
     import numpy as np
+
+    # dict keys
+    server_socket_key = make_key(algo_name, 'server_socket')
+    client_socket_key = make_key(algo_name, 'client_socket')
 
     # create a server socket if it does not exist
     if server_socket_key not in data_dict:

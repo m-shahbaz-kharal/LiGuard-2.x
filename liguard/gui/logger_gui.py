@@ -1,7 +1,7 @@
 import open3d.visualization.gui as gui
 
 import os
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import time
 import yaml
 
@@ -50,7 +50,7 @@ class Logger:
         Returns:
             None
         """
-        path = get_abs_path(cfg['logging']['logs_dir'])
+        path = resolve_for_default_workspace(cfg['logging']['logs_dir'])
         level = cfg['logging']['level']
         
         if not os.path.exists(path): os.makedirs(path, exist_ok=True)

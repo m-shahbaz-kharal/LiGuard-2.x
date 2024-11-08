@@ -1,4 +1,5 @@
 import os
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 
 pcd_dir = os.path.dirname(os.path.realpath(__file__))
 

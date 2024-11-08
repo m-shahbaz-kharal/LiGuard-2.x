@@ -1,13 +1,14 @@
 import inspect
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
-from liguard.algo.utils import AlgoType, make_key, get_algo_params
+from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AlgoType.lidar
 
 import os
 import sys
 import numpy as np
 
+@algo_func(required_data=['current_point_cloud_numpy'])
 def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Rotate the point cloud data by the specified angles.
@@ -17,14 +18,19 @@ def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing the configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
+    for key in rotate.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # get point cloud and rotation angles
     pcd = data_dict['current_point_cloud_numpy']
@@ -41,6 +47,7 @@ def rotate(data_dict: dict, cfg_dict: dict, logger: Logger):
     rotated_pcd = np.hstack((rotated_pcd, pcd[:, 3:]))
     data_dict['current_point_cloud_numpy'] = rotated_pcd
 
+@algo_func(required_data=['current_point_cloud_numpy'])
 def crop(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Crop the point cloud data based on the specified limits.
@@ -50,14 +57,19 @@ def crop(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing the configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
+    
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
+    for key in crop.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # get point cloud and crop limits
     pcd = data_dict['current_point_cloud_numpy']
@@ -73,6 +85,7 @@ def crop(data_dict: dict, cfg_dict: dict, logger: Logger):
     data_dict['current_point_cloud_numpy'] = pcd[x_condition & y_condition & z_condition]
     data_dict['current_point_cloud_point_colors'] = np.ones((data_dict['current_point_cloud_numpy'].shape[0], 3), dtype=np.float32)
     
+@algo_func(required_data=['current_point_cloud_numpy', 'current_image_numpy', 'current_calib_data'])
 def project_image_pixel_colors(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Projects the colors of image pixels onto the point cloud.
@@ -82,20 +95,19 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
-    if "current_image_numpy" not in data_dict:
-        logger.log('current_image_numpy not found in data_dict', Logger.ERROR)
-        return
-    if "current_calib_data" not in data_dict:
-        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
-        return
+    for key in project_image_pixel_colors.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # Extract required data
     img_np = data_dict['current_image_numpy']
@@ -120,6 +132,7 @@ def project_image_pixel_colors(data_dict: dict, cfg_dict: dict, logger: Logger):
     # Update the point cloud colors in data_dict corresponding to the valid pixel coordinates
     data_dict['current_point_cloud_point_colors'][valid_coords] = img_np[normalized_pixel_coords_2d[valid_coords][:, 1], normalized_pixel_coords_2d[valid_coords][:, 0]] / 255.0
     
+@algo_func(required_data=['current_point_cloud_numpy'])
 def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Apply Background Filter using Dynamic Histogram Point Process (DHistDPP) algorithm.
@@ -129,9 +142,19 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
-    params = get_algo_params(cfg_dict, algo_type, algo_name, logger).copy()
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+    
+    # check if required data is present in data_dict
+    for key in BGFilterDHistDPP.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
     
     # imports
@@ -155,7 +178,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         # add params to data_dict
         data_dict[params_key] = params
         
-        filter_params = load_DHistDPP_params(os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        filter_params = load_DHistDPP_params(os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
@@ -187,7 +210,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
         logger.log(f'Filter generated', Logger.INFO)
         # save filter
-        filter_saved_path = save_DHistDPP_params(filter_params, os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        filter_saved_path = save_DHistDPP_params(filter_params, os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
@@ -206,6 +229,7 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
+@algo_func(required_data=['current_point_cloud_numpy'])
 def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Applies Background Filter using Spatio-Temporal Density Filtering (BGFilterSTDF) to the point cloud data.
@@ -215,9 +239,19 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing the configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
-    params = get_algo_params(cfg_dict, algo_type, algo_name, logger).copy()
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+    
+    # check if required data is present in data_dict
+    for key in BGFilterSTDF.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     live_editable_params = ['background_density_threshold'] # list of params that can be live edited and do not require re-computation of filter
 
     # imports
@@ -241,7 +275,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         # add params to data_dict
         data_dict[params_key] = params
         
-        filter_params = load_STDF_params(os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        filter_params = load_STDF_params(os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
@@ -271,7 +305,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
         logger.log('Filter generated', Logger.INFO)
         # save filter
-        filter_saved_path = save_STDF_params(filter_params, os.path.join(get_abs_path(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        filter_saved_path = save_STDF_params(filter_params, os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
@@ -291,6 +325,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
 
+@algo_func(required_data=['current_point_cloud_numpy'])
 def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Perform TEPP DBSCAN clustering on the current point cloud.
@@ -303,14 +338,19 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
+    for key in Clusterer_TEPP_DBSCAN.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     try: DBSCAN = __import__('dbscan', fromlist=['DBSCAN']).DBSCAN
     except:
@@ -321,15 +361,14 @@ def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     labels, _ = DBSCAN(data_dict['current_point_cloud_numpy'], params['eps'], params['min_samples'])
     
     # create 'current_label_list' if not exists
-    if 'current_label_list' not in data_dict:
-        data_dict['current_label_list'] = []
-        logger.log('current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
+    if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
     
     # update label list
     for label in np.unique(labels):
         if label == -1: continue
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
 
+@algo_func(required_data=['current_point_cloud_numpy'])
 def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     DBSCAN clustering available in Open3D library.
@@ -339,14 +378,19 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
+    for key in O3D_DBSCAN.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
 
     # perform clustering
     import open3d as o3d
@@ -355,15 +399,14 @@ def O3D_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
     labels = np.array(pcd.cluster_dbscan(eps=params['eps'], min_points=params['min_samples'], print_progress=False))
 
     # create 'current_label_list' if not exists
-    if 'current_label_list' not in data_dict:
-        data_dict['current_label_list'] = []
-        logger.log('current_label_list not found in data_dict, creating a new one', Logger.DEBUG)
+    if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
 
     # update label list
     for label in np.unique(labels):
         if label == -1: continue
         data_dict['current_label_list'].append({'lidar_cluster': {'point_indices': labels == label}})
 
+@ algo_func(required_data=['current_point_cloud_numpy', 'current_label_list'])
 def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Converts lidar clusters to object labels and adds them to the current label list.
@@ -373,17 +416,19 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
+    
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
+    for key in Cluster2Object.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
 
     # imports
     import open3d as o3d
@@ -456,6 +501,7 @@ def Cluster2Object(data_dict: dict, cfg_dict: dict, logger: Logger):
         label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True, 'added_by': algo_name}
         data_dict['current_label_list'].append(label)
 
+@algo_func(required_data=['current_point_cloud_numpy'])
 def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Perform object detection using the PointPillar algorithm.
@@ -471,14 +517,19 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing the configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
-
+    
     # check if required data is present in data_dict
-    if "current_point_cloud_numpy" not in data_dict:
-        logger.log('current_point_cloud_numpy not found in data_dict', Logger.ERROR)
-        return
+    for key in PointPillarDetection.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # algo name and keys used in algo
     model_key = make_key(algo_name, 'model')
@@ -499,12 +550,12 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[pcd_limit_range_key] = np.array(min_xyz + max_xyz, dtype=np.float32)
         data_dict[class_color_key] = {'Pedestrian': [1, 0, 0], 'Cyclist': [0, 0, 1], 'Car': [0, 1, 0]}
 
-        path = get_abs_path(params['github_repo_dir'])
+        path = resolve_for_application_root(params['github_repo_dir'])
         if path not in sys.path: sys.path.append(path)
         from liguard.algo.nn.PointPillars.model import PointPillars
 
         data_dict[model_key] = PointPillars(nclasses=len(data_dict[class_ids_key]))
-        model_path = get_abs_path(params['ckpt_file'])
+        model_path = resolve_for_application_root(params['ckpt_file'])
         if torch.cuda.is_available():
             data_dict[model_key].cuda()
             data_dict[model_key].load_state_dict(torch.load(model_path))
@@ -539,6 +590,7 @@ def PointPillarDetection(data_dict: dict, cfg_dict: dict, logger: Logger):
         if 'current_label_list' not in data_dict: data_dict['current_label_list'] = []
         data_dict['current_label_list'].append(label)
 
+@algo_func(required_data=['current_label_list', 'current_calib_data'])
 def gen_bbox_2d(data_dict: dict, cfg_dict: dict, logger: Logger):
     """
     Generate 2D bounding boxes from 3D bounding boxes.
@@ -548,17 +600,19 @@ def gen_bbox_2d(data_dict: dict, cfg_dict: dict, logger: Logger):
         cfg_dict (dict): A dictionary containing the configuration parameters.
         logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
     """
-    # get name and params
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
     algo_name = inspect.stack()[0].function
     params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
     
     # check if required data is present in data_dict
-    if 'current_label_list' not in data_dict:
-        logger.log('current_label_list not found in data_dict', Logger.ERROR)
-        return
-    if 'current_calib_data' not in data_dict:
-        logger.log('current_calib_data not found in data_dict', Logger.ERROR)
-        return
+    for key in gen_bbox_2d.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
     
     # imports
     import open3d as o3d

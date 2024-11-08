@@ -3,8 +3,8 @@ import traceback
 
 import open3d.visualization.gui as gui
 
-from liguard.gui.config_gui import BaseConfiguration as BaseConfigurationGUI, get_abs_path
-from liguard.gui.config_gui import user_home_dir, application_root_dir
+from liguard.gui.config_gui import BaseConfiguration as BaseConfigurationGUI
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
 from liguard.liguard_profiler import Profiler
 
@@ -105,22 +105,22 @@ class LiGuard:
         need_reset = False
         need_level_change = False
         if not hasattr(self, 'last_data_path'):
-            self.last_data_path = get_abs_path(cfg['data']['main_dir'])
+            self.last_data_path = resolve_for_default_workspace(cfg['data']['main_dir'])
             need_reset = True
-        if self.last_data_path != get_abs_path(cfg['data']['main_dir']): need_reset = True
+        if self.last_data_path != resolve_for_default_workspace(cfg['data']['main_dir']): need_reset = True
         if not hasattr(self, 'last_logging_level'):
             self.last_logging_level = cfg['logging']['level']
             need_level_change = True
         if self.last_logging_level != cfg['logging']['level']: need_level_change = True
         if not hasattr(self, 'last_logging_path'):
-            self.last_logging_path = get_abs_path(cfg['logging']['logs_dir'])
+            self.last_logging_path = resolve_for_default_workspace(cfg['logging']['logs_dir'])
             need_reset = True
-        if self.last_logging_path != get_abs_path(cfg['logging']['logs_dir']): need_reset = True
+        if self.last_logging_path != resolve_for_default_workspace(cfg['logging']['logs_dir']): need_reset = True
         
         # Reset the logger if the data path or logging level has changed
         if need_reset:
-            self.last_data_path = get_abs_path(cfg['data']['main_dir'])
-            self.last_logging_path = get_abs_path(cfg['logging']['logs_dir'])
+            self.last_data_path = resolve_for_default_workspace(cfg['data']['main_dir'])
+            self.last_logging_path = resolve_for_default_workspace(cfg['logging']['logs_dir'])
             logger.reset(cfg)
         # Change the logging level if it has changed
         if need_level_change:
@@ -128,7 +128,8 @@ class LiGuard:
             logger.change_level(cfg['logging']['level'])
 
         # Make sure the required directories exist
-        if not os.path.exists(cfg['data']['outputs_dir']): os.makedirs(get_abs_path(cfg['data']['outputs_dir']))
+        data_outputs_dir = resolve_for_default_workspace(cfg['data']['outputs_dir'])
+        os.makedirs(data_outputs_dir, exist_ok=True)
 
         # unlock the keyboard keys right, left, and space
         if self.pynput_listener: self.pynput_listener.stop()
@@ -495,7 +496,7 @@ class LiGuard:
             
             # sleep for a while
             time.sleep(cfg['threads']['vis_sleep'])
-            profiler.save(os.path.join(get_abs_path(cfg['data']['outputs_dir']), 'LiGuard_main.profile'))
+            profiler.save(os.path.join(resolve_for_default_workspace(cfg['data']['outputs_dir']), 'LiGuard_main.profile'))
             
     def quit(self, cfg):
         # stop the app
@@ -517,11 +518,11 @@ class LiGuard:
         
 def main():
     try:
-        default_workspace_dir = os.path.join(user_home_dir, 'liguard-default-workspace')
+        default_workspace_dir = os.path.join(default_workspace_dir, 'liguard-default-workspace')
         if not os.path.exists(default_workspace_dir):
             os.makedirs(default_workspace_dir)
             import shutil
-            shutil.copytree(os.path.join(application_root_dir, 'examples'), os.path.join(default_workspace_dir, 'examples'))
+            shutil.copytree(resolve_for_application_root('examples'), resolve_for_default_workspace('examples'))
         LiGuard()
         print('LiGuard exited successfully.')
     except Exception:

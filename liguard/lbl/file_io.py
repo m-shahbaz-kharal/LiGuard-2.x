@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import get_abs_path
+from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -40,7 +40,7 @@ class FileIO:
     """
     def __init__(self, cfg: dict, calib_reader: callable):
         self.cfg = cfg
-        self.lbl_dir = os.path.join(get_abs_path(cfg['data']['main_dir']), cfg['data']['label_subdir'])
+        self.lbl_dir = os.path.join(resolve_for_default_workspace(cfg['data']['main_dir']), cfg['data']['label_subdir'])
         self.lbl_type = cfg['data']['label']['lbl_type']
         self.lbl_start_idx = cfg['data']['start']['label']
         self.global_zero = cfg['data']['start']['global_zero']

@@ -12,9 +12,12 @@ class AlgoType(Enum):
     label = auto()
     post = auto()
 
-def keys_required_in_data_dict(keys: list):
+def algo_func(required_data: list = []):
+    """
+    A decorator to specify the required data for an algorithm.
+    """
     def decorator(func):
-        func.required_data = keys
+        func.required_data = required_data
         return func
     return decorator
 
