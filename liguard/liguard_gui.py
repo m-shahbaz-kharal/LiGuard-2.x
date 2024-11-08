@@ -518,7 +518,7 @@ class LiGuard:
         
 def main():
     try:
-        default_workspace_dir = os.path.join(default_workspace_dir, 'liguard-default-workspace')
+        default_workspace_dir = resolve_for_default_workspace('')
         if not os.path.exists(default_workspace_dir):
             os.makedirs(default_workspace_dir)
             import shutil
