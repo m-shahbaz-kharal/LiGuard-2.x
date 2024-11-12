@@ -70,21 +70,21 @@ class BaseConfiguration:
         button_container = gui.Horiz(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.new_config_button = gui.Button("New")
         self.open_config_button = gui.Button("Open")
+        self.reload_config_button = gui.Button("Reload")
         self.save_config_button = gui.Button("Save")
-        self.save_as_config_button = gui.Button("Save As")
         self.apply_config_button = gui.Button("Apply")
         # -- set callbacks
         self.new_config_button.set_on_clicked(self.__new_config__)
         self.open_config_button.set_on_clicked(self.__open_config__)
+        self.reload_config_button.set_on_clicked(self.__reload_config__)
         self.save_config_button.set_on_clicked(self.__save_config__)
-        self.save_as_config_button.set_on_clicked(self.__save_as_config__)
         self.apply_config_button.set_on_clicked(self.__apply_config__)
         # -- add to button container
         button_container.add_stretch()
         button_container.add_child(self.new_config_button)
         button_container.add_child(self.open_config_button)
+        button_container.add_child(self.reload_config_button)
         button_container.add_child(self.save_config_button)
-        button_container.add_child(self.save_as_config_button)
         button_container.add_child(self.apply_config_button)
         
         # add to top container
@@ -133,6 +133,21 @@ class BaseConfiguration:
             cfg = yaml.safe_load(f)
         return cfg
     
+    def load_pipeline_algos(self):
+        custom_algo_dir = os.path.join(self.last_pipeline_dir, 'algo')
+        self.custom_algos_cfg = dict()
+        if os.path.exists(custom_algo_dir):
+            for algo_type_path in os.listdir(custom_algo_dir):
+                algo_type_path = os.path.join(custom_algo_dir, algo_type_path)
+                if not os.path.isdir(algo_type_path): continue
+                if algo_type_path not in sys.path: sys.path.append(algo_type_path)
+                algo_type = os.path.basename(algo_type_path)
+                if algo_type not in self.custom_algos_cfg: self.custom_algos_cfg[algo_type] = dict()
+                for algo_file_name in os.listdir(algo_type_path):
+                    if not algo_file_name.endswith('.yml'): continue
+                    self.custom_algos_cfg[algo_type].update(self.load_config(os.path.join(algo_type_path, algo_file_name)))
+                self.cfg['proc'][algo_type].update(self.custom_algos_cfg[algo_type])
+    
     def save_config(self, cfg, cfg_path):
         """
         Save the configuration to a YAML file.
@@ -144,6 +159,15 @@ class BaseConfiguration:
         Returns:
             None
         """
+        # remove custom algo configs from the main config
+        if hasattr(self, 'custom_algos_cfg'):
+            for algo_type in self.custom_algos_cfg:
+                for algo_name in self.custom_algos_cfg[algo_type]:
+                    if algo_name in self.cfg['proc'][algo_type]: self.cfg['proc'][algo_type].pop(algo_name)
+                    algo_dir = os.path.join(self.last_pipeline_dir, 'algo', algo_type)
+                    with open(os.path.join(algo_dir, f'{algo_name}.yml'), 'w') as f:
+                        algo_config = {algo_name: self.custom_algos_cfg[algo_type][algo_name]}
+                        yaml.safe_dump(algo_config, f, sort_keys=False)
         with open(cfg_path, 'w') as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
 
@@ -153,7 +177,7 @@ class BaseConfiguration:
         if system_platform == "Windows": os.startfile(file_path) # windows
         elif system_platform == "Darwin": subprocess.run(['open', file_path]) # macOS
         else: subprocess.run(['xdg-open', file_path]) # linux
-            
+
     def __update_gui_from_cfg__(self, item, container, parent_keys=[], margin=0.2):
         """
         This function recursively generates the GUI from the configuration dictionary based on the item types.
@@ -168,7 +192,7 @@ class BaseConfiguration:
                     if label_text in algo_types:
                         def add_algo_button_callback(algo_type=label_text):
                             import shutil
-                            algo_dir = os.path.join(self.last_workspace_dir, 'algo', algo_type)
+                            algo_dir = os.path.join(self.last_pipeline_dir, 'algo', algo_type)
                             os.makedirs(algo_dir, exist_ok=True)
                             def __input_dialog_callback__():
                                 func_name = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
@@ -187,7 +211,7 @@ class BaseConfiguration:
                                 
                                 self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(algo_dir, f'{func_name}.py')))
                                 self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(algo_dir, f'{func_name}.yml')))
-                            self.show_input_dialog(title='Add New Function',
+                            self.show_input_dialog(title='+ Custom Function',
                                                    query=f'name:',
                                                    key=f'new_{algo_type}_function_name',
                                                    ans_base_type=gui.TextEdit,
@@ -196,7 +220,7 @@ class BaseConfiguration:
                                                    default_value=f'my_custom_{algo_type}_function',
                                                    custom_callback=__input_dialog_callback__)
 
-                        add_button = gui.Button(f"Add New {label_text} Function")
+                        add_button = gui.Button(f"+ Custom {label_text.capitalize()} Function")
                         add_button.set_on_clicked(add_algo_button_callback)
                         collapsable_container.add_child(add_button)
                     collapsable_container.set_is_open(False)
@@ -211,14 +235,17 @@ class BaseConfiguration:
                     sub_container.add_child(G[global_key]['view'])
                     if key.endswith('_dir') or key.endswith('_file'):
                         browse_button = gui.Button("...")
+                        browse_button.horizontal_padding_em = 0.5
+                        browse_button.vertical_padding_em = 0
                         def create_browse_dialog(title=label_text, path_edit=G[global_key]['view']):
                             def on_done(path):
                                 path_edit.text_value = path
                                 self.__close_dialog__()
                             dialog_title = f"Select {title.upper()}"
                             mode = gui.FileDialog.OPEN_DIR if title.endswith('_dir') else gui.FileDialog.OPEN
-                            self.__show_path_dialog__(dialog_title, mode, self.last_workspace_dir, "", on_done=on_done)
+                            self.__show_path_dialog__(dialog_title, mode, self.last_pipeline_dir, "", on_done=on_done)
                         browse_button.set_on_clicked(create_browse_dialog)
+                        sub_container.add_fixed(0.25 * self.em)
                         sub_container.add_child(browse_button)
                     sub_container.add_stretch()
                     container.add_child(sub_container)
@@ -298,26 +325,25 @@ class BaseConfiguration:
         dialog.add_child(vert)
         self.__show_dialog__(dialog)
 
-    def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value', default_value=0, custom_callback=None):
+    def show_input_dialog(self, title, query, key, ans_base_type=gui.NumberEdit, ans_type=gui.NumberEdit.INT, value_variable='int_value', default_value=0, editbox_width=200, custom_callback=None):
         # Create a dialog and base layout
         dialog = gui.Dialog(title)
-        layout = gui.Vert(0.25 * self.em, gui.Margins(1 * self.em))
-
-        # First row containing Label and Input widget
-        h_layout = gui.Horiz(0, gui.Margins(self.em * 0.6, self.em * 0.6, self.em * 0.6, self.em * 0.4))
+        layout = gui.Horiz(margins=gui.Margins(self.em * 0.4, self.em * 0.4, self.em * 0.4, self.em * 0.4))
         
         label = gui.Label(query)
-        h_layout.add_child(label)
+        layout.add_child(label)
         self.input_dialog_key = key
         if ans_type: self.input_dialog_widget = ans_base_type(ans_type)
         else: self.input_dialog_widget = ans_base_type()
         setattr(self.input_dialog_widget, value_variable, default_value)
         self.input_dialog_widget_value_variable = value_variable
-        h_layout.add_child(self.input_dialog_widget)
-        layout.add_child(h_layout)
+        layout.add_child(self.input_dialog_widget)
+        layout.add_fixed(0.25 * self.em)
         
         # Second row containing OK button
         ok_button = gui.Button("OK")
+        ok_button.horizontal_padding_em = 0.5
+        ok_button.vertical_padding_em = 0
         def ok_button_callback():
             self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
             self.__close_dialog__()
@@ -342,73 +368,82 @@ class BaseConfiguration:
         self.__show_dialog__(path_dialog)
         
     def __new_config__(self):
-        # Load the default configuration template and set a default configuration file name to the current timestamp
-        self.cfg = self.load_config(os.path.join(resolve_for_application_root(''), 'resources', 'config_template.yml'))
-        self.last_workspace_dir = resolve_for_default_workspace('')
-        time_stamp = time.strftime("%Y%m%d-%H%M%S")
-        self.config_file_path_textedit.text_value = os.path.join(self.last_workspace_dir, f"{time_stamp}.yml")
+        def create_base_pipeline(pipeline_dir):
+            self.cfg = self.load_config(os.path.join(resolve_for_application_root(''), 'resources', 'config_template.yml'))
+            self.save_config(self.cfg, os.path.join(pipeline_dir, 'base_config.yml'))
+            self.config_file_path_textedit.text_value = pipeline_dir
+            self.last_pipeline_dir = pipeline_dir
+            self.__close_dialog__()
 
-        # Generate the configuration GUI from the configuration dictionary
-        cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-        self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
-        self.generated_config.set_widget(cfg_gui)
-        
-        # Call the callback functions for the 'new_config' action
-        for callback in self.callbacks['new_config']: callback(self.cfg)
+            # Generate the configuration GUI from the configuration dictionary
+            cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+            self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
+            self.generated_config.set_widget(cfg_gui)
+            
+            # Call the callback functions for the 'new_config' action
+            for callback in self.callbacks['new_config']: callback(self.cfg)
+        self.__show_path_dialog__("New Pipeline", gui.FileDialog.OPEN_DIR, resolve_for_default_workspace(''), "", "", create_base_pipeline)
 
     def __open_config__(self):
         # Define the function to load the configuration file, update GUI, and close the dialog
-        def load_cfg_and_close_dialog(cfg_path):
-            self.config_file_path_textedit.text_value = cfg_path
-            self.last_workspace_dir = os.path.dirname(cfg_path)
+        def load_pipeline(pipeline_dir):
+            self.config_file_path_textedit.text_value = pipeline_dir
+            self.last_pipeline_dir = pipeline_dir
             self.__close_dialog__()
             try:
-                self.cfg = self.load_config(cfg_path)
+                self.cfg = self.load_config(os.path.join(pipeline_dir, 'base_config.yml'))
+                self.load_pipeline_algos()
+                for algo_type in self.cfg['proc']:
+                    algo_priorities = zip(
+                        [algo_name for algo_name in self.cfg['proc'][algo_type]],
+                        [algo_cfg['priority'] for algo_cfg in self.cfg['proc'][algo_type].values()]
+                    )
+                    algo_priorities = sorted(algo_priorities, key=lambda x: x[1])
+                    self.cfg['proc'][algo_type] = {algo_name: self.cfg['proc'][algo_type][algo_name] for algo_name, _ in algo_priorities}
+                    
                 cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
                 self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
                 self.generated_config.set_widget(cfg_gui)
                 # Call the callback functions for the 'open_config' action
                 for callback in self.callbacks['open_config']: callback(self.cfg)
             except:
-                self.__show_issue_dialog__('Failed to load configuration file.')
-
+                self.__show_issue_dialog__('The selected directory is not a valid pipeline directory. Create a new pipeline or select a valid pipeline directory.')
         # make sure the last workspace directory exists
-        if not hasattr(self, 'last_workspace_dir'):
-            self.last_workspace_dir = resolve_for_default_workspace('')
+        if not hasattr(self, 'last_pipeline_dir'):
+            self.last_pipeline_dir = resolve_for_default_workspace('')
 
         # Open the configuration file by asking the user for the path
-        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, self.last_workspace_dir, ".yml", "LiGuard Configuration (.yml)", load_cfg_and_close_dialog)
+        self.__show_path_dialog__("Open Pipeline", gui.FileDialog.OPEN_DIR, self.last_pipeline_dir, "", "", load_pipeline)
+
+    def __reload_config__(self):
+        try:
+            self.cfg = self.load_config(os.path.join(self.last_pipeline_dir, 'base_config.yml'))
+            self.load_pipeline_algos()
+            for algo_type in self.cfg['proc']:
+                algo_priorities = zip(
+                    [algo_name for algo_name in self.cfg['proc'][algo_type]],
+                    [algo_cfg['priority'] for algo_cfg in self.cfg['proc'][algo_type].values()]
+                )
+                algo_priorities = sorted(algo_priorities, key=lambda x: x[1])
+                self.cfg['proc'][algo_type] = {algo_name: self.cfg['proc'][algo_type][algo_name] for algo_name, _ in algo_priorities}
+                
+            cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+            self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
+            self.generated_config.set_widget(cfg_gui)
+            # Call the callback functions for the 'open_config' action
+            for callback in self.callbacks['open_config']: callback(self.cfg)
+        except:
+            self.__show_issue_dialog__('Failed to reload pipeline. Make sure to open a pipeline first.')
     
     def __save_config__(self):
         # Update the configuration from the GUI and save it to the specified path
         try:
             self.__update_cfg_from_gui__(self.cfg, ['cfg'])
-            if not os.path.exists(self.last_workspace_dir): os.makedirs(self.last_workspace_dir)
-            self.save_config(self.cfg, self.config_file_path_textedit.text_value)
+            self.save_config(self.cfg, os.path.join(self.last_pipeline_dir, 'base_config.yml'))
             # Call the callback functions for the 'save_config' action
             for callback in self.callbacks['save_config']: callback(self.cfg)
         except:
-            self.__show_issue_dialog__('Failed to save configuration file.')
-            
-    def __save_as_config__(self):
-        # Define the function to get configuration from GUI, save to the specified path, and close the dialog
-        def save_cfg_and_close_dialog(cfg, cfg_path):
-            self.config_file_path_textedit.text_value = cfg_path
-            self.last_workspace_dir = os.path.dirname(cfg_path)
-            self.__update_cfg_from_gui__(self.cfg, ['cfg'])
-            self.save_config(cfg, cfg_path)
-            self.__close_dialog__()
-            # Call the callback functions for the 'save_as_config' action
-            for callback in self.callbacks['save_as_config']: callback(self.cfg)
-
-        # If the configuration exists
-        if hasattr(self, 'cfg'):
-            if not hasattr(self, 'last_workspace_dir'):
-                if not os.path.exists(self.last_workspace_dir): os.makedirs(self.last_workspace_dir)
-            # Save the configuration by asking the user for the path
-            self.__show_path_dialog__("Save Configuration", gui.FileDialog.SAVE, self.last_workspace_dir, ".yml", "LiGuard Configuration (.yml)", lambda cfg_path: save_cfg_and_close_dialog(self.cfg, cfg_path))
-        else:
-            self.__show_issue_dialog__('No configuration to save.')
+            self.__show_issue_dialog__('Failed to save pipeline. Make sure to open a pipeline first.')
             
     def __apply_config__(self):
         # If the configuration exists

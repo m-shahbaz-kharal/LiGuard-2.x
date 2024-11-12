@@ -7,7 +7,7 @@ from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AGLO_TYPE
 #########################################################################################################################
 
-@algo_func([]) # add required keys in the list -- necessary decorator, don't remove
+@algo_func(required_data=[]) # add required keys in the list -- necessary decorator, don't remove
 # following keys are standard to `LiGuard`:
 # `current_point_cloud_path`, `current_point_cloud_numpy`, `current_image_path`, `current_image_numpy`, `current_calib_path`, `current_calib_data`, `current_label_path`, `current_label_list`
 # one or more of the `LiGuard` standard keys can be added to `keys_required_in_data_dict` decorator, for example:

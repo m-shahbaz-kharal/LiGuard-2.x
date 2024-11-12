@@ -87,7 +87,7 @@ class LiGuard:
                 if self.pcd_visualizer: self.pcd_visualizer.load_view_status()
             elif key == pynput.keyboard.KeyCode(char='['):
                 self.is_playing = False
-                self.config.show_input_dialog('Enter the frame index:', f'0-{self.data_dict["maximum_frame_index"]}', 'jump_to_frame')
+                self.config.show_input_dialog('Enter the frame index:', f'Jump to Frame (0-{self.data_dict["maximum_frame_index"]})', 'jump_to_frame')
                     
     def reset(self, cfg):
         """
@@ -241,13 +241,14 @@ class LiGuard:
         ##########################################
         # pre processes
         self.pre_processes = dict()
+        built_in_pre_modules = __import__('liguard.algo.pre', fromlist=['*']).__dict__
         for proc in cfg['proc']['pre']:
-            if 'enabled' not in cfg['proc']['pre'][proc]: cfg['proc']['pre'][proc]['enabled'] = 'True'
             enabled = cfg['proc']['pre'][proc]['enabled']
             if enabled:
                 try:
                     priority = cfg['proc']['pre'][proc]['priority']
-                    process = __import__('liguard.algo.pre', fromlist=[proc]).__dict__[proc]
+                    if proc in built_in_pre_modules: process = built_in_pre_modules[proc]
+                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
                     self.pre_processes[priority] = process
                 except Exception:
                     self.logger.log(f'pre_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -256,13 +257,14 @@ class LiGuard:
         
         # lidar processes
         self.lidar_processes = dict()
+        built_in_lidar_modules = __import__('liguard.algo.lidar', fromlist=['*']).__dict__
         for proc in cfg['proc']['lidar']:
-            if 'enabled' not in cfg['proc']['lidar'][proc]: cfg['proc']['lidar'][proc]['enabled'] = 'True'
             enabled = cfg['proc']['lidar'][proc]['enabled']
             if enabled:
                 try:
                     priority = cfg['proc']['lidar'][proc]['priority']
-                    process = __import__('liguard.algo.lidar', fromlist=[proc]).__dict__[proc]
+                    if proc in built_in_lidar_modules: process = built_in_lidar_modules[proc]
+                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
                     self.lidar_processes[priority] = process
                 except Exception:
                     self.logger.log(f'lidar_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -271,13 +273,14 @@ class LiGuard:
         
         # camera processes
         self.camera_processes = dict()
+        built_in_camera_modules = __import__('liguard.algo.camera', fromlist=['*']).__dict__
         for proc in cfg['proc']['camera']:
-            if 'enabled' not in cfg['proc']['camera'][proc]: cfg['proc']['camera'][proc]['enabled'] = 'True'
             enabled = cfg['proc']['camera'][proc]['enabled']
             if enabled:
                 try:
                     priority = cfg['proc']['camera'][proc]['priority']
-                    process = __import__('liguard.algo.camera', fromlist=[proc]).__dict__[proc]
+                    if proc in built_in_camera_modules: process = built_in_camera_modules[proc]
+                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
                     self.camera_processes[priority] = process
                 except Exception:
                     self.logger.log(f'camera_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -286,13 +289,14 @@ class LiGuard:
 
         # calib processes
         self.calib_processes = dict()
+        built_in_calib_modules = __import__('liguard.algo.calib', fromlist=['*']).__dict__
         for proc in cfg['proc']['calib']:
-            if 'enabled' not in cfg['proc']['calib'][proc]: cfg['proc']['calib'][proc]['enabled'] = 'True'
             enabled = cfg['proc']['calib'][proc]['enabled']
             if enabled:
                 try:
                     priority = cfg['proc']['calib'][proc]['priority']
-                    process = __import__('liguard.algo.calib', fromlist=[proc]).__dict__[proc]
+                    if proc in built_in_calib_modules: process = built_in_calib_modules[proc]
+                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
                     self.calib_processes[priority] = process
                 except Exception:
                     self.logger.log(f'calib_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -301,13 +305,14 @@ class LiGuard:
 
         # label processes
         self.label_processes = dict()
+        built_in_label_modules = __import__('liguard.algo.label', fromlist=['*']).__dict__
         for proc in cfg['proc']['label']:
-            if 'enabled' not in cfg['proc']['label'][proc]: cfg['proc']['label'][proc]['enabled'] = 'True'
             enabled = cfg['proc']['label'][proc]['enabled']
             if enabled:
                 try:
                     priority = cfg['proc']['label'][proc]['priority']
-                    process = __import__('liguard.algo.label', fromlist=[proc]).__dict__[proc]
+                    if proc in built_in_label_modules: process = built_in_label_modules[proc]
+                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
                     self.label_processes[priority] = process
                 except Exception:
                     self.logger.log(f'label_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -316,13 +321,14 @@ class LiGuard:
         
         # post processes
         self.post_processes = dict()
+        built_in_post_modules = __import__('liguard.algo.post', fromlist=['*']).__dict__
         for proc in cfg['proc']['post']:
-            if 'enabled' not in cfg['proc']['post'][proc]: cfg['proc']['post'][proc]['enabled'] = 'True'
             enabled = cfg['proc']['post'][proc]['enabled']
             if enabled:
                 try:
                     priority = cfg['proc']['post'][proc]['priority']
-                    process = __import__('liguard.algo.post', fromlist=[proc]).__dict__[proc]
+                    if proc in built_in_post_modules: process = built_in_post_modules[proc]
+                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
                     self.post_processes[priority] = process
                 except Exception:
                     self.logger.log(f'post_processes creation failed for {proc.__name__}:\n{traceback.format_exc()}', Logger.CRITICAL)
