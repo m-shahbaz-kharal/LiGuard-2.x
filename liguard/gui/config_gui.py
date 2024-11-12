@@ -143,6 +143,7 @@ class BaseConfiguration:
                 if algo_type_path not in sys.path: sys.path.append(algo_type_path)
                 algo_type = os.path.basename(algo_type_path)
                 if algo_type not in self.custom_algos_cfg: self.custom_algos_cfg[algo_type] = dict()
+                
                 for algo_file_name in os.listdir(algo_type_path):
                     if not algo_file_name.endswith('.yml'): continue
                     self.custom_algos_cfg[algo_type].update(self.load_config(os.path.join(algo_type_path, algo_file_name)))
@@ -183,14 +184,40 @@ class BaseConfiguration:
         This function recursively generates the GUI from the configuration dictionary based on the item types.
         """
         G = self.generated_config_gui_dict
+        data_handler_types = ['calib', 'label']
         algo_types = ['pre', 'lidar', 'camera', 'calib', 'label', 'post']
         if type(item) == dict:
             for key in item.keys():
                 label_text = key
                 if type(item[key]) == dict:
                     collapsable_container = gui.CollapsableVert(label_text, self.em * 0.2, gui.Margins(self.em * margin, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-                    if label_text in algo_types:
-                        def add_algo_button_callback(algo_type=label_text):
+                    if label_text in data_handler_types and parent_keys[-1] == 'data':
+                        def add_data_handler_callback(algo_type=label_text):
+                            import shutil
+                            data_handler_dir = os.path.join(self.last_pipeline_dir, 'data_handler', algo_type)
+                            os.makedirs(data_handler_dir, exist_ok=True)
+                            if data_handler_dir not in sys.path: sys.path.append(data_handler_dir)
+                            
+                            def __input_dialog_callback__():
+                                data_handler_name = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
+                                self.__close_dialog__()
+                                shutil.copy(os.path.join(resolve_for_application_root(''), 'resources', f'{algo_type}_handler_template.py'), os.path.join(data_handler_dir, f'handler_{data_handler_name}.py'))
+                                self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(data_handler_dir, f'handler_{data_handler_name}.py')))
+                            
+                            self.show_input_dialog(title='Create Custom Data Handler',
+                                                query=f'name(no underscores):',
+                                                key=f'new_{algo_type}_data_handler',
+                                                ans_base_type=gui.TextEdit,
+                                                ans_type=None,
+                                                value_variable='text_value',
+                                                default_value=f'custom{algo_type}',
+                                                custom_callback=__input_dialog_callback__)
+
+                        add_button = gui.Button(f"Create Custom {label_text.capitalize()} Data Handler")
+                        add_button.set_on_clicked(add_data_handler_callback)
+                        collapsable_container.add_child(add_button)
+                    elif label_text in algo_types and parent_keys[-1] == 'proc':
+                        def add_data_handler_callback(algo_type=label_text):
                             import shutil
                             algo_dir = os.path.join(self.last_pipeline_dir, 'algo', algo_type)
                             os.makedirs(algo_dir, exist_ok=True)
@@ -211,17 +238,17 @@ class BaseConfiguration:
                                 
                                 self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(algo_dir, f'{func_name}.py')))
                                 self.app.run_in_thread(lambda: self.open_file_with_default_program(os.path.join(algo_dir, f'{func_name}.yml')))
-                            self.show_input_dialog(title='+ Custom Function',
-                                                   query=f'name:',
-                                                   key=f'new_{algo_type}_function_name',
-                                                   ans_base_type=gui.TextEdit,
-                                                   ans_type=None,
-                                                   value_variable='text_value',
-                                                   default_value=f'my_custom_{algo_type}_function',
-                                                   custom_callback=__input_dialog_callback__)
+                            self.show_input_dialog(title='Create Custom Function',
+                                                query=f'name:',
+                                                key=f'new_{algo_type}_function_name',
+                                                ans_base_type=gui.TextEdit,
+                                                ans_type=None,
+                                                value_variable='text_value',
+                                                default_value=f'my_custom_{algo_type}_function',
+                                                custom_callback=__input_dialog_callback__)
 
-                        add_button = gui.Button(f"+ Custom {label_text.capitalize()} Function")
-                        add_button.set_on_clicked(add_algo_button_callback)
+                        add_button = gui.Button(f"Create Custom {label_text.capitalize()} Function")
+                        add_button.set_on_clicked(add_data_handler_callback)
                         collapsable_container.add_child(add_button)
                     collapsable_container.set_is_open(False)
                     self.__update_gui_from_cfg__(item[key], collapsable_container, parent_keys + [key], margin + 0.2)
@@ -370,6 +397,7 @@ class BaseConfiguration:
     def __new_config__(self):
         def create_base_pipeline(pipeline_dir):
             self.cfg = self.load_config(os.path.join(resolve_for_application_root(''), 'resources', 'config_template.yml'))
+            self.cfg['data']['pipeline_dir'] = pipeline_dir
             self.save_config(self.cfg, os.path.join(pipeline_dir, 'base_config.yml'))
             self.config_file_path_textedit.text_value = pipeline_dir
             self.last_pipeline_dir = pipeline_dir
@@ -392,6 +420,7 @@ class BaseConfiguration:
             self.__close_dialog__()
             try:
                 self.cfg = self.load_config(os.path.join(pipeline_dir, 'base_config.yml'))
+                self.cfg['data']['pipeline_dir'] = pipeline_dir
                 self.load_pipeline_algos()
                 for algo_type in self.cfg['proc']:
                     algo_priorities = zip(
@@ -418,6 +447,7 @@ class BaseConfiguration:
     def __reload_config__(self):
         try:
             self.cfg = self.load_config(os.path.join(self.last_pipeline_dir, 'base_config.yml'))
+            self.cfg['data']['pipeline_dir'] = self.last_pipeline_dir
             self.load_pipeline_algos()
             for algo_type in self.cfg['proc']:
                 algo_priorities = zip(

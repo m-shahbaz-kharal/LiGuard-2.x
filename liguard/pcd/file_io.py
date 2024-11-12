@@ -31,8 +31,10 @@ class FileIO:
     """
 
     def __init__(self, cfg: dict):
-        self.cfg = cfg     
-        self.pcd_dir = os.path.join(resolve_for_default_workspace(cfg['data']['main_dir']), cfg['data']['lidar_subdir'])
+        self.cfg = cfg
+        main_dir = cfg['data']['main_dir']
+        if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
+        self.pcd_dir = os.path.join(main_dir, cfg['data']['lidar_subdir'])
         self.pcd_type = cfg['data']['lidar']['pcd_type']
         self.pcd_start_idx = cfg['data']['start']['lidar']
         self.global_zero = cfg['data']['start']['global_zero']

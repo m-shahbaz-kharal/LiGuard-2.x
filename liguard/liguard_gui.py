@@ -104,32 +104,41 @@ class LiGuard:
         # Check if the data path or logging level has changed
         need_reset = False
         need_level_change = False
+        
+        current_data_path = cfg['data']['main_dir']
+        if not os.path.isabs(current_data_path): current_data_path = os.path.join(cfg['data']['pipeline_dir'], current_data_path)
         if not hasattr(self, 'last_data_path'):
-            self.last_data_path = resolve_for_default_workspace(cfg['data']['main_dir'])
+            self.last_data_path = current_data_path
             need_reset = True
-        if self.last_data_path != resolve_for_default_workspace(cfg['data']['main_dir']): need_reset = True
+        if self.last_data_path != current_data_path: need_reset = True
+        
+        current_logging_level = cfg['logging']['level']
         if not hasattr(self, 'last_logging_level'):
-            self.last_logging_level = cfg['logging']['level']
+            self.last_logging_level = current_logging_level
             need_level_change = True
-        if self.last_logging_level != cfg['logging']['level']: need_level_change = True
+        if self.last_logging_level != current_logging_level: need_level_change = True
+        
+        current_logging_path = cfg['logging']['logs_dir']
+        if not os.path.isabs(current_logging_path): current_logging_path = os.path.join(cfg['data']['pipeline_dir'], current_logging_path)
         if not hasattr(self, 'last_logging_path'):
-            self.last_logging_path = resolve_for_default_workspace(cfg['logging']['logs_dir'])
+            self.last_logging_path = current_logging_path
             need_reset = True
-        if self.last_logging_path != resolve_for_default_workspace(cfg['logging']['logs_dir']): need_reset = True
+        if self.last_logging_path != current_logging_path: need_reset = True
         
         # Reset the logger if the data path or logging level has changed
         if need_reset:
-            self.last_data_path = resolve_for_default_workspace(cfg['data']['main_dir'])
-            self.last_logging_path = resolve_for_default_workspace(cfg['logging']['logs_dir'])
+            self.last_data_path = current_data_path
+            self.last_logging_path = current_logging_path
             logger.reset(cfg)
         # Change the logging level if it has changed
         if need_level_change:
-            self.last_logging_level = cfg['logging']['level']
-            logger.change_level(cfg['logging']['level'])
+            self.last_logging_level = current_logging_level
+            logger.change_level(current_logging_level)
 
         # Make sure the required directories exist
-        data_outputs_dir = resolve_for_default_workspace(cfg['data']['outputs_dir'])
-        os.makedirs(data_outputs_dir, exist_ok=True)
+        self.outputs_dir = cfg['data']['outputs_dir']
+        if not os.path.isabs(self.outputs_dir): self.outputs_dir = os.path.join(cfg['data']['pipeline_dir'], self.outputs_dir)
+        os.makedirs(self.outputs_dir, exist_ok=True)
 
         # unlock the keyboard keys right, left, and space
         if self.pynput_listener: self.pynput_listener.stop()
@@ -502,7 +511,7 @@ class LiGuard:
             
             # sleep for a while
             time.sleep(cfg['threads']['vis_sleep'])
-            profiler.save(os.path.join(resolve_for_default_workspace(cfg['data']['outputs_dir']), 'LiGuard_main.profile'))
+            profiler.save(os.path.join(self.outputs_dir, 'LiGuard_main.profile'))
             
     def quit(self, cfg):
         # stop the app

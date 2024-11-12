@@ -489,9 +489,14 @@ def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Log
     current_point_cloud_path = data_dict['current_point_cloud_path']
     current_point_cloud_numpy = data_dict['current_point_cloud_numpy']
     current_label_list = data_dict['current_label_list']
+
+    # make sure the outputs_dir is created
+    data_outputs_dir = cfg_dict['data']['outputs_dir']
+    if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+    os.makedirs(data_outputs_dir, exist_ok=True)
     
     # Create output directories if they do not exist
-    output_path = os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), 'post', 'per_object_pcdet_dataset')
+    output_path = os.path.join(data_outputs_dir, 'post', 'per_object_pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')
@@ -571,9 +576,14 @@ def create_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     current_point_cloud_path = data_dict['current_point_cloud_path']
     current_point_cloud_numpy = data_dict['current_point_cloud_numpy']
     current_label_list = data_dict['current_label_list']
+
+    # make sure the outputs_dir is created
+    data_outputs_dir = cfg_dict['data']['outputs_dir']
+    if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+    os.makedirs(data_outputs_dir, exist_ok=True)
     
     # Create output directories if they do not exist
-    output_path = os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), 'post', 'pcdet_dataset')
+    output_path = os.path.join(data_outputs_dir, 'post', 'pcdet_dataset')
     pcd_output_dir = os.path.join(output_path, 'point_cloud')
     os.makedirs(pcd_output_dir, exist_ok=True)
     lbl_output_dir = os.path.join(output_path, 'label')

@@ -1,7 +1,7 @@
 # This is a LiGuard pipeline configuration file.
 
 data: # dataset configurations
-    main_dir: 'examples/dataset' # root directory containing dataset
+    main_dir: 'dataset' # root directory containing dataset
     lidar_subdir: 'pointclouds' # subdirectory containing point clouds
     camera_subdir: 'images' # subdirectory containing images
     label_subdir: 'labels' # subdirectory containing labels
@@ -26,7 +26,7 @@ data: # dataset configurations
     label:
         enabled: False # set True to read labels from disk
         lbl_type: 'kitti' # can be kitti, openpcdet, or sustechpoints
-    outputs_dir: 'examples/simple_pipeline/outputs' # directory to save outputs
+    outputs_dir: 'outputs' # directory to save outputs
 
 proc: # liguard processing configurations
     pre:
@@ -93,7 +93,7 @@ visualization: # visualization parameters
 
 logging: # parameters for logger
     level: 1 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL
-    logs_dir: 'examples/simple_pipeline/logs' # path to save logs
+    logs_dir: 'logs' # path to save logs
         
 threads: # don't change unless debugging
     io_sleep: 0.01 # input/output threads sleep time in seconds

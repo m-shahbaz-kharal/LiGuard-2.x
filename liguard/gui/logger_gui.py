@@ -50,7 +50,9 @@ class Logger:
         Returns:
             None
         """
-        path = resolve_for_default_workspace(cfg['logging']['logs_dir'])
+        # make sure the outputs_dir is created
+        path = cfg['logging']['logs_dir']
+        if not os.path.isabs(path): path = os.path.join(cfg['data']['pipeline_dir'], path)
         level = cfg['logging']['level']
         
         if not os.path.exists(path): os.makedirs(path, exist_ok=True)

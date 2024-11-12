@@ -24,16 +24,28 @@ class FileIO:
         """
         # get params from config
         self.cfg = cfg
-        self.clb_dir = os.path.join(resolve_for_default_workspace(cfg['data']['main_dir']), cfg['data']['calib_subdir'])
+        main_dir = cfg['data']['main_dir']
+        if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
+        self.clb_dir = os.path.join(main_dir, cfg['data']['calib_subdir'])
         self.clb_type = cfg['data']['calib']['clb_type']
         self.clb_start_idx = cfg['data']['start']['calib']
         self.global_zero = cfg['data']['start']['global_zero']
         self.clb_end_idx = self.clb_start_idx + cfg['data']['count']
         
+        # Add custom supported calibration types to the list
+        custom_calib_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler', 'calib')
+        if os.path.exists(custom_calib_data_handlers_dir):
+            custom_supported_calib_types = [clb_handler.split('_')[1].replace('.py','') for clb_handler in os.listdir(custom_calib_data_handlers_dir) if 'handler' in clb_handler]
+            supported_calib_types.extend(custom_supported_calib_types)
+        else:
+            custom_supported_calib_types = []
         # Check if the calibration type is supported
         if self.clb_type not in supported_calib_types: raise NotImplementedError("Calib type not supported. Supported file types: " + ', '.join(supported_calib_types) + ".")
         # Import the calibration handler
-        h = __import__('liguard.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
+        if self.clb_type in custom_supported_calib_types:
+            h = __import__(f'handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
+        else:
+            h = __import__('liguard.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
         self.clb_ext, self.reader = h.calib_file_extension, h.Handler
         
         # read all the calibration files

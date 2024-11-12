@@ -40,16 +40,28 @@ class FileIO:
     """
     def __init__(self, cfg: dict, calib_reader: callable):
         self.cfg = cfg
-        self.lbl_dir = os.path.join(resolve_for_default_workspace(cfg['data']['main_dir']), cfg['data']['label_subdir'])
+        main_dir = cfg['data']['main_dir']
+        if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
+        self.lbl_dir = os.path.join(main_dir, cfg['data']['label_subdir'])
         self.lbl_type = cfg['data']['label']['lbl_type']
         self.lbl_start_idx = cfg['data']['start']['label']
         self.global_zero = cfg['data']['start']['global_zero']
         self.lbl_end_idx = self.lbl_start_idx + cfg['data']['count']
         
+        # Add custom supported calibration types to the list
+        custom_label_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler', 'label')
+        if os.path.exists(custom_label_data_handlers_dir):
+            custom_supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir(custom_label_data_handlers_dir) if 'handler' in lbl_handler]
+            supported_label_types.extend(custom_supported_label_types)
+        else:
+            custom_supported_label_types = []
         # Check if the label type is supported
         if self.lbl_type not in supported_label_types: raise NotImplementedError("Label type not supported. Supported file types: " + ', '.join(supported_label_types) + ".")
         # Import the handler for the label type
-        h = __import__('liguard.lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
+        if self.lbl_type in custom_supported_label_types:
+            h = __import__(f'handler_{self.lbl_type}', fromlist=['label_file_extension', 'Handler'])
+        else:
+            h = __import__('liguard.lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
         self.lbl_ext, self.reader = h.label_file_extension, h.Handler
         self.clb_reader = calib_reader
         

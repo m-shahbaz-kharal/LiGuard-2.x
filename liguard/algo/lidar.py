@@ -178,7 +178,10 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         # add params to data_dict
         data_dict[params_key] = params
         
-        filter_params = load_DHistDPP_params(os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        # load filter
+        data_outputs_dir = cfg_dict['data']['outputs_dir']
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+        filter_params = load_DHistDPP_params(os.path.join(data_outputs_dir, params['filter_file']))
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
@@ -209,8 +212,14 @@ def BGFilterDHistDPP(data_dict: dict, cfg_dict: dict, logger: Logger):
         filter_params = calc_DHistDPP_params(data_dict[query_frames_key], params['number_of_points_per_frame'], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
         data_dict[filter_key] = lambda pcd, threshold: make_DHistDPP_filter(pcd, threshold, **filter_params)
         logger.log(f'Filter generated', Logger.INFO)
+        
+        # make sure the outputs_dir is created
+        data_outputs_dir = cfg_dict['data']['outputs_dir']
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+        os.makedirs(data_outputs_dir, exist_ok=True)
+
         # save filter
-        filter_saved_path = save_DHistDPP_params(filter_params, os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        filter_saved_path = save_DHistDPP_params(filter_params, os.path.join(data_outputs_dir, params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
@@ -275,7 +284,10 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         # add params to data_dict
         data_dict[params_key] = params
         
-        filter_params = load_STDF_params(os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        # load filter
+        data_outputs_dir = cfg_dict['data']['outputs_dir']
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+        filter_params = load_STDF_params(os.path.join(data_outputs_dir, params['filter_file']))
         if filter_params:
             data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
             data_dict[filter_loaded_key] = True
@@ -304,8 +316,14 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         filter_params = calc_STDF_params(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
         data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
         logger.log('Filter generated', Logger.INFO)
+
+        # make sure the outputs_dir is created
+        data_outputs_dir = cfg_dict['data']['outputs_dir']
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+        os.makedirs(data_outputs_dir, exist_ok=True)
+
         # save filter
-        filter_saved_path = save_STDF_params(filter_params, os.path.join(resolve_for_default_workspace(cfg_dict['data']['outputs_dir']), params['filter_file']))
+        filter_saved_path = save_STDF_params(filter_params, os.path.join(data_outputs_dir, params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed

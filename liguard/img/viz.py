@@ -36,7 +36,10 @@ class ImageVisualizer:
         # init
         # create necessary paths
         if cfg['visualization']['camera']['save_images']:
-            self.image_save_path = os.path.join(resolve_for_default_workspace(cfg['data']['outputs_dir']), 'img_viz')
+            # make sure the outputs_dir is created
+            data_outputs_dir = cfg['data']['outputs_dir']
+            if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg['data']['pipeline_dir'], data_outputs_dir)
+            self.image_save_path = os.path.join(data_outputs_dir, 'img_viz')
             os.makedirs(self.image_save_path, exist_ok=True)
         # reset
         self.reset(cfg, True)
