@@ -270,7 +270,16 @@ class BaseConfiguration:
                                 self.__close_dialog__()
                             dialog_title = f"Select {title.upper()}"
                             mode = gui.FileDialog.OPEN_DIR if title.endswith('_dir') else gui.FileDialog.OPEN
-                            self.__show_path_dialog__(dialog_title, mode, self.last_pipeline_dir, "", on_done=on_done)
+                            starting_path = path_edit.text_value
+                            if not os.path.isabs(starting_path): starting_path = os.path.join(self.last_pipeline_dir, starting_path)
+                            if not os.path.exists(starting_path): starting_path = self.last_pipeline_dir
+                            self.__show_path_dialog__(
+                                title=dialog_title,
+                                mode=mode,
+                                initial_path=starting_path,
+                                filter_type="",
+                                on_done=on_done
+                            )
                         browse_button.set_on_clicked(create_browse_dialog)
                         sub_container.add_fixed(0.25 * self.em)
                         sub_container.add_child(browse_button)

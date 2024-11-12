@@ -38,7 +38,7 @@ def Handler(label_path: str, calib_data: dict):
     for line in lbls:
         parts = line.strip().split(' ')
         obj_type = parts[0]  # Describes the type of object: 'Car', 'Truck', 'Pedestrian', 'Cyclist', 'Tricycle', 'Car', 'Bus','Truck', 'Engineeringcar'
-        occluded = int(parts[1])  # Set to -1
+        occluded = float(parts[1])  # Set to -1
         reserved = float(parts[2])  # Set to -1
         alpha = float(parts[3]) # Observation angle of object, ranging [-pi..pi]
         left0, top0, right0, bottom0 = np.array([float(x) for x in parts[4:8]], dtype=np.float32)  # 2D bounding box of object in the image from cam1 (0-based index): contains left, top, right, bottom pixel coordinates.

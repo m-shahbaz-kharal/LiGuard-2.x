@@ -37,14 +37,15 @@ setup(
     keywords="point-cloud, image, processing, pipeline, dynamic, GUI, research, development, framework",
     python_requires=">=3.8",
     install_requires=[
-        "pynput",
+        "matplotlib",
         "numpy<2.0.0",
         "open3d==0.18.0",
         "opencv-python",
+        "pynput",
         "pillow",
         "pyyaml",
         "scipy",
-        "matplotlib"
+        "tqdm",
     ],
     extras_require={
         "dev": [
