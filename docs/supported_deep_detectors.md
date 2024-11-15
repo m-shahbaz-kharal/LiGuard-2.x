@@ -1,4 +1,4 @@
-# Supported Deep Object Detectors
+# Supported Deep Object Detectors (Experimental)
 `LiGuard` allows users to add various pre-trained LIDAR and/or RGB deep object detectors into their data processing pipelines. Each deep detector usually has its dependencies. It is upto the users to install the dependencies of their cusotm deep learning algorithms. In the following, a list of currently supported (out-of-box) deep object detectors is given along their corresponding installation instructions.
 
 ## Image Object Detectors
@@ -7,7 +7,7 @@
 pip install -U torch==1.13.1+cu117 torchvision==0.14.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
 pip install -U ultralytics==8.2.78
 ```
-Once installation is complete, add the following entry under `proc/camera/` in your pipeline configuration.
+Once installation is complete, add the following entry under `proc/camera/` in `base_config.yml` file inside your pipeline directory.
 ```yaml
 UltralyticsYOLOv5:
     enabled: True
@@ -31,7 +31,7 @@ git clone https://github.com/zhulf0804/PointPillars /path/to/liguard/algo/nn/Poi
 pip install -U -r /path/to/liguard/algo/nn/PointPillars/requirements.txt
 cd /path/to/liguard/algo/nn/PointPillars/ops && python setup.py develop
 ```
-Once installation is complete, add the following entry under `proc/lidar/` in your pipeline configuration.
+Once installation is complete, add the following entry under `proc/lidar/` in `base_config.yml` file inside your pipeline directory.
 ```yaml
 PointPillarDetection:
     enabled: True

@@ -6,14 +6,9 @@ Author: Muhammad Shahbaz (m.shahbaz.kharal@outlook.com)
 Github: github.com/m-shahbaz-kharal
 
 Discrete Histograms of Distances-Per-Point (D_HistDPP)
+=======================================================
 
-It is a background filter for roadside LIDAR "structured" point cloud data. The term "structured", here, means that the point cloud can be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix.
-
-For example:
-    - If a LiDAR has a 1024 horizontal and 64 vertical resolution,
-    - and outputs a point cloud containing 1024x64 points where each point is from a fixed azimuth and elevation ray.
-    - Then the point cloud is structured.
-The algorithm is designed to work with such structured point clouds.
+It is a background filter for roadside LIDAR "structured" point cloud data. The term "structured", here, means that the point cloud can be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix. For example, if a LiDAR has a 1024 horizontal and 64 vertical resolution, and outputs a point cloud containing 1024x64 points where each point is from a fixed azimuth and elevation ray, then the point cloud is structured. The algorithm is designed to work with such structured point clouds.
 
 The algorithm is summmarized in the following steps:
 Since the point cloud is structured, each point index represents a unique ray in the LIDAR's field of view.

@@ -6,14 +6,9 @@ Author: Muhammad Shahbaz (m.shahbaz.kharal@outlook.com)
 Github: github.com/m-shahbaz-kharal
 
 Spatio-Temporal Density Filter (STDF)
+======================================
 
-A simple implementation of a spatio-temporal density-based background filter that can operate on "unstructured" point cloud data (as well as structured). This term "unstructured", here, means that the point cloud cannot be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix.
-
-For example:
-    - If a LiDAR generate arbitrary number of points in each frame,
-    - and each point doesn't necessarily belong to a fixed azimuth and elevation ray.
-    - then the point cloud is unstructured.
-The algorithm can be used for such unstructured point clouds.
+A simple implementation of a spatio-temporal density-based background filter that can operate on "unstructured" point cloud data (as well as structured). This term "unstructured", here, means that the point cloud cannot be represented by a fixed size HXV (horizontal resolution x vertical resolution) matrix. For example, if a LiDAR generate arbitrary number of points in each frame, and each point doesn't necessarily belong to a fixed azimuth and elevation ray, then the point cloud is unstructured. The algorithm can be used for such unstructured point clouds.
 
 The algorithm is summarized in the following steps:
 Since the number of points in each frame is not fixed, all the point clouds (gathered temporally) are stacked together to form a single point cloud.

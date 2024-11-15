@@ -1,12 +1,14 @@
+![LiGuard Main Interface](docs/figs/liguard-main.png)
+*LiGuard's GUI Layout (from left to right): Configuration Window, Visualization Windows (Point Cloud Feed and Image Feed), and Log Window.*
 # Introduction
-`LiGuard` is a framework for interactive research on LIDAR (and accompanying image) data focusing on intelligent transportation system (ITS) applications. It provides a graphical user interface (GUI) that facilitates the creation of LIDAR data processing pipelines, enabling users to interactively enable, disable, or adjust function parameters and visualize the results.
+`LiGuard` is a research-purposed framework for LiDAR (and corresponding image) data. It provides an easy-to-use graphical user interface (GUI) that helps researchers interactively create algorithms by allowing them to dynamically create, enable or disable components, adjust parameters, and instantly visualize results.
 
-`LiGuard` provides, out of the box, data readers for many common dataset formats including support for reading calibration and label data. Moreover, it provides built-in features ranging from basic data preprocessors to advanced object detection and tracking algorithms. Additionally, it offers a straightforward standard for adding custom functions or algorithms, allowing users to integrate unique components into their pipelines. Your contributions and collaborations are encouraged! Please visit [our GitHub repository](https://github.com/m-shahbaz-kharal/LiGuard-2.x) for more information.
+`LiGuard` features, out of the box, data reading for many common dataset formats including support for reading calibration and label data. Moreover, it provides (an increasing list of) commonly used algorithm components ranging from basic data preprocessors to advanced object detection and tracking algorithms. Additionally, it establishes a straightforward standard for adding custom functions/algorithms, allowing users to integrate unique components into their pipelines. Pipelines created in `LiGuard` are saved in structured directories, making it easy to share and reproduce results.
 
-# Quick Start
+# Installation
 Requirements:
 - Windows 10 or later
-- Python 3.8, 3.9, or 3.10
+- Python 3.8, 3.9, 3.10, or 3.11
 
 Install `LiGuard` with pip (from PyPI):
 ```bash
@@ -17,17 +19,27 @@ Run `LiGuard` by executing the following command in the terminal:
 ```bash
 liguard-gui
 ```
+# Usage
 Test an example pipeline:
 1. In the `Configuration` windows, click the `Open` button.
-2. Navigate to `examples/pipelines` and open `sample_pipeline.yml`.
+2. Navigate to `examples/simple_pipeline`, click open, and then click `Apply`.
 3. Explore various functions under `proc` dropdown in the `Configuration` window. For example, under `proc/lidar/crop`, check the `enabled` checkbox, and click `Apply` to see the cropped LIDAR data.
 4. Press `left arrow` or `right arrow` to navigate through the frames. A list of all key bindings is available [here](docs/visualizer_key_bindings.md).
-5. To save the pipeline, click the `Save`/`Save As` button in the `Configuration` window.
+5. To save the pipeline, click the `Save` button in the `Configuration` window.
 
-To learn how to create advanced custom pipelines, see [Tutorial: Implementing A Point-Cloud Processing Pipeline](https://m-shahbaz-kharal.github.io/LiGuard-2.x/tutorial_your_first_pipeline.html).
+For more details on pipelines, see [LiGuard Pipelines](docs/liguard_pipelines.md).
 
 # Documentation
-A documentation for `LiGuard` is available at [GitHub Pages](https://m-shahbaz-kharal.github.io/LiGuard-2.x).
+A detailed documentation for `LiGuard` is available at [GitHub Pages](https://m-shahbaz-kharal.github.io/LiGuard-2.x).
+
+# Contributing
+We welcome contributions to the `LiGuard` framework. Please follow the guidelines below to contribute to the framework:
+- Fork the repository.
+- Create a new branch for your feature or bug fix.
+- Make your changes and add comments.
+- Write tests for your changes.
+- Run the tests.
+- Create a pull request.
 
 # License
-Distributed under the MIT License. See [LICENSE](LICENSE.txt) for more information.
+MIT License Copyright (c) 2024 Muhammad Shahbaz - see the [LICENSE](LICENSE.txt) file for details.
