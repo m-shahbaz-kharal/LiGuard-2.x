@@ -13,12 +13,13 @@ If you think that a new calibration file handler can be beneficial for a vast ma
 
 Handler File Structure
 -----------------------
+
 .. code-block:: python
+
     import os
     import numpy as np
 
     calib_file_extension = '.txt' # this tells the extension of the calibration files in directory given by config['data']['calib_subdir']
-
 
     def Handler(calib_path: str): # don't change the function signature
         '''

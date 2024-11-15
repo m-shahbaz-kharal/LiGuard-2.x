@@ -169,7 +169,7 @@ class FileIO:
         
     def close(self):
         """
-        Stop the asynchronous reading thread.
+        Close the point cloud files reading thread.
 
         """
         self.stop.set()

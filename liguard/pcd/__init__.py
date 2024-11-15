@@ -2,9 +2,10 @@
 pcd Package
 ===========
 This package contains modules responsible for reading and displaying point cloud data. It comprises of three kinds of modules:
-- 1. `**file_io.py**`: Contains the boilerplate code for reading point cloud files supported by the `open3d` library.
-- 2. `**sensor_io.py**`: Contains the boilerplate code for reading live stream from LiDAR sensors. This module is experimental.
-- 3. `**handler_<manufacturer>_<model>.py**`: Contains the handler for reading live stream from a specific LiDAR sensor from a specific manufacturer.
+
+1. **file_io.py**: Contains the boilerplate code for reading point cloud files supported by the `open3d` library.
+2. **sensor_io.py**: Contains the boilerplate code for reading live stream from LiDAR sensors. This module is experimental.
+3. **handler_<manufacturer>_<model>.py**: Contains the handler for reading live stream from a specific LiDAR sensor from a specific manufacturer.
 
 The `file_io.py` and `sensor_io.py` modules should not be modified except for contributions to the framework application logic.
 
@@ -29,6 +30,7 @@ Sensor Stream Handler File Structure
 The `handler_<manufacturer>_<model>.py` file should contain a class named `Handler` with the following structure:
 
 .. code-block:: python
+
     class Handler:
         '''
         Args:

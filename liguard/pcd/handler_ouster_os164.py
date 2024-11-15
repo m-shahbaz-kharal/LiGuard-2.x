@@ -70,7 +70,7 @@ class Handler:
                 
     def close(self):
         """
-        Closes the reader and stream objects.
+        Closes the Ouster reader and closes stream objects.
 
         """
         self.reader.close()

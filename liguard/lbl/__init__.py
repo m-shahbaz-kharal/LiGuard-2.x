@@ -2,8 +2,9 @@
 lbl Package
 ===========
 This package contains modules responsible for reading labl files. It comprises of two kinds of modules:
-- 1. `**file_io.py**`: Contains the boilerplate code for reading label files.
-- 2. `**handler_<lbl_type>.py**`: Contains the handler for reading a specific type of label file.
+
+1. **file_io.py**: Contains the boilerplate code for reading label files.
+2. **handler_<lbl_type>.py**: Contains the handler for reading a specific type of label file.
 
 The `file_io.py` module should not be modified except for contributions to the framework application logic.
 
@@ -11,9 +12,9 @@ Contributing a New Label File Handler
 -------------------------------------
 If you think that a new label file handler can be beneficial for a vast majority of users, you can follow the contribution guidelines and add your handler to the `lbl` package as described below.
 
-- 1. Create a new Python file named `handler_<lbl_type>.py` in the `calib` package.
-- 2. Replace `<lbl_type>` with the name of the dataset (e.g., `kitti`, `coco`, etc.).
-- 3. The `lbl_type` is passed from `data->label->lbl_type` in `base_config.yml` and is used to select the appropriate handler.
+1. Create a new Python file named `handler_<lbl_type>.py` in the `calib` package.
+2. Replace `<lbl_type>` with the name of the dataset (e.g., `kitti`, `coco`, etc.).
+3. The `lbl_type` is passed from `data->label->lbl_type` in `base_config.yml` and is used to select the appropriate handler.
 
 Handler File Structure
 -----------------------
@@ -24,6 +25,7 @@ The `handler_<lbl_type>.py` file should contain the following elements:
 - `Handler` function: Reads the label file and returns a list of dictionaries representing the labels.
 
 .. code-block:: python
+
     import os
     import numpy as np
 

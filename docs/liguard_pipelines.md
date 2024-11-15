@@ -1,4 +1,4 @@
-# LiGuard Pipelines
+# An In-Depth Look into LiGuard Pipelines
 In `LiGuard`, a `pipeline` is a sequence of components that process LIDAR and/or image data. In other words, it defines an algorithm that performs a sequence of steps on given LIDAR and/or image data. Each component in the pipeline performs a specific task such as reading data, preprocessing, data analysis, or postprocessing. The components are connected in a sequence, and the data flows from one component to the next based on the defined priority of the components. The pipeline is executed in real-time, and the results are visualized in the GUI and/or stored.
 
 ## Pipeline Directory Structure

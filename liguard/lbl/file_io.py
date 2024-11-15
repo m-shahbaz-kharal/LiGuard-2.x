@@ -132,7 +132,7 @@ class FileIO:
         
     def close(self):
         """
-        Stops the async read thread.
+        Closes the label files reading thread.
 
         """
         self.stop.set()

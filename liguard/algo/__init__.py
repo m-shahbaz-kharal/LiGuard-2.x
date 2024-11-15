@@ -20,13 +20,15 @@ Contributing a New Algorithm
 -----------------------------
 If you think that a new algorithm/function can be beneficial for a vast majority of users, you can follow the contribution guidelines and add your algorithm to the appropriate sub-module as described below.
 
-1. Add a YAML configuration entry in the `resources->config_template.yml` under `proc->*<sub_module_type>*->*<your_algo_name>*.
-2. Implement the algorithm function in the `*<sub_module_type>.py*` file within the `algo` package.
+1. Add a YAML configuration entry in the `resources->config_template.yml` under `proc-><sub_module_type>-><your_algo_name>`.
+2. Implement the algorithm function in the `<sub_module_type>.py` file within the `algo` package.
 
 For example to add a new lidar algorithm named `dummy`, you would follow these steps:
 
 1. Add the following entry to the `resources->config_template.yml` file:
+
 .. code-block:: yaml
+
     # configuration for a function in LiGuard is defined in yaml format
     dummy: # name of the function
         enabled: False # bool -- adds the function to pipeline if True -- necessary parameter, don't remove
@@ -43,7 +45,9 @@ For example to add a new lidar algorithm named `dummy`, you would follow these s
         # ...
 
 2. Implement the algorithm function in the `lidar.py` file within the `algo` package:
+
 .. code-block:: python
+
     @algo_func(required_data=[]) # add required keys in the list -- necessary decorator, don't remove
     # following keys are standard to `LiGuard`:
     # `current_point_cloud_path`, `current_point_cloud_numpy`, `current_image_path`, `current_image_numpy`, `current_calib_path`, `current_calib_data`, `current_label_path`, `current_label_list`

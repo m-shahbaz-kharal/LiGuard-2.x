@@ -12,6 +12,7 @@ It is a background filter for roadside LIDAR "structured" point cloud data. The 
 
 The algorithm is summmarized in the following steps:
 Since the point cloud is structured, each point index represents a unique ray in the LIDAR's field of view.
+
 1. So, for each ray, a histogram of distance is calculated across all frames, resulting in N histograms, where N is the number of points in the point cloud.
 2. The histograms are then normalized by the number of frames.
 3. The normalized histograms are then used to filter out the background points as follows:

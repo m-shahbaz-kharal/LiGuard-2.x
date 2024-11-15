@@ -1,4 +1,4 @@
-## Visualizer key bindings:
+# Visualizer key bindings
 | Key | Description |
 | --- | --- |
 | `left arrow` | Previous frame |

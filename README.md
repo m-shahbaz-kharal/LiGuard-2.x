@@ -1,6 +1,7 @@
 <p align="center">
-  <img src="docs/figs/liguard-logo.png" alt="Description" width="400" />
+    <img src="docs/figs/liguard-logo.png" alt="Description" width="400" />
 </p>
+
 <p align="center">
     A Research-Purposed Framework for Processing LIDAR and Image Data
 </p>
@@ -36,6 +37,7 @@ liguard-gui
 ```
 # Usage
 Test an example pipeline:
+
 1. In the `Configuration` windows, click the `Open` button.
 2. Navigate to `examples/simple_pipeline`, click open, and then click `Apply`.
 3. Explore various functions under `proc` dropdown in the `Configuration` window. For example, under `proc/lidar/crop`, check the `enabled` checkbox, and click `Apply` to see the cropped LIDAR data.

@@ -112,6 +112,6 @@ class FileIO:
         
     def close(self):
         """
-        Stop the asynchronous read thread.
+        Closes the calibration files reading thread.
         """
         self.stop.set()

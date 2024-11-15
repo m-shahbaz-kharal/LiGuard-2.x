@@ -132,7 +132,7 @@ class FileIO:
 
     def close(self):
         """
-        Stops the asynchronous reading process.
+        Closes the image files reading thread.
 
         """
         self.stop.set()

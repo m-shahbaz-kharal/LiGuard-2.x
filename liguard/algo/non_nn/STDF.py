@@ -12,6 +12,7 @@ A simple implementation of a spatio-temporal density-based background filter tha
 
 The algorithm is summarized in the following steps:
 Since the number of points in each frame is not fixed, all the point clouds (gathered temporally) are stacked together to form a single point cloud.
+
 1. A 3D (for spatial dimensions x, y, z) histogram of the point cloud is calculated across all frames.
 2. The histogram is then normalized by the number of frames.
 3. The normalized histogram is then used to filter out the background points as follows:
