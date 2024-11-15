@@ -1,9 +1,24 @@
-![LiGuard Main Interface](docs/figs/liguard-main.png)
-*LiGuard's GUI Layout (from left to right): Configuration Window, Visualization Windows (Point Cloud Feed and Image Feed), and Log Window.*
+<p align="center">
+  <img src="docs/figs/liguard-logo.png" alt="Description" width="400" />
+</p>
+<p align="center">
+    A Research-Purposed Framework for Processing LIDAR and Image Data
+</p>
+
+<p align="center">
+    <a href="#installation">Installation</a> | <a href="#usage">Usage</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a> | <a href="#license">License</a>
+</p>
+
+[![PyPI version](https://badge.fury.io/py/LiGuard.svg)](https://badge.fury.io/py/LiGuard)
+[![GitHub license](https://img.shields.io/github/license/m-shahbaz-kharal/LiGuard-2.x)]
+
 # Introduction
 `LiGuard` is a research-purposed framework for LiDAR (and corresponding image) data. It provides an easy-to-use graphical user interface (GUI) that helps researchers interactively create algorithms by allowing them to dynamically create, enable or disable components, adjust parameters, and instantly visualize results.
 
 `LiGuard` features, out of the box, data reading for many common dataset formats including support for reading calibration and label data. Moreover, it provides (an increasing list of) commonly used algorithm components ranging from basic data preprocessors to advanced object detection and tracking algorithms. Additionally, it establishes a straightforward standard for adding custom functions/algorithms, allowing users to integrate unique components into their pipelines. Pipelines created in `LiGuard` are saved in structured directories, making it easy to share and reproduce results.
+
+![LiGuard Main Interface](docs/figs/liguard-main.png)
+*LiGuard's GUI Layout (from left to right): Configuration Window, Visualization Windows (Point Cloud Feed and Image Feed), and Log Window.*
 
 # Installation
 Requirements:
