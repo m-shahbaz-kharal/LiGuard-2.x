@@ -3,7 +3,7 @@ import glob
 
 setup(
     name="LiGuard",
-    version="2.1.2",
+    version="2.1.3",
     author="Muhammad Shahbaz",
     author_email="m.shahbaz.kharal@outlook.com",
     description=(
@@ -47,13 +47,6 @@ setup(
         "scipy",
         "tqdm",
     ],
-    extras_require={
-        "dev": [
-            "pytest",
-            "sphinx",
-            "sphinx-rtd-theme",
-        ],
-    },
     packages=find_packages(),
     include_package_data=True,
     entry_points={
