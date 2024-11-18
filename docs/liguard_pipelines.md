@@ -247,36 +247,34 @@ Here, `FUNCTION_NAME` is the name of the component, `AGLO_TYPE` is the type of t
 
 ## Create Custom Data Handlers and Algorithm Components
 - ### Data Handlers
-    - Calibration Data Handler
-The easiest way to add custom data handlers to `LiGuard` is as follows:
-- Under `data->calib` in `Configuration` window, click `Create Custom Calib Data Handler` button.
-- Enter the name of the handler and click `OK`. This will create the necessary directory stucture and files for the custom data handler. It'll also open the Python script in the default editor in your OS.
-- Implement the data reading in the Python script by following the structure described above or in the comments in the script.
-- Save the file and click `Reload` button in the `Configuration` window to load the new data handler.
-- Under `data->calib->clb_type` in `Configuration` window, type the name of the custom data handler. Click `Apply` to use the custom data handler.
+    - Calibration Data Handler: The easiest way to add custom data handlers to `LiGuard` is as follows:
+        - Under `data->calib` in `Configuration` window, click `Create Custom Calib Data Handler` button.
+        - Enter the name of the handler and click `OK`. This will create the necessary directory stucture and files for the custom data handler. It'll also open the Python script in the default editor in your OS.
+        - Implement the data reading in the Python script by following the structure described above or in the comments in the script.
+        - Save the file and click `Reload` button in the `Configuration` window to load the new data handler.
+        - Under `data->calib->clb_type` in `Configuration` window, type the name of the custom data handler. Click `Apply` to use the custom data handler.
 
-You can also do this manually by creating the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the file to ensure that `LiGuard` can load and execute the data handler correctly.
+        - Note: You can also do this manually by creating the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the file to ensure that `LiGuard` can load and execute the data handler correctly.
 
-    - Label Data Handler
-The easiest way to add custom data handlers to `LiGuard` is as follows:
-- Under `data->label` in `Configuration` window, click `Create Custom Label Data Handler` button.
-- Enter the name of the handler and click `OK`. This will create the necessary directory stucture and files for the custom data handler. It'll also open the Python script in the default editor in your OS.
-- Implement the data reading in the Python script by following the structure described above or in the comments in the script.
-- Save the file and click `Reload` button in the `Configuration` window to load the new data handler.
-- Under `data->label->lbl_type` in `Configuration` window, type the name of the custom data handler. Click `Apply` to use the custom data handler.
+    - Label Data Handler: The easiest way to add custom data handlers to `LiGuard` is as follows:
+        - Under `data->label` in `Configuration` window, click `Create Custom Label Data Handler` button.
+        - Enter the name of the handler and click `OK`. This will create the necessary directory stucture and files for the custom data handler. It'll also open the Python script in the default editor in your OS.
+        - Implement the data reading in the Python script by following the structure described above or in the comments in the script.
+        - Save the file and click `Reload` button in the `Configuration` window to load the new data handler.
+        - Under `data->label->lbl_type` in `Configuration` window, type the name of the custom data handler. Click `Apply` to use the custom data handler.
 
-You can also do this manually by creating the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the file to ensure that `LiGuard` can load and execute the data handler correctly.
+        - Note: You can also do this manually by creating the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the file to ensure that `LiGuard` can load and execute the data handler correctly.
 
 - ### Algorithm Components
-The easiest way to add custom components to `LiGuard` is as follows:
-- Under `proc->lidar` in `Configuration` window, click `Create Custom Function` button.
-- Enter the name of the function and click `OK`. This will create the necessary directory stucture and files for the custom component. It'll also open the YAML configuration file and the Python script in the default editor in your OS.
-- Modify the YAML configuration file to define the parameters for the component.
-- Implement the algorithm in the Python script by following the structure described above or in the comments in the script.
-- Save the files and click `Reload` button in the `Configuration` window to load the new component, and then click `Apply` to execute it as part of the pipeline.
-- From now on, you can enable/disable this custom component, adjust its parameters, reorder it in the pipeline using `priority` parameter. Please make sure to click `Apply` after making any changes to the component to see the results.
+    - The easiest way to add custom components to `LiGuard` is as follows:
+        - Under `proc->lidar` in `Configuration` window, click `Create Custom Function` button.
+        - Enter the name of the function and click `OK`. This will create the necessary directory stucture and files for the custom component. It'll also open the YAML configuration file and the Python script in the default editor in your OS.
+        - Modify the YAML configuration file to define the parameters for the component.
+        - Implement the algorithm in the Python script by following the structure described above or in the comments in the script.
+        - Save the files and click `Reload` button in the `Configuration` window to load the new component, and then click `Apply` to execute it as part of the pipeline.
+        - From now on, you can enable/disable this custom component, adjust its parameters, reorder it in the pipeline using `priority` parameter. Please make sure to click `Apply` after making any changes to the component to see the results.
 
-You can also do this manually by creating the YAML configuration file and the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the files to ensure that `LiGuard` can load and execute the components correctly.
+        - Note: You can also do this manually by creating the YAML configuration file and the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the files to ensure that `LiGuard` can load and execute the components correctly.
 
 ## Sharing Pipelines
 To share a pipeline with others, you can simply zip the pipeline directory and share it. The recipient can then unzip the directory and load the pipeline in `LiGuard`. The recipient can also modify the pipeline by adding or removing components, adjusting parameters, or adding new components. The structured directory format ensures that the pipeline remains organized and easy to understand.

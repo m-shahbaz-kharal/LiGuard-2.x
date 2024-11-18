@@ -10,8 +10,10 @@
     <a href="#installation">Installation</a> | <a href="#usage">Usage</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a> | <a href="#license">License</a>
 </p>
 
-[![PyPI version](https://badge.fury.io/py/LiGuard.svg)](https://badge.fury.io/py/LiGuard)
-[![GitHub license](https://img.shields.io/github/license/m-shahbaz-kharal/LiGuard-2.x)]
+![PyPI Release Version](https://img.shields.io/pypi/v/liguard?label=release)
+![Docs Build Status](https://img.shields.io/github/actions/workflow/status/m-shahbaz-kharal/LiGuard-2.x/build_and_deploy_sphinx_docs.yml?label=docs)
+![Tests Run Status](https://img.shields.io/github/actions/workflow/status/m-shahbaz-kharal/LiGuard-2.x/run_tests.yml?label=tests)
+![GitHub License](https://img.shields.io/github/license/m-shahbaz-kharal/LiGuard-2.x)
 
 # Introduction
 `LiGuard` is a research-purposed framework for LiDAR (and corresponding image) data. It provides an easy-to-use graphical user interface (GUI) that helps researchers interactively create algorithms by allowing them to dynamically create, enable or disable components, adjust parameters, and instantly visualize results.
