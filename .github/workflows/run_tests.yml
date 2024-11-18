@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]  # Define the OS platforms to test
-        python-version: [3.8, 3.9, 3.10]    # Define the Python versions to test
+        python-version: ["3.8", "3.9", "3.10"]    # Define the Python versions to test
 
     steps:
     - name: Checkout code
