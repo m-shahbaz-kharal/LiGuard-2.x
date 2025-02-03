@@ -1,0 +1,255 @@
+# This is a LiGuard pipeline configuration file.
+
+data: # dataset configurations
+    main_dir: 'data' # root directory containing dataset
+    lidar_subdir: 'lidar' # subdirectory containing point clouds
+    camera_subdir: 'camera' # subdirectory containing images
+    label_subdir: 'label' # subdirectory containing labels
+    calib_subdir: 'calib' # subdirectory containing calibration files
+    start: # index of first frame, only used if reading from disk; should be different for camera and lidar only if they are not synchronized
+        lidar: 0 # start frame index
+        camera: 0 # start frame index
+        label: 0 # start frame index
+        calib: 0 # start frame index
+        global_zero: 0 # first frame index in 0 to count-1 range
+    count: 10 # end frame number
+
+    lidar:
+        enabled: True # set True to read point clouds from disk
+        pcd_type: '.bin' # can be .bin or .npy
+    camera:
+        enabled: False # set True to read images from disk
+        img_type: '.png' # most image types are supported
+    calib:
+        enabled: False # set True to read calibration files from disk
+        clb_type: 'kitti' # can be kitti or sustechpoints
+    label:
+        enabled: False # set True to read labels from disk
+        lbl_type: 'kitti' # can be kitti, openpcdet, or sustechpoints
+    outputs_dir: 'outputs' # directory to save outputs
+
+sensors: # lidar and camera configurations
+    lidar: # lidar sensor configurations, at this point only Ouster lidars are supported, support for other lidars is coming soon
+        enabled: False # set True to stream point clouds from sensor, please set False if reading from disk
+        hostname: '192.168.1.2' # sensor ip address or hostname
+        manufacturer: 'Ouster' # sensor manufacturer
+        model: 'OS1-64' # sensor model
+        serial_number: '000000000000' # sensor serial number
+    camera: # camera sensor configurations, at this point only Flir cameras are supported, support for other cameras is coming soon
+        enabled: False # set True to stream point clouds from sensor, please set False if reading from disk
+        hostname: '192.168.1.3' # sensor ip address or hostname
+        manufacturer: 'Flir' # sensor manufacturer
+        model: 'BFS-PGE-16S2C-CS' # sensor model
+        serial_number: '00000000' # sensor serial number
+        camera_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0] # camera matrix (K)
+        distortion_coeffs: [0, 0, 0, 0, 0] # distortion coefficients (D)
+        T_lidar_camera: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]] # 4x4 transformation matrix from camera to lidar
+
+proc: # liguard processing configurations
+    pre:
+        remove_nan_inf_allzero_from_pcd: # remove nan points from point cloud
+            enabled: True # set True to remove nan points
+            priority: 1 # priority of process - lower is higher
+        manual_calibration:
+            enabled: False # set True to manually calibrate camera and lidar
+            priority: 2 # priority of process - lower is higher
+            T_lidar_to_cam_4x4: "1.0 0.0 0.0 0.0 0.0 -1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0" #4x4 transformation matrix from lidar to camera
+            rotation_matrix_4x4: "0.0 1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0" # 4x4 rotation matrix
+            cam_intrinsic_3x4: "1000.0 0.0 960.0 0.0 0.0 1000.0 540.0 0.0 0.0 0.0 1.0 0.0" # 3x4 camera intrinsic matrix
+    lidar:
+        BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
+            enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
+            priority: 1 # priority of process - lower is higher
+            number_of_frame_gather_iters: 6 # number of iterations to gather frames
+            number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
+            number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
+            number_of_points_per_frame: 65536 # number of points in each point cloud
+            lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
+            bins_per_unit_length: 2 # number of bins per unit length
+            background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
+            filter_file: 'bg_filter_dhist_dpp' # path to save/load filter
+            load_filter: False # set True to load filter
+        rotate: # rotate point cloud
+            enabled: False # set True to rotate point cloud
+            priority: 1 # priority of process - lower is higher
+            angles: [0.0, 0.0, 0.0] # rotation angles in degrees
+        crop:
+            priority: 2 # priority of process - lower is higher
+            enabled: False # set True to crop point cloud
+            min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
+            max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
+        BGFilterSTDF: # Spatio-Temporal Density Filter
+            enabled: False # set True to filter background using Simple Density Filter Filter
+            priority: 3 # priority of process - lower is higher
+            number_of_frame_gather_iters: 6 # number of iterations to gather frames
+            number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
+            number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
+            number_of_points_per_frame: 65536 # number of points in each point cloud
+            lidar_range_in_unit_length: 100 # maximum range of lidar in lidar unit length
+            bins_per_unit_length: 2 # number of bins per unit length
+            background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
+            filter_file: 'bg_filter_stdf' # path to save/load filter
+            load_filter: False # set True to load filter
+        Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
+            enabled: False # set True to cluster point cloud using TEPP DBSCAN
+            priority: 4 # priority of process - lower is higher
+            eps: 0.5 # maximum radius to search
+            min_samples: 5 # minimum number of points to consider a cluster valid
+        O3D_DBSCAN: # DBSCAN point clustering algorithm in Open3D
+            enabled: False # set True to cluster point cloud using Open3D DBSCAN
+            priority: 4 # priority of process - lower is higher
+            eps: 0.5 # maximum radius to search
+            min_samples: 5 # minimum number of points to consider a cluster valid
+        Cluster2Object:
+            enabled: False
+            priority: 5
+            ground_level: -3.2
+            max_foot_level: 1.4
+            min_height: 0.6
+            classes_require_orientation: ['Car', 'Van', 'Truck', 'Bus']
+            size_constraints: # in increasing order of base lengths, units in meters, left inclusive, right exclusive
+                Pedestrian:
+                    base_length: [0.35, 1.5]
+                    height: [1.0, 1.8]
+                Cyclist:
+                    base_length: [1.5, 1.75]
+                    height: [0.8, 1.6]
+                Car:
+                    base_length: [4.0, 4.8]
+                    height: [1.6, 1.8]
+                Van:
+                    base_length: [5.0, 5.4]
+                    height: [2.0, 2.2]
+                Truck:
+                    base_length: [4.8, 5.2]
+                    height: [2.2, 2.4]
+                Bus:
+                    base_length: [10.0, 12.0]
+                    height: [3.0, 3.5]
+            class_colors: # in RGB format 
+                Pedestrian: [1, 0, 0]
+                Cyclist: [0, 1, 0]
+                Car: [0, 0, 1]
+                Van: [1, 1, 0]
+                Truck: [1, 0, 1]
+                Bus: [0, 1, 1]
+        project_image_pixel_colors:
+            enabled: False # set True to paint point cloud with rgb
+            priority: 6 # priority of process - lower is higher
+        PointPillarDetection:
+            enabled: False
+            priority: 7
+            github_repo_dir: 'algo/nn/PointPillars' # clone https://github.com/zhulf0804/PointPillars to this path and install the requirements
+            ckpt_file: 'algo/nn/PointPillars/pretrained/epoch_160.pth' # path to checkpoint file
+            score_threshold: 0.5
+        gen_bbox_2d:
+            enabled: False
+            priority: 8
+            visualize: True
+    camera:
+        project_point_cloud_points: # project point cloud points to camera image
+            enabled: False # set True to project point cloud points to camera image
+            priority: 1 # priority of process - lower is higher
+        UltralyticsYOLOv5:
+            enabled: False
+            priority: 2
+            model: 'yolov5s' # can be yolov5s, yolov5m, yolov5l, yolov5x https://pytorch.org/hub/ultralytics_yolov5
+            class_colors: # in RGB format 
+                Person: [1, 0, 0]
+                Bicycle: [0, 1, 0]
+                Car: [0, 0, 1]
+                Motorcycle: [0, 1, 0]
+                Bus: [0, 1, 1]
+                Truck: [1, 0, 1]
+            score_threshold: 0.5
+    calib:
+        dummy: # dummy calibration process
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+    label:
+        remove_out_of_bound_labels: # crop out of bound bboxes
+            enabled: False # set True to crop labels
+            priority: 1 # priority of process - lower is higher
+            use_lidar_range: False # set True to crop using lidar crop
+            use_image_size: False # set True to crop using image size
+        remove_less_point_labels: # remove labels with no points
+            enabled: False # set True to remove labels
+            priority: 2 # priority of process - lower is higher
+            min_points: 6 # minimum number of points to consider a label valid
+    post:
+        Fuse2DPredictedBBoxes: # use KDTree matching to fuse 2D bounding boxes information
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+            ModalityA: # first modality
+                algo_src: Cluster2Object_2d # bbox_2d 'added_by' field value
+                img_extras: # extra visualization options
+                    show_fusion_dot: True # shows a green dot if fusion is successful
+                    show_text_info: False # shows text info on the bbox
+            ModalityB: # second modality
+                algo_src: UltralyticsYOLOv5 # bbox_2d 'added_by' field value
+                img_extras: # extra visualization options
+                    show_fusion_dot: False # shows a green dot if fusion is successful
+                    show_text_info: True # shows text info on the bbox
+            max_match_distance: 150.0 # maximum euclidean distance between pixel indices (x,y) of two bbox_2d
+        GenerateKDTreePastTrajectory: # generate past trajectory using KDTree matching
+            enabled: False # set True to generate past trajectory
+            priority: 2 # priority of process - lower is higher
+            max_match_distance: 4.0 # maximum euclidean distance for matching last and current bbox_3d
+            history_size: 10 # number of past frames to consider
+        GenerateCubicSplineFutureTrajectory: # generate future trajectory using cubic spline interpolation
+            enabled: False # set True to generate future trajectory
+            priority: 3 # priority of process - lower is higher
+            t_minimum: 10 # minimum need past trajectory length (ms)
+            t_plus_steps: 10 # number of steps to predict in future (ms)
+        GeneratePolyFitFutureTrajectory: # generate future trajectory using polynomial fitting
+            enabled: False # set True to generate future trajectory
+            priority: 3 # priority of process - lower is higher
+            t_minimum: 10 # minimum need past trajectory length (ms)
+            t_plus_steps: 20 # number of steps to predict in future (ms)
+            poly_degree: 3 # degree of polynomial fitting
+        GenerateVelocityFromTrajectory: # generate velocity from trajectory
+            enabled: False # set True to generate velocity from trajectory
+            priority: 4 # priority of process - lower is higher
+            t_delta: 0.1 # time delta between two points in trajectory (ms) = 1/fps
+        create_per_object_pcdet_dataset: # create per object dataset in pcdet format
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+        create_pcdet_dataset: # create dataset in pcdet format
+            enabled: False # set True to enable
+            priority: 1 # priority of process - lower is higher
+        visualize_in_vr:
+            enabled: False
+            priority: 2
+            server_ip: '127.0.0.1'
+            server_port: 5254
+
+
+visualization: # visualization parameters
+    enabled: True # set True to visualize
+    lidar:
+        space_color: [0, 0, 0] # color of non-point-cloud space
+        bound_color: [0, 0, 1] # point cloud range bound bbox color
+        point_size: 2.0 # rendered point size
+        draw_cluster: True # visualize clusters
+        draw_bbox_3d: True # visualize bounding boxes
+        draw_trajectory: True # visualize trajectory
+        save_images: False # save images
+    camera:
+        draw_bbox_2d: True # visualize 2D bounding boxes
+        draw_bbox_3d: True # visualize 3D bounding boxes
+        draw_trajectory: True # visualize trajectory
+        draw_text_info: True # visualize text
+        draw_extras: True # visualize extras
+        bbox_line_width: 2 # bbox line width
+        trajectory_line_width: 2 # trajectory line width
+        save_images: False # save images
+
+logging: # parameters for logger
+    level: 1 # log level can be 0 (DEBUG), 1 (INFO), 2 (WARNING), 3 (ERROR), 4 (CRITICAL
+    logs_dir: 'logs' # path to save logs
+        
+threads: # don't change unless debugging
+    io_sleep: 0.01 # input/output threads sleep time in seconds
+    proc_sleep: 0.01 # processing threads sleep time in seconds
+    vis_sleep: 0.01 # visualization threads sleep time in seconds
+    net_sleep: 0.2 # network threads sleep time in seconds

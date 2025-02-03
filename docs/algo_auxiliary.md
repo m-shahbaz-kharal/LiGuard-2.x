@@ -1,0 +1,5 @@
+# Auxiliary Utility Functions
+There are some utility functions that are not processing functions but are used in the processing functions. These functions are defined in `algo.util` package and can be imported in any processing function. The utility functions are:
+- `gather_point_clouds`: Gathers `current_point_cloud_numpy` in `data_dict` and stores in an array in `data_dict` using a `key` and `count` (as the number of point clouds to gather). An argument `global_index_key` can be used if need to make sure that only previously ungathered point clouds are gathered.
+- `combine_gathers`: Combines gathered point clouds in `data_dict` using a `global_index_key` and stores them as single array in `data_dict` at index `key`.
+- `skip_frames`: Skips `skip` number of frames in a sequence of frames. An argument `global_index_key` can be used if need to make sure that only previously unskipped frames are skipped.

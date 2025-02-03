@@ -1,0 +1,11 @@
+graft liguard
+
+include README.md
+include LICENSE.txt
+include setup.py
+include pyproject.toml
+
+global-exclude *~
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .git
