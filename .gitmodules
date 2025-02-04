@@ -1,3 +1,6 @@
 [submodule "liguard/algo/nn/PointPillars"]
 	path = liguard/algo/nn/PointPillars
 	url = https://github.com/zhulf0804/PointPillars
+[submodule "liguard/algo/non_nn/SimpleTrack"]
+	path = liguard/algo/non_nn/SimpleTrack
+	url = https://github.com/tusen-ai/SimpleTrack

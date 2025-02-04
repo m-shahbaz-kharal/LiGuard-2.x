@@ -152,6 +152,93 @@ def Fuse2DPredictedBBoxes(data_dict: dict, cfg_dict: dict, logger: Logger):
             if 'text_info' not in mod_b_label: mod_b_label['text_info'] = text_info
             else: mod_b_label['text_info'] += f' | {text_info}'
 
+@algo_func(required_data=['current_point_cloud_numpy', 'current_label_list']) # add required keys in the list -- necessary decorator, don't remove
+def SimpleTrack(data_dict: dict, cfg_dict: dict, logger: Logger):
+    """
+    Implementation of SimpleTrack algorithm for 3D multi-object tracking.
+    @article{
+        pang2021simpletrack,
+        title={SimpleTrack: Understanding and Rethinking 3D Multi-object Tracking},
+        author={Pang, Ziqi and Li, Zhichao and Wang, Naiyan},
+        journal={arXiv preprint arXiv:2111.09621},
+        year={2021}
+    }
+
+    Args:
+        data_dict (dict): A dictionary containing the data.
+        cfg_dict (dict): A dictionary containing the configuration parameters.
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
+    """
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
+    algo_name = inspect.stack()[0].function
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+    
+    # check if required data is present in data_dict
+    for key in SimpleTrack.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
+    model_key = f'{algo_name}_model'
+    bbox_colors_key = f'{algo_name}_bbox_colors'
+    timestamp_key = f'{algo_name}_timestamp'
+    type_to_id_key = f'{algo_name}_type_to_id'
+    id_to_type_key = f'{algo_name}_id_to_type'
+    if model_key not in data_dict:
+        import yaml
+        from mot_3d.mot import MOTModel
+        config_path = resolve_for_application_root(params['config_file'])
+        configs = yaml.load(open(config_path, 'r'), Loader=yaml.Loader)
+        data_dict[model_key] = MOTModel(configs)
+        data_dict[bbox_colors_key] = dict()
+        data_dict[timestamp_key] = 0.0
+        data_dict[type_to_id_key] = {'Car': 1, 'Vehicle': 1, 'Pedestrian': 2, 'Cyclist': 4}
+        data_dict[id_to_type_key] = {1: 'Car', 2: 'Pedestrian', 4: 'Cyclist'}
+
+    import numpy as np
+    from mot_3d.frame_data import FrameData
+    
+    dets = list()
+    det_types = list()
+    used_idx = list()
+    for idx, label_dict in enumerate(data_dict['current_label_list']):
+        if 'bbox_3d' in label_dict:
+            used_idx.append(idx)
+            bbox_3d = label_dict['bbox_3d']
+            x, y, z = bbox_3d['xyz_center']
+            w, l, h = bbox_3d['xyz_extent']
+            o = bbox_3d['xyz_euler_angles'][2]
+            s = 1.0
+            dets.append([x, y, z, o, l, w, h, s])
+            det_types.append(data_dict[type_to_id_key].get(label_dict['class'], 0))
+            
+    aux_info = {'is_key_frame': True, 'velos': None} 
+    frame_data = FrameData(dets=dets, ego=None, pc=data_dict['current_point_cloud_numpy'][:, :3], det_types=det_types, aux_info=aux_info, time_stamp=data_dict[timestamp_key])
+    results = data_dict[model_key].frame_mot(frame_data)
+    result_bboxes = [trk[0] for trk in results]
+    result_ids = [trk[1] for trk in results]
+    result_states = [trk[2] for trk in results]
+    result_types = [trk[3] for trk in results]
+    
+    for obj_id in result_ids:
+        if obj_id not in data_dict[bbox_colors_key]:
+            data_dict[bbox_colors_key][obj_id] = np.random.rand(3)
+    
+    for bbox, obj_id, state, obj_type in zip(result_bboxes, result_ids, result_states, result_types):
+        xyz_center = np.array([bbox.x, bbox.y, bbox.z], dtype=np.float32)
+        xyz_extent = np.array([bbox.w, bbox.l, bbox.h], dtype=np.float32)
+        xyz_euler_angles = np.array([0, 0, bbox.o], dtype=np.float32)
+        rgb_color = np.array(data_dict[bbox_colors_key][obj_id], dtype=np.float32)
+        label = dict()
+        label['class'] = data_dict[id_to_type_key].get(obj_type, 'Unknown')
+        label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': True}
+        data_dict['current_label_list'].append(label)
+
+    data_dict[timestamp_key] += 0.1
+
 @algo_func(required_data=['current_label_list'])
 def GenerateKDTreePastTrajectory(data_dict: dict, cfg_dict: dict, logger: Logger):
     """

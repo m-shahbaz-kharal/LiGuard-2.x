@@ -191,6 +191,10 @@ proc: # liguard processing configurations
                     show_fusion_dot: False # shows a green dot if fusion is successful
                     show_text_info: True # shows text info on the bbox
             max_match_distance: 150.0 # maximum euclidean distance between pixel indices (x,y) of two bbox_2d
+        SimpleTrack: # Implementation of https://github.com/tusen-ai/SimpleTrack
+            enabled: False # set True to enable
+            priority: 2 # priority of process - lower is higher
+            config_file: 'algo/non_nn/SimpleTrack/configs/waymo_configs/vc_kf_giou.yaml' # path to config file
         GenerateKDTreePastTrajectory: # generate past trajectory using KDTree matching
             enabled: False # set True to generate past trajectory
             priority: 2 # priority of process - lower is higher
