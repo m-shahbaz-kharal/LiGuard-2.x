@@ -1,4 +1,5 @@
 import os
+import sys
 from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
@@ -49,7 +50,9 @@ class FileIO:
         self.lbl_end_idx = self.lbl_start_idx + cfg['data']['count']
         
         # Add custom supported calibration types to the list
-        custom_label_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler', 'label')
+        data_handler_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler')
+        if data_handler_dir not in sys.path: sys.path.append(data_handler_dir)
+        custom_label_data_handlers_dir = os.path.join(data_handler_dir, 'label')
         if os.path.exists(custom_label_data_handlers_dir):
             custom_supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir(custom_label_data_handlers_dir) if 'handler' in lbl_handler]
             supported_label_types.extend(custom_supported_label_types)
@@ -59,7 +62,7 @@ class FileIO:
         if self.lbl_type not in supported_label_types: raise NotImplementedError("Label type not supported. Supported file types: " + ', '.join(supported_label_types) + ".")
         # Import the handler for the label type
         if self.lbl_type in custom_supported_label_types:
-            h = __import__(f'handler_{self.lbl_type}', fromlist=['label_file_extension', 'Handler'])
+            h = __import__(f'label.handler_{self.lbl_type}', fromlist=['label_file_extension', 'Handler'])
         else:
             h = __import__('liguard.lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
         self.lbl_ext, self.reader = h.label_file_extension, h.Handler

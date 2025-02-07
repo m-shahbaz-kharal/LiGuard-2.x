@@ -1,4 +1,5 @@
 import os
+import sys
 from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
@@ -33,7 +34,9 @@ class FileIO:
         self.clb_end_idx = self.clb_start_idx + cfg['data']['count']
         
         # Add custom supported calibration types to the list
-        custom_calib_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler', 'calib')
+        data_handler_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler')
+        if data_handler_dir not in sys.path: sys.path.append(data_handler_dir)
+        custom_calib_data_handlers_dir = os.path.join(data_handler_dir, 'calib')
         if os.path.exists(custom_calib_data_handlers_dir):
             custom_supported_calib_types = [clb_handler.split('_')[1].replace('.py','') for clb_handler in os.listdir(custom_calib_data_handlers_dir) if 'handler' in clb_handler]
             supported_calib_types.extend(custom_supported_calib_types)
@@ -43,7 +46,7 @@ class FileIO:
         if self.clb_type not in supported_calib_types: raise NotImplementedError("Calib type not supported. Supported file types: " + ', '.join(supported_calib_types) + ".")
         # Import the calibration handler
         if self.clb_type in custom_supported_calib_types:
-            h = __import__(f'handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
+            h = __import__(f'calib.handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
         else:
             h = __import__('liguard.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
         self.clb_ext, self.reader = h.calib_file_extension, h.Handler
