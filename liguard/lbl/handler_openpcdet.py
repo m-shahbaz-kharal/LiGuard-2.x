@@ -3,6 +3,7 @@ import numpy as np
 
 colors = {
     'Car': [0, 1, 0],
+    'Vehicle': [0, 1, 0],
     'Van': [0, 1, 0],
     'Truck': [0, 1, 0],
     'Pedestrian': [1, 0, 0],
@@ -54,6 +55,10 @@ def Handler(label_path: str, calib_data: dict):
         label['dz'] = xyz_dxdydz_rz[5]
         label['heading_angle'] = xyz_dxdydz_rz[6]
         label['class'] = obj_class
+        # if len(parts) > 8:
+        #     label['score'] = float(parts[8])
+        #     if label['score'] < 0.8:
+        #         continue
         
         xyz_center = xyz_dxdydz_rz[0:3]
         xyz_extent = xyz_dxdydz_rz[3:6]
