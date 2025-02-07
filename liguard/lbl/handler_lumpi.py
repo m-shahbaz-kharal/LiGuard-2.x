@@ -28,7 +28,6 @@ dataset_path = "E:\\work\\urbanity\\hands_on\\datasets\\lumpi"
 
 measurement_id = 4
 data_parser = LumpiParser(dataset_path)
-data_parser.read_point_cloud_file_list(measurement_id)
 data_parser.read_track(os.path.join(data_parser.path,"Measurement"+str(measurement_id),"Label.csv"))
 
 def Handler(label_path: str, calib_data: dict): # don't change the function signature
