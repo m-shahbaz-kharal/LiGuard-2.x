@@ -47,17 +47,40 @@ class FileIO:
         self.img_end_idx = self.img_start_idx + cfg['data']['count']
         files = glob.glob(os.path.join(self.img_dir, '*' + self.img_type))
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
-        # Sort the file basenames based on the numerical part
-        file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
-        self.files_basenames = file_basenames[self.img_start_idx:self.img_end_idx][self.global_zero:]
-        self.reader = self.__read_img__
-
+        if self.img_type in ['.avi', '.mp4', '.mov']:
+            self.files_basenames = [str(i).zfill(6) for i in range(self.img_start_idx, self.img_end_idx)][self.global_zero:]
+            self.stream_reader = cv2.VideoCapture(os.path.join(self.img_dir, file_basenames[0] + self.img_type))
+            self.reader = lambda file_abs_path: self.__read_stream__(self.stream_reader, file_abs_path, cfg['data']['lidar']['fps'], cfg['data']['camera']['fps'])
+        else:
+            # Sort the file basenames based on the numerical part
+            file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
+            self.files_basenames = file_basenames[self.img_start_idx:self.img_end_idx][self.global_zero:]
+            self.reader = self.__read_img__
+        
         self.data_lock = threading.Lock()
         self.data = []
         self.stop = threading.Event()
         # Start the asynchronous reading thread
         threading.Thread(target=self.__async_read_fn__).start()
 
+    def __read_stream__(self, stream_reader: cv2.VideoCapture, file_abs_path: str, lidar_fps: int = 10, image_fps: int = 30):
+        """
+        Reads a frame from a video file and returns the frame data in RGB format.
+
+        Args:
+            stream_reader (cv2.VideoCapture): Video stream reader object.
+            file_abs_path (str): Absolute path of the video file.
+            lidar_fps (int): Lidar frames per second.
+            image_fps (int): Image frames per second.
+        Returns:
+            numpy.ndarray: Frame data in RGB format.
+        """
+        image_index = int(os.path.splitext(os.path.basename(file_abs_path))[0])
+        img_frame_index = int(image_index / lidar_fps * image_fps)
+        stream_reader.set(cv2.CAP_PROP_POS_FRAMES, img_frame_index)
+        ret, frame = stream_reader.read()
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
     def __read_img__(self, file_abs_path: str):
         """
         Reads an image file and returns the image data in RGB format.

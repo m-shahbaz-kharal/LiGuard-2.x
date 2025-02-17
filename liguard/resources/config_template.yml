@@ -17,9 +17,11 @@ data: # dataset configurations
     lidar:
         enabled: True # set True to read point clouds from disk
         pcd_type: '.bin' # can be .bin or .npy
+        fps: 10.0 # frames per second
     camera:
         enabled: False # set True to read images from disk
-        img_type: '.png' # most image types are supported
+        img_type: '.png' # most image and video types are supported
+        fps: 10.0 # frames per second
     calib:
         enabled: False # set True to read calibration files from disk
         clb_type: 'kitti' # can be kitti or sustechpoints
