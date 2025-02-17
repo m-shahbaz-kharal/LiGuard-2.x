@@ -28,15 +28,24 @@ def calc_STDF_params(point_cloud_set: list, # a list of point clouds, points in 
 ):
     number_of_frames = len(point_cloud_set)
     point_cloud_set = np.vstack(point_cloud_set).reshape(-1, point_cloud_set[0].shape[1])
-    bins_per_side = int(lidar_range_in_unit_length * bins_per_unit_length)
-    bins = np.linspace(-lidar_range_in_unit_length, lidar_range_in_unit_length, bins_per_side+1)
-    histogram_range = [-lidar_range_in_unit_length, lidar_range_in_unit_length]
-    histogram_3d, edges = np.histogramdd(point_cloud_set[:,:3], bins=(bins, bins, bins), range=[histogram_range, histogram_range, histogram_range])
+    
+    range_x = np.max(np.abs(point_cloud_set[:,0])).round().astype(int)
+    range_y = np.max(np.abs(point_cloud_set[:,1])).round().astype(int)
+    range_z = np.max(np.abs(point_cloud_set[:,2])).round().astype(int)
+    
+    bins_x = np.linspace(-range_x, range_x, (range_x * 2 * bins_per_unit_length) + 1)
+    bins_y = np.linspace(-range_y, range_y, (range_y * 2 * bins_per_unit_length) + 1)
+    bins_z = np.linspace(-range_z, range_z, (range_z * 2 * bins_per_unit_length) + 1)
+
+    hist_range_x = np.array([-range_x, range_x], dtype=np.int32)
+    hist_range_y = np.array([-range_y, range_y], dtype=np.int32)
+    hist_range_z = np.array([-range_z, range_z], dtype=np.int32)
+    
+    histogram_3d, edges = np.histogramdd(point_cloud_set[:,:3], bins=(bins_x, bins_y, bins_z), range=[hist_range_x, hist_range_y, hist_range_z])
     normalized_histogram_3d = histogram_3d / number_of_frames
 
     filter_params = dict(
-        bins=bins,
-        bins_per_side=bins_per_side,
+        bins=(bins_x, bins_y, bins_z),
         normalized_histogram_3d=normalized_histogram_3d
     )
 
@@ -44,23 +53,24 @@ def calc_STDF_params(point_cloud_set: list, # a list of point clouds, points in 
     
 def make_STDF_filter(point_cloud: np.ndarray, # Nx3 or Nx4,
             background_density_threshold: float, # if the point falls in a bin with density less than this threshold, it is considered as foreground
-            bins: np.ndarray, # bins for histogram
-            bins_per_side: int, # number of bins per side
+            bins: tuple, # bins for x, y, z
             normalized_histogram_3d: np.ndarray, # normalized histogram 3d
     ):
-    voxel_indices = np.digitize(point_cloud[:,:3], bins) - 1
-    voxel_indices = np.clip(voxel_indices, 0, bins_per_side-1)
-    mask = normalized_histogram_3d[voxel_indices[:,0], voxel_indices[:,1], voxel_indices[:,2]] < background_density_threshold
+    x_indices = np.digitize(point_cloud[:, 0], bins[0]) - 1
+    y_indices = np.digitize(point_cloud[:, 1], bins[1]) - 1
+    z_indices = np.digitize(point_cloud[:, 2], bins[2]) - 1
+
+    mask = normalized_histogram_3d[x_indices, y_indices, z_indices] < background_density_threshold
     return mask
 
 def save_STDF_params(filter_params, filename):
-    filename = filename.split('.')[0] + '.pkl'
+    filename = str(filename).split('.')[0] + '.pkl'
     with open(filename, 'wb') as f: pickle.dump(filter_params, f)
     return filename
 
 def load_STDF_params(filename):
     try:
-        filename = filename.split('.')[0] + '.pkl'
+        filename = str(filename).split('.')[0] + '.pkl'
         with open(filename, 'rb') as f: return pickle.load(f)
     except:
         return None

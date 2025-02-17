@@ -90,6 +90,11 @@ proc: # liguard processing configurations
             background_density_threshold: 0.5 # threshold that tells if a bin is dense enough to be considered as background
             filter_file: 'bg_filter_stdf' # path to save/load filter
             load_filter: False # set True to load filter
+        BGFilterInvertCloth:
+            enabled: False
+            priority: 4
+            grid_resolution: 1.0
+            height_threshold: 0.3
         Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
             enabled: False # set True to cluster point cloud using TEPP DBSCAN
             priority: 4 # priority of process - lower is higher

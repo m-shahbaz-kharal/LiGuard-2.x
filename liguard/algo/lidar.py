@@ -4,7 +4,7 @@ from liguard.gui.logger_gui import Logger
 from liguard.algo.utils import AlgoType, algo_func, get_algo_params, make_key
 algo_type = AlgoType.lidar
 
-import os
+import os; from pathlib import Path
 import sys
 import numpy as np
 
@@ -280,25 +280,28 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
     all_skip_frames_keys = [f'{skip_frames_key}_{i}' for i in range(params['number_of_skip_frames_after_each_iter'])]
 
     # load filter if exists
-    if filter_loaded_key not in data_dict and params['load_filter']:
-        # add params to data_dict
-        data_dict[params_key] = params
-        
-        # load filter
-        data_outputs_dir = cfg_dict['data']['outputs_dir']
-        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
-        filter_params = load_STDF_params(os.path.join(data_outputs_dir, params['filter_file']))
-        if filter_params:
-            data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
-            data_dict[filter_loaded_key] = True
-            logger.log(f'Filter loaded from {params["filter_file"]}', Logger.INFO)
-        else:
-            data_dict[filter_loaded_key] = False
-            logger.log(f'Failed to load filter from {params["filter_file"]}. Calculating ...', Logger.WARNING)
+    if params['load_filter']:   
+        if filter_loaded_key not in data_dict:
+            # load filter
+            data_outputs_dir = cfg_dict['data']['outputs_dir']
+            if not os.path.isabs(data_outputs_dir): data_outputs_dir = Path(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+            filter_params = load_STDF_params(Path(data_outputs_dir, params['filter_file']))
+            if filter_params:
+                data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
+                data_dict[filter_loaded_key] = True
+                data_dict[params_key] = params # to keep track of current params, so in case of change, filter is re-computed
+                logger.log(f'Filter loaded from {params["filter_file"]}', Logger.INFO)
+            else:
+                data_dict[filter_loaded_key] = False
+                logger.log(f'Failed to load filter from {params["filter_file"]}. Calculating ...', Logger.WARNING)
+
+    elif data_dict[filter_loaded_key]:
+        logger.log('A filter was loaded previously, unloading it to calculate new one.', Logger.INFO)
+        data_dict.pop(filter_key)
+        data_dict[filter_loaded_key] = False
     
     # generate filter if not exists
     if filter_key not in data_dict:
-        data_dict[params_key] = params
         # gather frames
         for i in range(params['number_of_frame_gather_iters']):
             gathering_done = gather_point_clouds(data_dict, cfg_dict, all_query_frames_keys[i], params['number_of_frames_in_each_gather_iter'])
@@ -315,15 +318,16 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         data_dict[query_frames_key] = [get_fixed_sized_point_cloud(frame, params['number_of_points_per_frame']) for frame in data_dict[query_frames_key]]
         filter_params = calc_STDF_params(data_dict[query_frames_key], params['lidar_range_in_unit_length'], params['bins_per_unit_length'])
         data_dict[filter_key] = lambda pcd, threshold: make_STDF_filter(pcd, threshold, **filter_params)
+        data_dict[params_key] = params # to keep track of current params, so in case of change, filter is re-computed
         logger.log('Filter generated', Logger.INFO)
 
         # make sure the outputs_dir is created
-        data_outputs_dir = cfg_dict['data']['outputs_dir']
-        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
+        data_outputs_dir = Path(cfg_dict['data']['outputs_dir'])
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = Path(cfg_dict['data']['pipeline_dir'], data_outputs_dir)
         os.makedirs(data_outputs_dir, exist_ok=True)
 
         # save filter
-        filter_saved_path = save_STDF_params(filter_params, os.path.join(data_outputs_dir, params['filter_file']))
+        filter_saved_path = save_STDF_params(filter_params, Path(data_outputs_dir, params['filter_file']))
         logger.log(f'Filter saved at {filter_saved_path}', Logger.INFO)
     else:
         # recompute filter if non-live-editable params are changed
@@ -333,6 +337,7 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
             condition = condition or data_dict[params_key][key] != params[key]
         # remove all algo keys if params are changed so that filter is re-computed on next call
         if condition:
+            logger.log('Filter params changed, re-computing filter', Logger.INFO)
             keys_to_remove = [key for key in data_dict.keys() if key.startswith(algo_name)]
             for key in keys_to_remove: data_dict.pop(key)
             return
@@ -342,6 +347,69 @@ def BGFilterSTDF(data_dict: dict, cfg_dict: dict, logger: Logger):
         # apply filter
         data_dict['current_point_cloud_numpy'] = get_fixed_sized_point_cloud(data_dict['current_point_cloud_numpy'], params['number_of_points_per_frame'])
         data_dict['current_point_cloud_numpy'] = data_dict['current_point_cloud_numpy'][data_dict[filter_key](data_dict['current_point_cloud_numpy'], params['background_density_threshold'])]
+
+@algo_func(required_data=['current_point_cloud_numpy'])
+def BGFilterInvertCloth(data_dict: dict, cfg_dict: dict, logger: Logger):
+    """
+    Applies Background Filter using Invert Cloth algorithm to the point cloud data to remove ground points.
+
+    Args:
+        data_dict (dict): A dictionary containing the input data and intermediate results.
+        cfg_dict (dict): A dictionary containing the configuration parameters.
+        logger (gui.logger_gui.Logger): A logger object for logging messages and errors in GUI.
+    """
+    #########################################################################################################################
+    # standard code snippet that gets the parameters from the config file and checks if required data is present in data_dict
+    # usually, this snippet is common for all the algorithms, so it is recommended to not remove it
+    algo_name = inspect.stack()[0].function
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+    
+    # check if required data is present in data_dict
+    for key in BGFilterInvertCloth.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    # standard code snippet ends here
+    #########################################################################################################################
+    points = data_dict['current_point_cloud_numpy'].copy()
+    
+    # Parameters for the grid based cloth filter
+    grid_res = params['grid_resolution'] # grid resolution (in same units as points)
+    height_threshold = params['height_threshold'] # threshold to classify a point as ground
+
+    # Compute grid limits from the current points
+    x_min_val, x_max_val = points[:, 0].min(), points[:, 0].max()
+    y_min_val, y_max_val = points[:, 1].min(), points[:, 1].max()
+
+    grid_x = np.arange(x_min_val, x_max_val + grid_res, grid_res)
+    grid_y = np.arange(y_min_val, y_max_val + grid_res, grid_res)
+
+    # Digitize the points into grid cells
+    x_idx = np.digitize(points[:, 0], grid_x) - 1
+    y_idx = np.digitize(points[:, 1], grid_y) - 1
+
+    # Invert the z values (since positive z is up; ground becomes highest in inverted space)
+    inverted_z = -points[:, 2]
+
+    # Create a cloth surface estimated as the median of inverted z values for each cell
+    cloth = np.full((len(grid_x)-1, len(grid_y)-1), np.nan)
+    unique_x = np.unique(x_idx)
+    unique_y = np.unique(y_idx)
+    for ix in unique_x:
+        for iy in unique_y:
+            cell_mask = (x_idx == ix) & (y_idx == iy)
+            if np.any(cell_mask):
+                cloth[ix, iy] = np.median(inverted_z[cell_mask])
+
+    # For each point, get the cloth surface value from the corresponding cell
+    cloth_surface = cloth[x_idx, y_idx]
+
+    # Points close to the cloth (in inverted space) are classified as ground
+    diff = np.abs(inverted_z - cloth_surface)
+    non_ground_mask = diff > height_threshold
+
+    # Update the point cloud in data_dict
+    data_dict['current_point_cloud_numpy'] = points[non_ground_mask]
 
 @algo_func(required_data=['current_point_cloud_numpy'])
 def Clusterer_TEPP_DBSCAN(data_dict: dict, cfg_dict: dict, logger: Logger):
