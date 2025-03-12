@@ -32,7 +32,7 @@ class ImageVisualizer:
         self.app = app
         # create visualizer
         self.viz = o3d.visualization.Visualizer()
-        self.viz.create_window("Image Feed", width=int(1440/4), height=int(1080/4), left=480 - int(1440/4), top=30)
+        self.win_created = self.viz.create_window("Image Feed", width=int(1440/4), height=int(1080/4), left=480 - int(1440/4), top=30)
         # init
         # create necessary paths
         if cfg['visualization']['camera']['save_images']:
@@ -331,4 +331,4 @@ class ImageVisualizer:
         """
         Destroys the visualizer window.
         """
-        self.viz.destroy_window()
+        del self.viz

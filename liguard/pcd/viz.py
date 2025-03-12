@@ -295,4 +295,4 @@ class PointCloudVisualizer:
         """ 
         Quits the visualizer.
         """
-        self.viz.destroy_window()
+        del self.viz
