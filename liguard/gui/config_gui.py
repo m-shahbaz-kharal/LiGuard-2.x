@@ -336,7 +336,7 @@ class BaseConfiguration:
         if not hasattr(self, 'showing_dialog'): self.showing_dialog = True
         elif self.showing_dialog: self.__close_dialog__()
         self.showing_dialog = True
-        self.mwin.show_dialog(dialog)
+        self.app.post_to_main_thread(self.mwin, lambda: self.mwin.show_dialog(dialog))
         
     def __close_dialog__(self):
         self.showing_dialog = False
@@ -345,7 +345,7 @@ class BaseConfiguration:
     def __show_issue_dialog__(self, issue_text):
         # create a dialog
         dialog = gui.Dialog("Configuration GUI")
-        vert = gui.Vert(0, gui.Margins(self.em * 0.6, self.em * 0.6, self.em * 0.6, self.em * 0.4))
+        vert = gui.Vert(0, gui.Margins(self.em * 2, self.em * 2, self.em * 2, self.em * 2))
         
         msg_label = gui.Label(f'Error: {issue_text}')
         vert.add_child(msg_label)
@@ -486,6 +486,9 @@ class BaseConfiguration:
         self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, self.last_pipeline_dir, ".yml", "LiGuard base_config.yml File (*.yml)", load_pipeline)
 
     def __reload_config__(self):
+        if not hasattr(self, 'cfg'):
+            self.__show_issue_dialog__('No configuration to reload. Create/Open a configuration first.')
+            return
         try: self.cfg = self.load_config(os.path.join(self.cfg['data']['pipeline_dir'], 'base_config.yml'))
         except Exception as e:
             self.log(f'Failed to reload configuration: {e}', Logger.ERROR)

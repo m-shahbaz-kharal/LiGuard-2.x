@@ -37,7 +37,9 @@ class LiGuard:
         
         # remove menubar
         self.config.mwin.show_menu(False)
+        self.config.mwin.post_redraw()
         self.logger.mwin.show_menu(False)
+        self.logger.mwin.post_redraw()
         
         # set the callbacks for the configuration GUI
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
@@ -61,7 +63,6 @@ class LiGuard:
         # initialize the data dictionary
         self.data_dict = dict()
         self.data_dict['current_frame_index'] = 0
-        self.data_dict['current_frame_name'] = '000000'
         self.data_dict['previous_frame_index'] = -1
         self.data_dict['maximum_frame_index'] = 0
         
@@ -137,10 +138,9 @@ class LiGuard:
 
         # unlock the keyboard keys right, left, and space
         if self.pynput_listener: self.pynput_listener.stop()
+        
         # pause at the start
         self.is_running = False
-        # reset the frame index
-        self.data_dict['previous_frame_index'] = -1
         
         # manage pcd reading
         if self.pcd_io != None: self.pcd_io.close()
@@ -225,6 +225,8 @@ class LiGuard:
         # get the maximum frame index
         self.data_dict['maximum_frame_index'] = max(self.data_dict['total_pcd_frames'], self.data_dict['total_img_frames'], self.data_dict['total_lbl_frames']) - 1
         self.logger.log(f'maximum_frame_index: {self.data_dict["maximum_frame_index"]}', Logger.DEBUG)
+        self.data_dict['previous_frame_index'] = -1
+        if self.data_dict['current_frame_index'] > self.data_dict['maximum_frame_index']: self.data_dict['current_frame_index'] = self.data_dict['maximum_frame_index']
         ##########################################
         # processes
         ##########################################

@@ -49,13 +49,12 @@ class PointCloudVisualizer:
         # reset
         self.reset()
         
-    def reset(self, cfg=None, reset_bounding_box=False):
+    def reset(self, cfg=None):
         """
         Resets the visualizer.
 
         Args:
             cfg: A dictionary containing configuration parameters.
-            reset_bounding_box: Whether to reset the bounding box or not.
         """
         # acquire lock
         self.lock.acquire()
@@ -84,10 +83,8 @@ class PointCloudVisualizer:
         if self.cfg:
             self.viz.point_size = int(self.cfg['visualization']['lidar']['point_size'])
             self.viz.set_background(np.append(self.cfg['visualization']['lidar']['space_color'], 1), None)
-            center = np.array([0, 0, 0], dtype=np.float32)
-            eye = np.array([0, -100, 50], dtype=np.float32)
-            up = np.array([0, 0, 1], dtype=np.float32)
-            self.viz.setup_camera(60, center, eye, up)
+        else:
+            self.viz.add_3d_label([0, 0, 0], "No Data")
         
         # add coordinate frame
         coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
@@ -95,13 +92,19 @@ class PointCloudVisualizer:
 
         # global point cloud
         self.default_points = np.random.rand(1000, 3) * [100, 100, 10]
-        self.default_points -= [50, 50, -5]
+        self.default_points -= [50, 50, 5]
         self.point_cloud = create_pcd(self.default_points)
         self.__add_geometry__('point_cloud', self.point_cloud)
 
         # bboxes and trajectories
         self.bboxes = []
         self.trajectories = []
+
+        # set camera
+        center = np.array([0, 0, 0], dtype=np.float32)
+        eye = np.array([0, -100, 50], dtype=np.float32)
+        up = np.array([0, 0, 1], dtype=np.float32)
+        self.viz.setup_camera(60, center, eye, up)
         
     def __add_geometry__(self, name, geometry):
         """
@@ -121,6 +124,7 @@ class PointCloudVisualizer:
         self.viz.add_geometry(name, self.geometries[name], self.materials[name])
 
     def gui_update(self, data_dict):
+        if not hasattr(self, 'viz'): return
         self.app.post_to_main_thread(self.viz, lambda: self._update(data_dict))
 
     def _update(self, data_dict):
@@ -166,7 +170,7 @@ class PointCloudVisualizer:
                     self.__add_cluster__(lbl)
                     self.__add_trajectory__(lbl)
 
-        self.app.post_to_main_thread(self.viz, _update_func)
+        _update_func()
         
         # release lock
         self.lock.release()

@@ -41,13 +41,12 @@ class ImageVisualizer:
         # reset
         self.reset()
         
-    def reset(self, cfg=None, reset_bounding_box=False):
+    def reset(self, cfg=None):
         """
         Resets the visualizer.
 
         Args:
             cfg: A dictionary containing configuration parameters.
-            reset_bounding_box: Whether to reset the bounding box or not.
         """
         # acquire lock
         self.lock.acquire()
@@ -56,14 +55,18 @@ class ImageVisualizer:
         self.cfg = cfg
 
         #
-        self.app.post_to_main_thread(self.viz, self.clear)
+        def clear_and_init_settings_gui():
+            self.clear()
+        self.app.post_to_main_thread(self.viz, clear_and_init_settings_gui)
 
         # release lock
         self.lock.release()
 
     def clear(self):
         self.viz.clear_3d_labels()
-        self.viz.set_background(np.array([0,0,0,1], dtype=np.float32), None)
+        black = np.zeros((1080, 1440, 3), dtype=np.uint8)
+        image = o3d.geometry.Image(black)
+        self.viz.set_background(np.array([0,0,0,1], dtype=np.float32), image)
         
     def __add_geometry__(self, name, geometry):
         """
@@ -77,6 +80,7 @@ class ImageVisualizer:
         self.viz.set_background([1,1,1,1],geometry)
 
     def gui_update(self, data_dict):
+        if not hasattr(self, 'viz'): return
         self.app.post_to_main_thread(self.viz, lambda: self._update(data_dict))
         
     def _update(self, data_dict):
