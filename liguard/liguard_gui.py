@@ -33,7 +33,9 @@ class LiGuard:
         self.logger = Logger(self.app)
         self.config = BaseConfigurationGUI(self.app, self.logger)
         self.pcd_viz = PointCloudVisualizer(self.app, self.logger)
+        self.pcd_viz.hide()
         self.img_viz = ImageVisualizer(self.app, self.logger)
+        self.img_viz.hide()
         
         # remove menubar
         self.config.mwin.show_menu(False)
@@ -44,7 +46,6 @@ class LiGuard:
         # set the callbacks for the configuration GUI
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
         config_call_backs['apply_config'] = [self.reset, self.start]
-        config_call_backs['save_config'] = [lambda cfg: self.pcd_viz.save_view_status()]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         
@@ -147,6 +148,7 @@ class LiGuard:
         # if files are enabled
         if cfg['data']['lidar']['enabled']:
             try:
+                self.pcd_viz.show()
                 self.pcd_io = PCD_File_IO(cfg)
                 self.logger.log('PCD_File_IO created', Logger.DEBUG)
             except Exception:
@@ -155,12 +157,15 @@ class LiGuard:
         # if sensors are enabled
         elif 'sensors' in cfg and 'lidar' in cfg['sensors'] and cfg['sensors']['lidar']['enabled']:
             try:
+                self.pcd_viz.show()
                 self.pcd_io = PCD_Sensor_IO(cfg)
                 self.logger.log('PCD_Sensor_IO created', Logger.DEBUG)
             except Exception:
                 self.logger.log(f'PCD_Sensor_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.pcd_io = None
-        else: self.pcd_io = None
+        else:
+            self.pcd_viz.hide()
+            self.pcd_io = None
         # get the total number of pcd frames
         self.data_dict['total_pcd_frames'] = len(self.pcd_io) if self.pcd_io else 0
         self.logger.log(f'total_pcd_frames: {self.data_dict["total_pcd_frames"]}', Logger.DEBUG)
@@ -173,6 +178,7 @@ class LiGuard:
         # if files are enabled
         if cfg['data']['camera']['enabled']:
             try:
+                self.img_viz.show()
                 self.img_io = IMG_File_IO(cfg)
                 self.logger.log('IMG_File_IO created', Logger.DEBUG)
             except Exception:
@@ -181,12 +187,15 @@ class LiGuard:
         # if sensors are enabled
         elif 'sensors' in cfg and 'camera' in cfg['sensors'] and cfg['sensors']['camera']['enabled']:
             try:
+                self.img_viz.show()
                 self.img_io = IMG_Sensor_IO(cfg)
                 self.logger.log('IMG_Sensor_IO created', Logger.DEBUG)
             except Exception:
                 self.logger.log(f'IMG_Sensor_IO creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
                 self.img_io = None
-        else: self.img_io = None
+        else:
+            self.img_viz.hide()
+            self.img_io = None
         # get the total number of image frames
         self.data_dict['total_img_frames'] = len(self.img_io) if self.img_io else 0
         self.logger.log(f'total_img_frames: {self.data_dict["total_img_frames"]}', Logger.DEBUG)

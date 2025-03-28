@@ -48,6 +48,18 @@ class PointCloudVisualizer:
 
         # reset
         self.reset()
+
+    def show(self):
+        """
+        Shows the visualizer window.
+        """
+        self.app.post_to_main_thread(self.viz, lambda: self.viz.show(True))
+
+    def hide(self):
+        """
+        Hides the visualizer window.
+        """
+        self.app.post_to_main_thread(self.viz, lambda: self.viz.show(False))
         
     def reset(self, cfg=None):
         """
