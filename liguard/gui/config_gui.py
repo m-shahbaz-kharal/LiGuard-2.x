@@ -301,17 +301,18 @@ class BaseConfiguration:
                 else:
                     raise Exception("Unsupported type: {}".format(type(item[key])))
                 
-    def __update_cfg_from_gui__(self, item, parent_keys=[]):
+    def __update_cfg_from_gui__(self, item, parent_keys=[], debug_key: dict=None):
         G = self.generated_config_gui_dict
         # Check if the item is a dictionary
         if type(item) == dict:
             # Iterate over all keys in the dictionary
             for key in item.keys():
+                debug_key['key'] = '->'.join(parent_keys + [key])
                 # Create a global key by joining the parent keys and the current key
                 global_key = ".".join(parent_keys + [key])
                 # If the value of the current key is a dictionary, recursively call the function
                 if type(item[key]) == dict:
-                    self.__update_cfg_from_gui__(item[key], parent_keys + [key])
+                    self.__update_cfg_from_gui__(item[key], parent_keys + [key], debug_key)
                 # If the value of the current key is a string, integer or float
                 elif global_key in G:
                     if type(item[key]) in [str, int, float]:
@@ -523,9 +524,10 @@ class BaseConfiguration:
     def __save_config__(self):
         if hasattr(self, 'cfg'):
             # Update the configuration from the GUI and save it to the specified path
-            try: self.__update_cfg_from_gui__(self.cfg, ['cfg'])
+            debug_key = dict()
+            try: self.__update_cfg_from_gui__(self.cfg, ['cfg'], debug_key)
             except Exception as e:
-                self.log(f'Failed to parse configuration: {e}', Logger.ERROR)
+                self.log(f'Failed to parse configuration at {debug_key["key"] if "key" in debug_key else "unknown location"}: {e}', Logger.ERROR)
                 self.__show_issue_dialog__('Failed to save configuration. See logs for details.')
                 return
             try: self.save_config(self.cfg, os.path.join(self.last_pipeline_dir, 'base_config.yml'))
@@ -545,9 +547,10 @@ class BaseConfiguration:
         # If the configuration exists
         if hasattr(self, 'cfg'):
             # Update the configuration from the GUI
-            try: self.__update_cfg_from_gui__(self.cfg, ['cfg'])
+            debug_key = dict()
+            try: self.__update_cfg_from_gui__(self.cfg, ['cfg'], debug_key)
             except Exception as e:
-                self.log(f'Failed to parse configuration: {e}', Logger.ERROR)
+                self.log(f'Failed to parse configuration at {debug_key["key"] if "key" in debug_key else "unknown location"}: {e}', Logger.ERROR)
                 self.__show_issue_dialog__('Failed to parse configuration. See logs for details.')
                 return
             try:
