@@ -403,9 +403,9 @@ class LiGuard:
 
                 # if non of the data sources are available, exit the app in 5 seconds
                 if not any([self.pcd_io, self.img_io, self.clb_io, self.lbl_io]):
-                    self.logger.log(f'no data source is available, exiting in 5 seconds...', Logger.CRITICAL)
-                    time.sleep(5)
-                    self.is_running = False
+                    self.logger.log(f'No data source available', Logger.CRITICAL)
+                    time.sleep(0.1)
+                    continue
 
                 # apply the processes
                 for proc in self.pre_processes:
