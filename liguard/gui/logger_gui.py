@@ -28,12 +28,12 @@ class Logger:
             self.app = app
 
             if self.app:
-                # Default log file path
+                # create the logger window
                 self.mwin = app.create_window("Logs", 440, 1080, x=1480, y=30)
-                self.em = self.mwin.theme.font_size
-
                 self.mwin.set_on_close(lambda: False)
-
+                
+                # set layout
+                self.em = self.mwin.theme.font_size
                 self.__init__layout__()
         
     def reset(self, cfg: dict=None):
@@ -43,14 +43,21 @@ class Logger:
         Args:
             cfg (dict): The dictionary containing the logger configuration.
         """
-        # make sure the outputs_dir is created
-        path = cfg['logging']['logs_dir']
-        if not os.path.isabs(path): path = os.path.join(cfg['data']['pipeline_dir'], path)
-        level = cfg['logging']['level']
-        
-        if not os.path.exists(path): os.makedirs(path, exist_ok=True)
-        
-        self.log_file_path = os.path.join(path, time.strftime("log_%Y%m%d-%H%M%S") + ".txt")
+        if cfg:
+            path = cfg['logging']['logs_dir']
+            level = cfg['logging']['level']
+        else:
+            path = None
+            level = Logger.DEBUG
+
+        if path:
+            if not os.path.isabs(path): path = os.path.join(cfg['data']['pipeline_dir'], path)
+            if not os.path.exists(path): os.makedirs(path, exist_ok=True)
+            self.log_file_path = os.path.join(path, time.strftime("log_%Y%m%d-%H%M%S") + ".txt")
+        else:
+            path = os.path.join(resolve_for_application_root(), 'logs')
+            if not os.path.exists(path): os.makedirs(path, exist_ok=True)
+            self.log_file_path = os.path.join(path, time.strftime("log_%Y%m%d-%H%M%S") + ".txt")
 
         if level < Logger.DEBUG or level > Logger.CRITICAL:
             level = Logger.DEBUG
@@ -67,6 +74,8 @@ class Logger:
             Args:
                 level (int): The new logging level.
             """
+            if level < Logger.DEBUG: level = Logger.DEBUG
+            elif level > Logger.CRITICAL: level = Logger.CRITICAL
             self.level = level
             self.log(f'[gui->logger_gui.py->Logger]: Logging level changed to {Logger.__level_string__[level]}', Logger.WARNING)
 
@@ -79,7 +88,15 @@ class Logger:
             level (int): The level of the log message.
         """
         stack = inspect.stack()
-        message = f'[{stack[2].function}->{stack[1].function}]: {message}'
+        message = \
+f"""
+{os.path.basename(stack[2].filename)} [Line: {stack[2].lineno}] -> {stack[2].code_context[0].strip()}
+|
+{stack[1].function}
+|
+Message:
+{message}
+"""
 
         # Write to log file
         txt = f'{time.strftime("%Y-%m-%d %H:%M:%S")} [{Logger.__level_string__[level]}] {message}\n'
@@ -91,18 +108,23 @@ class Logger:
             print(txt)
             return
         
-        # update log container if level is greater than or equal to the current level
-        horiz = gui.Horiz(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-        icon_str = gui.Label(Logger.__level_string__[level])
-        icon_str.text_color = Logger.__level_color__[level]
-        msg_str = gui.Label(message)
-        horiz.add_child(icon_str)
-        horiz.add_child(msg_str)
-        self.log_container.add_child(horiz)
+        def _gui_update():
+            # update log container if level is greater than or equal to the current level
+            horiz = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+            icon_str = gui.Label(Logger.__level_string__[level])
+            icon_str.text_color = Logger.__level_color__[level]
+            msg_str = gui.Label(message)
+            horiz.add_child(gui.Label('--' * 40))
+            horiz.add_child(icon_str)
+            horiz.add_child(msg_str)
+            horiz.add_child(gui.Label('--' * 40))
+            self.log_container.add_child(horiz)
         
-        # request redraw
-        self.mwin.set_needs_layout()
-        self.mwin.post_redraw()
+            # request redraw
+            self.mwin.set_needs_layout()
+            self.mwin.post_redraw()
+
+        self.app.post_to_main_thread(self.mwin, _gui_update)
         
     def __init__layout__(self):
         # Create the layout for the logger window
