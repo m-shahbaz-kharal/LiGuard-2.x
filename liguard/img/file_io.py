@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -41,11 +41,13 @@ class FileIO:
         main_dir = cfg['data']['main_dir']
         if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
         self.img_dir = os.path.join(main_dir, cfg['data']['camera_subdir'])
+        if not os.path.exists(self.img_dir): raise FileNotFoundError(f'Directory {self.img_dir} does not exist.')
         self.img_type = cfg['data']['camera']['img_type']
         self.img_start_idx = cfg['data']['start']['camera']
         self.global_zero = cfg['data']['start']['global_zero']
         self.img_end_idx = self.img_start_idx + cfg['data']['count']
         files = glob.glob(os.path.join(self.img_dir, '*' + self.img_type))
+        if len(files) == 0: raise FileNotFoundError(f'No image files found in {self.img_dir}.')
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numerical part
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))

@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -27,6 +27,7 @@ class FileIO:
         main_dir = cfg['data']['main_dir']
         if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
         self.clb_dir = os.path.join(main_dir, cfg['data']['calib_subdir'])
+        if not os.path.exists(self.clb_dir): raise FileNotFoundError(f'Directory {self.clb_dir} does not exist.')
         self.clb_type = cfg['data']['calib']['clb_type']
         self.clb_start_idx = cfg['data']['start']['calib']
         self.global_zero = cfg['data']['start']['global_zero']
@@ -50,6 +51,7 @@ class FileIO:
         
         # read all the calibration files
         files = glob.glob(os.path.join(self.clb_dir, '*' + self.clb_ext))
+        if len(files) == 0: raise FileNotFoundError(f'No calibration files found in {self.clb_dir}.')
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
         self.files_basenames = file_basenames[self.clb_start_idx:self.clb_end_idx][self.global_zero:]

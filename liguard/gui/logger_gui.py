@@ -1,7 +1,7 @@
 import open3d.visualization.gui as gui
 
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import time
 import yaml
 
@@ -18,37 +18,30 @@ class Logger:
     __level_string__ = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     __level_color__ = [gui.Color(255,255,255,255), gui.Color(0,255,0,255), gui.Color(255,255,0,255), gui.Color(255,0,0,255), gui.Color(255,0,255,255)]
     
-    def __init__(self, app: gui.Application = None):
+    def __init__(self, app: gui.Application=None):
             """
             Initializes the LoggerGUI object.
 
             Args:
-                app (gui.Application): The GUI application object.
-
-            Returns:
-                None
+                app (gui.Application): The application object.
             """
             self.app = app
 
             if self.app:
                 # Default log file path
-                self.mwin = app.create_window("Log", 440, 1080, x=1480, y=30)
+                self.mwin = app.create_window("Logs", 440, 1080, x=1480, y=30)
                 self.em = self.mwin.theme.font_size
 
                 self.mwin.set_on_close(lambda: False)
 
                 self.__init__layout__()
-                self.mwin.post_redraw()
         
-    def reset(self, cfg: dict):
+    def reset(self, cfg: dict=None):
         """
         Resets the logger configuration based on the provided dictionary.
 
         Args:
             cfg (dict): The dictionary containing the logger configuration.
-
-        Returns:
-            None
         """
         # make sure the outputs_dir is created
         path = cfg['logging']['logs_dir']
@@ -73,9 +66,6 @@ class Logger:
 
             Args:
                 level (int): The new logging level.
-
-            Returns:
-                None
             """
             self.level = level
             self.log(f'[gui->logger_gui.py->Logger]: Logging level changed to {Logger.__level_string__[level]}', Logger.WARNING)
@@ -87,9 +77,6 @@ class Logger:
         Args:
             message (str): The message to be logged.
             level (int): The level of the log message.
-
-        Returns:
-            None
         """
         stack = inspect.stack()
         message = f'[{stack[2].function}->{stack[1].function}]: {message}'
@@ -104,7 +91,6 @@ class Logger:
             print(txt)
             return
         
-        
         # update log container if level is greater than or equal to the current level
         horiz = gui.Horiz(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         icon_str = gui.Label(Logger.__level_string__[level])
@@ -113,6 +99,7 @@ class Logger:
         horiz.add_child(icon_str)
         horiz.add_child(msg_str)
         self.log_container.add_child(horiz)
+        
         # request redraw
         self.mwin.set_needs_layout()
         self.mwin.post_redraw()
@@ -153,9 +140,12 @@ class Logger:
         scroll_vert = gui.ScrollableVert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
         self.log_container.set_widget(scroll_vert)
 
-    def set_status_frame_idx(self, idx:int):
-        self.status_current_frame_idx.text = f'Frame Index: {idx}'
-        self.mwin.post_redraw()
+    def gui_set_frame(self, idx: int):
+        self.app.post_to_main_thread(self.mwin, lambda: self._set_frame(idx))
 
-    def __quit__(self):
-        self.mwin.close()
+    def _set_frame(self, idx: int):
+        if hasattr(self, 'mwin'): self.status_current_frame_idx.text = f'Frame Index: {idx}'
+
+    def quit(self):
+        if hasattr(self, 'mwin') == False: return
+        del self.mwin

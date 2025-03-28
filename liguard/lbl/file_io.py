@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -43,6 +43,7 @@ class FileIO:
         main_dir = cfg['data']['main_dir']
         if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
         self.lbl_dir = os.path.join(main_dir, cfg['data']['label_subdir'])
+        if not os.path.exists(self.lbl_dir): raise FileNotFoundError(f'Directory {self.lbl_dir} does not exist.')
         self.lbl_type = cfg['data']['label']['lbl_type']
         self.lbl_start_idx = cfg['data']['start']['label']
         self.global_zero = cfg['data']['start']['global_zero']
@@ -66,6 +67,7 @@ class FileIO:
         self.clb_reader = calib_reader
         
         files = glob.glob(os.path.join(self.lbl_dir, '*' + self.lbl_ext))
+        if len(files) == 0: raise FileNotFoundError(f'No label files found in {self.lbl_dir}.')
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numbers in the filenames
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))

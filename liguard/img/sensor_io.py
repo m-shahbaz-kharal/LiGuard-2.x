@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 
 img_dir = os.path.dirname(os.path.realpath(__file__))
 

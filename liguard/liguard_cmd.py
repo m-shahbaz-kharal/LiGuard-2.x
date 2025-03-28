@@ -1,6 +1,6 @@
 import os
 import sys
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import yaml
 
 from liguard.pcd.file_io import FileIO as PCD_File_IO
