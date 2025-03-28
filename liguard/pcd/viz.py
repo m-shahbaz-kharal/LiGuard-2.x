@@ -1,45 +1,55 @@
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+import time
 
 import open3d as o3d
+import open3d.visualization.gui as gui
+import open3d.visualization.rendering as rendering
 import numpy as np
 
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.logger_gui import Logger
 from liguard.pcd.utils import create_pcd
 
-from liguard.gui.logger_gui import Logger
-
-import open3d as o3d
-import numpy as np
+import threading
 
 class PointCloudVisualizer:
     """
     Class for visualizing point clouds and bounding boxes using Open3D.
     """
 
-    def __init__(self, app, cfg: dict):
+    def __init__(self, app: gui.Application, logger: Logger=None):
         """
         Initializes the PointCloudVisualizer.
 
         Args:
-            app: The application object.
-            cfg: A dictionary containing configuration parameters.
+            app (gui.Application): The application object.
+            logger (Logger): The logger object.
         """
         self.app = app
-        # create visualizer
-        self.viz = o3d.visualization.Visualizer()
-        self.win_created = self.viz.create_window("PointCloud Feed", width=1000, height=1080, left=480, top=30)
-        # init
-        # create necessary paths
-        if cfg['visualization']['lidar']['save_images']:
-            # make sure the outputs_dir is created
-            data_outputs_dir = cfg['data']['outputs_dir']
-            if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(cfg['data']['pipeline_dir'], data_outputs_dir)
-            self.lidar_save_path = os.path.join(data_outputs_dir, 'pcd_viz')
-            os.makedirs(self.lidar_save_path, exist_ok=True)
-        # reset
-        self.reset(cfg, True)
+        if logger: self.log = logger.log
+        else: self.log = lambda msg,lvl: print(f'[Point Cloud Visualizer][{Logger.__level_string__[lvl]}] {msg}')
         
-    def reset(self, cfg, reset_bounding_box=False):
+        # create visualizer
+        self.viz = o3d.visualization.O3DVisualizer(title="PointCloud Feed", width=1000, height=1080)
+        self.viz.set_on_close(lambda: False)
+        self.viz.show_menu(False)
+        self.viz.show_settings = True
+        self.viz.show_skybox(False)
+
+        #
+        self.materials = dict()
+        self.geometries = dict()
+        
+        #
+        self.lock = threading.Lock()
+
+        # add to window
+        self.app.add_window(self.viz)
+
+        # reset
+        self.reset()
+        
+    def reset(self, cfg=None, reset_bounding_box=False):
         """
         Resets the visualizer.
 
@@ -47,110 +57,119 @@ class PointCloudVisualizer:
             cfg: A dictionary containing configuration parameters.
             reset_bounding_box: Whether to reset the bounding box or not.
         """
-        self.cfg = cfg
-        # clear geometries
-        self.geometries = dict()
-        self.viz.clear_geometries()
-        # set render options
-        render_options = self.viz.get_render_option()
-        render_options.point_size = cfg['visualization']['lidar']['point_size']
-        render_options.background_color = cfg['visualization']['lidar']['space_color']
-        # add default geometries
-        self.__add_default_geometries__(reset_bounding_box)
-        
-    def __add_default_geometries__(self, reset_bounding_box):
-        """
-        Adds default geometries to the visualizer.
+        # acquire lock
+        self.lock.acquire()
 
-        Args:
-            reset_bounding_box: Whether to reset the bounding box or not.
-        """
+        # update cfg
+        self.cfg = cfg
+        
+        #
+        def clear_and_init_settings_gui():
+            self.clear()
+            self._init_settings()
+
+        self.app.post_to_main_thread(self.viz, clear_and_init_settings_gui)
+
+        # release lock
+        self.lock.release()
+
+    def clear(self):
+        self.viz.clear_3d_labels()
+        self.materials.clear()
+        for name in self.geometries: self.viz.remove_geometry(name)
+        self.geometries.clear()
+
+    def _init_settings(self):
+        # set render options
+        if self.cfg:
+            self.viz.point_size = int(self.cfg['visualization']['lidar']['point_size'])
+            self.viz.set_background(np.append(self.cfg['visualization']['lidar']['space_color'], 1), None)
+            center = np.array([0, 0, 0], dtype=np.float32)
+            eye = np.array([0, -100, 50], dtype=np.float32)
+            up = np.array([0, 0, 1], dtype=np.float32)
+            self.viz.setup_camera(60, center, eye, up)
+        
         # add coordinate frame
         coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
-        self.__add_geometry__('coordinate_frame', coordinate_frame, reset_bounding_box)
+        self.__add_geometry__('coordinate_frame', coordinate_frame)
 
-        # add default range bound
-        default_bound = o3d.geometry.AxisAlignedBoundingBox([-50, -50, -5], [+50, +50, +5])
-        default_bound.color = self.cfg['visualization']['lidar']['bound_color']
-        self.__add_geometry__('bound', default_bound, reset_bounding_box)
-
-        # if crop enabled, remove default bound and add bound according to crop params
-        if self.cfg['proc']['lidar']['crop']['enabled']:
-            crop_bound = o3d.geometry.AxisAlignedBoundingBox(self.cfg['proc']['lidar']['crop']['min_xyz'], self.cfg['proc']['lidar']['crop']['max_xyz'])
-            crop_bound.color = self.cfg['visualization']['lidar']['bound_color']
-            self.__add_geometry__('bound', crop_bound, reset_bounding_box)
-        else:
-            self.viz.remove_geometry(default_bound, False)
-        
         # global point cloud
-        self.point_cloud = create_pcd(np.zeros((1000, 4)))
-        self.__add_geometry__('point_cloud', self.point_cloud, reset_bounding_box)
-        
-        # bboxes
-        self.bboxes = []
+        self.default_points = np.random.rand(1000, 3) * [100, 100, 10]
+        self.default_points -= [50, 50, -5]
+        self.point_cloud = create_pcd(self.default_points)
+        self.__add_geometry__('point_cloud', self.point_cloud)
 
-        # trajectories
+        # bboxes and trajectories
+        self.bboxes = []
         self.trajectories = []
         
-    def __add_geometry__(self, name, geometry, reset_bounding_box):
+    def __add_geometry__(self, name, geometry):
         """
         Adds a geometry to the visualizer.
 
         Args:
             name: The name of the geometry.
             geometry: The geometry object.
-            reset_bounding_box: Whether to reset the bounding box or not.
+
         """
-        if name in self.geometries:
-            self.viz.remove_geometry(self.geometries[name], reset_bounding_box=False)
+        if name in self.geometries: self.viz.remove_geometry(name)
         else:
+            mat = rendering.MaterialRecord()
+            mat.shader = "defaultUnlit"
+            self.materials[name] = mat
             self.geometries[name] = geometry
-        self.viz.add_geometry(geometry, reset_bounding_box=reset_bounding_box)
-        
-    def __update_geometry__(self, name, geometry):
-        """
-        Updates a geometry in the visualizer.
+        self.viz.add_geometry(name, self.geometries[name], self.materials[name])
 
-        Args:
-            name: The name of the geometry.
-            geometry: The updated geometry object.
+    def gui_update(self, data_dict):
+        self.app.post_to_main_thread(self.viz, lambda: self._update(data_dict))
 
-        Returns:
-            bool: True if the geometry was updated successfully, False otherwise.
-        """
-        if name in self.geometries:
-            self.viz.update_geometry(geometry)
-            return True
-        return False
-        
-    def update(self, data_dict):
+    def _update(self, data_dict):
         """
         Updates the visualizer with new data.
 
         Args:
             data_dict: A dictionary containing the data to be visualized.
         """
-        if 'logger' in data_dict: logger:Logger = data_dict['logger']
-        else: print('[CRITICAL ERROR]: No logger object in data_dict. It is abnormal behavior as logger object is created by default. Please check if some script is removing the logger key in data_dict.'); return
-        if "current_point_cloud_numpy" not in data_dict:
-            logger.log(f'current_point_cloud_numpy not found in data_dict', Logger.DEBUG)
-            return
-        self.point_cloud.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, 0:3])
+        # acquire lock
+        self.lock.acquire()
+
+        # update frame name
+        try: self.frame_name = os.path.basename(data_dict['current_point_cloud_path'])
+        except: self.frame_name = 'last_frame'
+
+        # update pcd points
+        if "current_point_cloud_numpy" in data_dict:
+            try: self.point_cloud.points = o3d.utility.Vector3dVector(data_dict['current_point_cloud_numpy'][:, 0:3])
+            except Exception as e:
+                self.log(f"Failed to update point cloud: {e}", Logger.ERROR)
+                self.point_cloud.points = o3d.utility.Vector3dVector(self.default_points)
+        
+        # updates pcd colors
         if 'current_point_cloud_point_colors' in data_dict:
-            self.point_cloud.colors = o3d.utility.Vector3dVector(data_dict['current_point_cloud_point_colors'][:, 0:3])
-        else:
-            self.point_cloud.paint_uniform_color([1,1,1])
-        self.__update_geometry__('point_cloud', self.point_cloud)
+            try:
+                self.point_cloud.colors = o3d.utility.Vector3dVector(data_dict['current_point_cloud_point_colors'][:, 0:3])
+            except:
+                self.log("Failed to update point cloud colors", Logger.ERROR)
+                self.point_cloud.paint_uniform_color([1,1,1])
+
+        def _update_func():    
+            # update pcd
+            self.__add_geometry__('point_cloud', self.point_cloud)
+            
+            # update other geometries
+            self.__clear_bboxes__()
+            self.__clear_trajectories__()
+            
+            if "current_label_list" in data_dict:
+                for lbl in data_dict['current_label_list']:
+                    self.__add_bbox__(lbl)
+                    self.__add_cluster__(lbl)
+                    self.__add_trajectory__(lbl)
+
+        self.app.post_to_main_thread(self.viz, _update_func)
         
-        self.__clear_bboxes__()
-        self.__clear_trajectories__()
-        
-        if "current_label_list" not in data_dict:
-            return
-        for lbl in data_dict['current_label_list']:
-            self.__add_bbox__(lbl)
-            self.__add_cluster__(lbl)
-            self.__add_trajectory__(lbl)
+        # release lock
+        self.lock.release()
 
     def __add_bbox__(self, label_dict: dict):
         """
@@ -159,32 +178,36 @@ class PointCloudVisualizer:
         Args:
             label_dict: A dictionary containing the label information.
         """
-        if 'bbox_3d' not in label_dict or not self.cfg['visualization']['lidar']['draw_bbox_3d']:
-            return
-        # bbox params
-        bbox_3d_dict = label_dict['bbox_3d']
-        xyz_center = bbox_3d_dict['xyz_center']
-        xyz_extent = bbox_3d_dict['xyz_extent']
-        xyz_euler_angles = bbox_3d_dict['xyz_euler_angles']
-        if bbox_3d_dict['predicted']:
-            color = bbox_3d_dict['rgb_color']
-        else:
-            color = bbox_3d_dict['rgb_color'] * 0.5 # darken the color for ground truth
+        enabled = self.cfg['visualization']['lidar']['draw_bbox_3d']
+        have_bbox = 'bbox_3d' in label_dict
+        if not enabled or not have_bbox: return
+        
+        try:
+            # bbox params
+            bbox_3d_dict = label_dict['bbox_3d']
+            xyz_center = bbox_3d_dict['xyz_center']
+            xyz_extent = bbox_3d_dict['xyz_extent']
+            xyz_euler_angles = bbox_3d_dict['xyz_euler_angles']
+            if 'rgb_color' in bbox_3d_dict: color = bbox_3d_dict['rgb_color']
+            else: color = np.array([1,1,1], dtype=np.float32)
+            if 'predicted' in bbox_3d_dict and not bbox_3d_dict['predicted']: color *= 0.5 # darken the color for ground truth
 
-        # calculating bbox
-        rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(xyz_euler_angles)
-        lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(xyz_center, rotation_matrix, xyz_extent)
-        lidar_xyz_bbox.color = color
+            # calculating bbox
+            rotation_matrix = o3d.geometry.OrientedBoundingBox.get_rotation_matrix_from_xyz(xyz_euler_angles)
+            lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(xyz_center, rotation_matrix, xyz_extent)
+            lidar_xyz_bbox.color = color
 
-        self.bboxes.append(lidar_xyz_bbox)
-        self.__add_geometry__(f'bbox_{str(len(self.bboxes)+1).zfill(4)}', lidar_xyz_bbox, False)
+            box_name = f'bbox_{str(len(self.bboxes)+1).zfill(4)}'
+            self.bboxes.append(box_name)
+            self.__add_geometry__(box_name, lidar_xyz_bbox)
+        except Exception as e:
+            self.log(f"Failed to add bounding box: {e}", Logger.ERROR)
         
     def __clear_bboxes__(self):
         """
         Clears all the bounding boxes from the visualizer.
         """
-        for bbox in self.bboxes:
-            self.viz.remove_geometry(bbox, False)
+        for bbox_name in self.bboxes: self.viz.remove_geometry(bbox_name)
         self.bboxes.clear()
 
     def __add_cluster__(self, label_dict: dict):
@@ -194,16 +217,20 @@ class PointCloudVisualizer:
         Args:
             label_dict: A dictionary containing the label information.
         """
-        if 'lidar_cluster' not in label_dict or not self.cfg['visualization']['lidar']['draw_cluster']:
-            return
-        # cluster params
-        lidar_cluster_dict = label_dict['lidar_cluster']
-        point_indices = lidar_cluster_dict['point_indices']
-        colors = np.asarray(self.point_cloud.colors)
-        if colors.shape[0] != point_indices.shape[0]:
-            colors = np.zeros_like(self.point_cloud.points)
-        colors[point_indices] = np.random.rand(3) # ToDO: use consistent color if tracking is enabled
-        self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
+        enabled = self.cfg['visualization']['lidar']['draw_cluster']
+        has_cluster = 'lidar_cluster' in label_dict
+        if not enabled or not has_cluster: return
+
+        try:
+            # cluster params
+            lidar_cluster_dict = label_dict['lidar_cluster']
+            point_indices = lidar_cluster_dict['point_indices']
+            colors = np.asarray(self.point_cloud.colors)
+            assert colors.shape[0] == self.point_indices.points.shape[0]
+            colors[point_indices] = np.random.rand(3) # ToDO: use consistent color if tracking is enabled
+            self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
+        except Exception as e:
+            self.log(f"Failed to add cluster: {e}", Logger.ERROR)
 
     def __add_trajectory__(self, label_dict: dict):
         """
@@ -211,74 +238,84 @@ class PointCloudVisualizer:
 
         Args:
             trajectory: The trajectory to be added.
-            color: The color of the trajectory.
         """
-        if 'bbox_3d' not in label_dict or not self.cfg['visualization']['lidar']['draw_trajectory']:
-            return
+        enabled = self.cfg['visualization']['lidar']['draw_trajectory']
+        has_box = 'bbox_3d' in label_dict # trajectories in lidar are associated to bounding boxes
+        if not enabled or not has_box: return
 
-        color = label_dict['bbox_3d']['rgb_color']
+        box = label_dict['bbox_3d']
+        if 'rgb_color' in box: color = box['rgb_color']
+        else: color = np.array([1,1,1], dtype=np.float32)
         
-        if 'past_trajectory' in label_dict['bbox_3d']: past_trajectory = label_dict['bbox_3d']['past_trajectory']
+        if 'past_trajectory' in box: past_trajectory = box['past_trajectory']
         else: past_trajectory = []
         
-        if 'future_trajectory' in label_dict['bbox_3d']: future_trajectory = label_dict['bbox_3d']['future_trajectory']
+        if 'future_trajectory' in box: future_trajectory = box['future_trajectory']
         else: future_trajectory = []
         
-        if len(past_trajectory) >= 2:
-            lines = []
-            for i in range(len(past_trajectory) - 1): lines.append([i, i + 1])
-            line_set = o3d.geometry.LineSet()
-            line_set.points = o3d.utility.Vector3dVector(past_trajectory)
-            line_set.lines = o3d.utility.Vector2iVector(lines)
-            line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
-            self.trajectories.append(line_set)
-            self.__add_geometry__(f'past_trajectory_{str(len(self.trajectories)+1).zfill(4)}', line_set, False)
+        try:
+            if len(past_trajectory) >= 2:
+                lines = []
+                for i in range(len(past_trajectory) - 1): lines.append([i, i + 1])
+                line_set = o3d.geometry.LineSet()
+                line_set.points = o3d.utility.Vector3dVector(past_trajectory)
+                line_set.lines = o3d.utility.Vector2iVector(lines)
+                line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
+                trajectory_name = f'past_trajectory_{str(len(self.trajectories)+1).zfill(4)}'
+                self.trajectories.append(trajectory_name)
+                self.__add_geometry__(trajectory_name, line_set)
+        except Exception as e:
+            self.log(f"Failed to add past trajectory: {e}", Logger.ERROR)
         
-        if len(future_trajectory) >= 2:
-            lines = []
-            for i in range(len(future_trajectory) - 1): lines.append([i, i + 1])
-            line_set = o3d.geometry.LineSet()
-            line_set.points = o3d.utility.Vector3dVector(future_trajectory)
-            line_set.lines = o3d.utility.Vector2iVector(lines)
-            line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
-            self.trajectories.append(line_set)
-            self.__add_geometry__(f'future_trajectory_{str(len(self.trajectories)+1).zfill(4)}', line_set, False)
+        try:
+            if len(future_trajectory) >= 2:
+                lines = []
+                for i in range(len(future_trajectory) - 1): lines.append([i, i + 1])
+                line_set = o3d.geometry.LineSet()
+                line_set.points = o3d.utility.Vector3dVector(future_trajectory)
+                line_set.lines = o3d.utility.Vector2iVector(lines)
+                line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
+                trajectory_name = f'future_trajectory_{str(len(self.trajectories)+1).zfill(4)}'
+                self.trajectories.append(trajectory_name)
+                self.__add_geometry__(trajectory_name, line_set)
+        except Exception as e:
+            self.log(f"Failed to add future trajectory: {e}", Logger.ERROR)
 
     def __clear_trajectories__(self):
         """
         Clears all the trajectories from the visualizer.
         """
-        for trajectory in self.trajectories:
-            self.viz.remove_geometry(trajectory, False)
+        for trajectory in self.trajectories: self.viz.remove_geometry(trajectory)
         self.trajectories.clear()
-        
-    def redraw(self):
-        """
-        Redraws the visualizer.
-        """
-        self.viz.poll_events()
-        self.viz.update_renderer()
 
-    def save_current_view(self, frame_idx):
+    def save_image(self):
         """
-        Saves the current view of the visualizer to file.
+        Saves the current visualization as an image.
+        """
+        # check if save_image is enabled
+        enabled = hasattr(self, 'cfg') and self.cfg['visualization']['lidar']['save_images']
+        if not enabled: return
 
-        Args:
-            frame_idx: The index of the frame.
-        """
-        file_path = os.path.join(self.lidar_save_path, f'{frame_idx:08d}.png')
-        self.viz.capture_screen_image(file_path)
+        # create output directory
+        pipeline_dir = self.cfg['data']['pipeline_dir']
+        data_outputs_dir = self.cfg['data']['outputs_dir']
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(pipeline_dir, data_outputs_dir)
+        pcd_imgs_dir = os.path.join(data_outputs_dir, 'pcd_viz')
+        os.makedirs(pcd_imgs_dir, exist_ok=True)
+
+        # save image
+        file_path = os.path.join(pcd_imgs_dir, self.frame_name)
+        self.app.post_to_main_thread(self.viz, lambda: self.viz.export_current_image(file_path))
 
     def save_view_status(self):
         """
         Saves the view status (parameters of looking camera) of the visualizer.
         """
-        if self.win_created:
-            # make sure the outputs_dir is created
-            data_outputs_dir = self.cfg['data']['outputs_dir']
-            if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(self.cfg['data']['pipeline_dir'], data_outputs_dir)
-            save_path = os.path.join(data_outputs_dir, 'view_status.txt')
-            with open(save_path, 'w') as file: file.write(str(self.viz.get_view_status()))
+        # make sure the outputs_dir is created
+        data_outputs_dir = self.cfg['data']['outputs_dir']
+        if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(self.cfg['data']['pipeline_dir'], data_outputs_dir)
+        save_path = os.path.join(data_outputs_dir, 'view_status.txt')
+        with open(save_path, 'w') as file: file.write(str(self.viz.get_view_status()))
     
     def load_view_status(self):
         """

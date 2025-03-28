@@ -1,5 +1,5 @@
 import os
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
@@ -35,11 +35,13 @@ class FileIO:
         main_dir = cfg['data']['main_dir']
         if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
         self.pcd_dir = os.path.join(main_dir, cfg['data']['lidar_subdir'])
+        if not os.path.exists(self.pcd_dir): raise FileNotFoundError(f'Directory {self.pcd_dir} does not exist.')
         self.pcd_type = cfg['data']['lidar']['pcd_type']
         self.pcd_start_idx = cfg['data']['start']['lidar']
         self.global_zero = cfg['data']['start']['global_zero']
         self.pcd_end_idx = self.pcd_start_idx + cfg['data']['count']
         files = glob.glob(os.path.join(self.pcd_dir, '*' + self.pcd_type))
+        if len(files) == 0: raise FileNotFoundError(f'No point cloud files found in {self.pcd_dir}.')
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
         # Sort the file basenames based on the numerical part
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))

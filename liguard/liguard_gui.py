@@ -4,7 +4,7 @@ import traceback
 import open3d.visualization.gui as gui
 
 from liguard.gui.config_gui import BaseConfiguration as BaseConfigurationGUI
-from liguard.gui.config_gui import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 from liguard.gui.logger_gui import Logger
 from liguard.liguard_profiler import Profiler
 
@@ -29,39 +29,39 @@ class LiGuard:
         self.app = gui.Application.instance
         self.app.initialize()
         
-        # initialize the configuration GUI
-        self.config = BaseConfigurationGUI(self.app)
-        # initialize the logger GUI
+        # initialize gui
         self.logger = Logger(self.app)
+        self.config = BaseConfigurationGUI(self.app, self.logger)
+        self.pcd_viz = PointCloudVisualizer(self.app, self.logger)
+        self.img_viz = ImageVisualizer(self.app, self.logger)
+        
+        # remove menubar
+        self.config.mwin.show_menu(False)
+        self.logger.mwin.show_menu(False)
+        
         # set the callbacks for the configuration GUI
         config_call_backs = BaseConfigurationGUI.get_callbacks_dict()
         config_call_backs['apply_config'] = [self.reset, self.start]
-        config_call_backs['save_config'] = [lambda cfg: self.pcd_visualizer.save_view_status() if self.pcd_visualizer else None]
-        config_call_backs['save_as_config'] = [lambda cfg: self.pcd_visualizer.save_view_status() if self.pcd_visualizer else None]
+        config_call_backs['save_config'] = [lambda cfg: self.pcd_viz.save_view_status()]
         config_call_backs['quit_config'] = [self.quit]
         self.config.update_callbacks(config_call_backs)
         
         # initialize the data sources
         self.pcd_io = None
-        self.pcd_visualizer = None
-        
         self.img_io = None
-        self.img_visualizer = None
-
         self.clb_io = None
-        
         self.lbl_io = None
         
         # initialize the main lock
-        self.lock = threading.Lock()
         self.pynput_listener = None
         self.is_running = False # if the app is running
         self.is_focused = False # if the app is focused
         self.is_playing = False # if the frames are playing
+
         # initialize the data dictionary
         self.data_dict = dict()
-        self.data_dict['logger'] = self.logger
         self.data_dict['current_frame_index'] = 0
+        self.data_dict['current_frame_name'] = '000000'
         self.data_dict['previous_frame_index'] = -1
         self.data_dict['maximum_frame_index'] = 0
         
@@ -70,37 +70,31 @@ class LiGuard:
         
     # handle the key events of right, left, and space keys
     def handle_key_event(self, key):
-        with self.lock:
-            if key == pynput.keyboard.Key.right:
-                self.is_playing = False
-                if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
-                    self.data_dict['current_frame_index'] += 1
-            elif key == pynput.keyboard.Key.left:
-                self.is_playing = False
-                if self.data_dict['current_frame_index'] > 0:
-                    self.data_dict['current_frame_index'] -= 1
-            elif key == pynput.keyboard.Key.space:
-                self.is_playing = not self.is_playing
-            elif key == pynput.keyboard.Key.delete:
-                self.is_playing = False
-                self.data_dict['current_frame_index'] = 0
-                if self.pcd_visualizer: self.pcd_visualizer.load_view_status()
-            elif key == pynput.keyboard.KeyCode(char='['):
-                self.is_playing = False
-                self.config.show_input_dialog('Enter the frame index:', f'Jump to Frame (0-{self.data_dict["maximum_frame_index"]})', 'jump_to_frame')
+        if key == pynput.keyboard.Key.right:
+            self.is_playing = False
+            if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
+                self.data_dict['current_frame_index'] += 1
+        elif key == pynput.keyboard.Key.left:
+            self.is_playing = False
+            if self.data_dict['current_frame_index'] > 0:
+                self.data_dict['current_frame_index'] -= 1
+        elif key == pynput.keyboard.Key.space:
+            self.is_playing = not self.is_playing
+        elif key == pynput.keyboard.Key.delete:
+            self.is_playing = False
+            self.data_dict['current_frame_index'] = 0
+            self.pcd_viz.load_view_status()
+        elif key == pynput.keyboard.KeyCode(char='['):
+            self.is_playing = False
+            self.config.show_input_dialog('Enter the frame index:', f'Jump to Frame (0-{self.data_dict["maximum_frame_index"]})', 'jump_to_frame')
                     
     def reset(self, cfg):
         """
         Resets the LiGuard with the given configuration.
 
-        Parameters:
-        - cfg (dict): The configuration dictionary containing the settings for LiGuard.
-
-        Returns:
-        - None
+        Args:
+            cfg: A dictionary containing configuration parameters.
         """
-        # Get the logger object from the data dictionary
-        logger:Logger = self.data_dict['logger']
         # Check if the data path or logging level has changed
         need_reset = False
         need_level_change = False
@@ -129,11 +123,12 @@ class LiGuard:
         if need_reset:
             self.last_data_path = current_data_path
             self.last_logging_path = current_logging_path
-            logger.reset(cfg)
+            self.logger.reset(cfg)
+            
         # Change the logging level if it has changed
         if need_level_change:
             self.last_logging_level = current_logging_level
-            logger.change_level(current_logging_level)
+            self.logger.change_level(current_logging_level)
 
         # Make sure the required directories exist
         self.outputs_dir = cfg['data']['outputs_dir']
@@ -143,7 +138,7 @@ class LiGuard:
         # unlock the keyboard keys right, left, and space
         if self.pynput_listener: self.pynput_listener.stop()
         # pause at the start
-        with self.lock: self.is_running = False
+        self.is_running = False
         # reset the frame index
         self.data_dict['previous_frame_index'] = -1
         
@@ -171,16 +166,8 @@ class LiGuard:
         self.logger.log(f'total_pcd_frames: {self.data_dict["total_pcd_frames"]}', Logger.DEBUG)
         
         # manage pcd visualization
-        if self.pcd_io:
-            if self.pcd_visualizer != None: self.pcd_visualizer.reset(cfg)
-            else:
-                try:
-                    self.pcd_visualizer = PointCloudVisualizer(self.app, cfg)
-                    self.pcd_visualizer.load_view_status()
-                    self.logger.log('PointCloudVisualizer created', Logger.DEBUG)
-                except Exception:
-                    self.logger.log(f'PointCloudVisualizer creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
-                    self.pcd_visualizer = None
+        if self.pcd_io: self.pcd_viz.reset(cfg)
+        
         # manage image reading
         if self.img_io != None: self.img_io.close()
         # if files are enabled
@@ -205,14 +192,7 @@ class LiGuard:
         self.logger.log(f'total_img_frames: {self.data_dict["total_img_frames"]}', Logger.DEBUG)
         
         # manage image visualization
-        if self.img_io:
-            try:
-                if self.img_visualizer != None: self.img_visualizer.reset(cfg)
-                else: self.img_visualizer = ImageVisualizer(self.app, cfg)
-                self.logger.log('ImageVisualizer created', Logger.DEBUG)
-            except Exception:
-                self.logger.log(f'ImageVisualizer creation failed:\n{traceback.format_exc()}', Logger.CRITICAL)
-                self.img_visualizer = None
+        if self.img_io: self.img_viz.reset(cfg)
 
         # manage calibration reading
         if self.clb_io != None: self.clb_io.close()
@@ -347,20 +327,16 @@ class LiGuard:
         
     def start(self, cfg):
         # start the LiGuard
-        with self.lock: self.is_running = True
+        self.is_running = True
         
         # start key event handling
-        if self.pcd_visualizer or self.img_visualizer:
+        if self.pcd_io or self.img_io:
             self.pynput_listener = pynput.keyboard.Listener(on_press=self.handle_key_event)
             self.pynput_listener.start()
         
         # the main loop
-        while True:
-            # check if the app is running
-            with self.lock:
-                if not self.is_running: break
-                # check if the frames are playing, if yes increment the frame index
-                elif self.is_playing and self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']: self.data_dict['current_frame_index'] += 1
+        while self.is_running:
+            if self.is_playing and self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']: self.data_dict['current_frame_index'] += 1
             
             # check if user has jumped to a frame
             jump = self.config.get_input_dialog_value('jump_to_frame')
@@ -371,7 +347,7 @@ class LiGuard:
             # if the frame has changed, update the data dictionary with the new frame data
             if frame_changed:
                 profiler.add_target('Total Time / Step')
-                self.logger.set_status_frame_idx(self.data_dict['current_frame_index'] + cfg['data']['start']['global_zero'])
+                self.logger.gui_set_frame(self.data_dict['current_frame_index'] + cfg['data']['start']['global_zero'])
                 self.data_dict['previous_frame_index'] = self.data_dict['current_frame_index']
                 
                 if self.pcd_io:
@@ -418,7 +394,7 @@ class LiGuard:
                 if not any([self.pcd_io, self.img_io, self.clb_io, self.lbl_io]):
                     self.logger.log(f'no data source is available, exiting in 5 seconds...', Logger.CRITICAL)
                     time.sleep(5)
-                    break
+                    self.is_running = False
 
                 # apply the processes
                 for proc in self.pre_processes:
@@ -481,41 +457,25 @@ class LiGuard:
                     # update and redraw
                     profiler.add_target('pcd_visualizer_update')
                     if cfg['visualization']['enabled']:
-                        self.pcd_visualizer.update(self.data_dict)
-                    self.pcd_visualizer.redraw()
+                        self.pcd_viz.gui_update(self.data_dict)
                     profiler.end_target('pcd_visualizer_update')
-                    # save image of the view if enabled
-                    if cfg['visualization']['lidar']['save_images']:
-                        profiler.add_target('pcd_visualizer_save_current_view')
-                        self.pcd_visualizer.save_current_view(self.data_dict['current_frame_index'])
-                        profiler.end_target('pcd_visualizer_save_current_view')
                 if self.img_io:
                     profiler.add_target('img_visualizer_update')
                     if cfg['visualization']['enabled']:
-                        self.img_visualizer.update(self.data_dict)
-                    self.img_visualizer.redraw()
+                        self.img_viz.gui_update(self.data_dict)
                     profiler.end_target('img_visualizer_update')
-                    if cfg['visualization']['camera']['save_images']:
-                        profiler.add_target('img_visualizer_save_current_view')
-                        self.img_visualizer.save_current_view(self.data_dict['current_frame_index'])
-                        profiler.end_target('img_visualizer_save_current_view')
 
                 if cfg['visualization']['enabled'] == False:
                     self.logger.log(f'Processed frame {self.data_dict["current_frame_index"]}', Logger.INFO)
                 profiler.end_target('Total Time / Step')
-                    
-            else:
-                # if the frame has not changed, redraw the visualizers only no processing is required
-                if self.pcd_io: self.pcd_visualizer.redraw()
-                if self.img_io: self.img_visualizer.redraw()
             
             # sleep for a while
-            time.sleep(cfg['threads']['vis_sleep'])
+            time.sleep(0.1)
             profiler.save(os.path.join(self.outputs_dir, 'LiGuard_main.profile'))
             
-    def quit(self, cfg):
+    def quit(self):
         # stop the app
-        with self.lock: self.is_running = False
+        if self.is_running: self.is_running = False
         # unhook the keyboard keys
         if self.pynput_listener: self.pynput_listener.stop()
         
@@ -525,11 +485,8 @@ class LiGuard:
         if self.lbl_io: self.lbl_io.close()
         
         # close the visualizers
-        if self.pcd_visualizer: self.pcd_visualizer.quit()
-        if self.img_visualizer: self.img_visualizer.quit()
-        
-        # close app
-        self.app.quit()
+        self.pcd_viz.quit()
+        self.img_viz.quit()
         
 def main():
     try:
@@ -539,6 +496,7 @@ def main():
             import shutil
             shutil.copytree(resolve_for_application_root('examples'), resolve_for_default_workspace('examples'))
         LiGuard()
+        
         print('LiGuard exited successfully.')
     except Exception:
         print(f'LiGuard exited with an error:\n{traceback.format_exc()}')

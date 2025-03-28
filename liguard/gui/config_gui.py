@@ -1,20 +1,14 @@
 import open3d.visualization.gui as gui
 
+from liguard.gui.logger_gui import Logger
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+
 import os
 import sys
-import time
 import yaml
 import ast
 
-def resolve_for_application_root(path:str) -> str:
-    application_root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-    if not os.path.isabs(path): path = os.path.join(application_root_dir, path)
-    return os.path.abspath(path)
-
-def resolve_for_default_workspace(path:str) -> str:
-    default_workspace_dir = os.path.join(os.path.expanduser("~"), 'liguard-default-workspace')
-    if not os.path.isabs(path): path = os.path.join(default_workspace_dir, path)
-    return os.path.abspath(path)
+import threading
 
 class BaseConfiguration:
     def get_callbacks_dict():
@@ -28,21 +22,25 @@ class BaseConfiguration:
             'new_config': [],       # List to store callback functions for 'new_config' action
             'open_config': [],      # List to store callback functions for 'open_config' action
             'save_config': [],      # List to store callback functions for 'save_config' action
-            'save_as_config': [],   # List to store callback functions for 'save_as_config' action
             'apply_config': [],     # List to store callback functions for 'apply_config' action
             'quit_config': []       # List to store callback functions for 'quit_config' action
         }
         
-    def __init__(self, app: gui.Application, callbacks = get_callbacks_dict()):
+    def __init__(self, app: gui.Application, logger: Logger=None):
         """
         Initializes the ConfigGUI class.
 
         Args:
             app (gui.Application): The application object.
-            callbacks (dict): A dictionary containing the callbacks for the GUI.
+            logger (Logger): The logger object.
         """
+        # Set the application and logger objects
         self.app = app
-        self.callbacks = callbacks
+        if logger: self.log = logger.log
+        else: self.log = lambda msg,lvl: print(f'[Configuration][{Logger.__level_string__[lvl]}] {msg}')
+
+        # default empty callbacks
+        self.callbacks = BaseConfiguration.get_callbacks_dict()
 
         # Create a window for the configuration GUI
         self.mwin = app.create_window("Configuration", 480, 1080, x=0, y=30)
@@ -129,8 +127,7 @@ class BaseConfiguration:
         Returns:
             dict: The loaded configuration as a dictionary.
         """
-        with open(cfg_path) as f:
-            cfg = yaml.safe_load(f)
+        with open(cfg_path) as f: cfg = yaml.safe_load(f)
         return cfg
     
     def load_pipeline_algos(self):
@@ -381,8 +378,12 @@ class BaseConfiguration:
         ok_button.horizontal_padding_em = 0.5
         ok_button.vertical_padding_em = 0
         def ok_button_callback():
-            self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
             self.__close_dialog__()
+            try: self.cfg[self.input_dialog_key] = getattr(self.input_dialog_widget, self.input_dialog_widget_value_variable)
+            except Exception as e:
+                self.log(f'Failed to set configuration value: {e}', Logger.ERROR)
+                self.__show_issue_dialog__(f'Failed to set {self.input_dialog_key} value. See logs for details.')
+            
         if custom_callback: ok_button.set_on_clicked(custom_callback)
         else: ok_button.set_on_clicked(ok_button_callback)
         layout.add_child(ok_button)
@@ -405,31 +406,54 @@ class BaseConfiguration:
         
     def __new_config__(self):
         def create_base_pipeline(pipeline_dir):
-            self.cfg = self.load_config(os.path.join(resolve_for_application_root(''), 'resources', 'config_template.yml'))
-            self.cfg['data']['pipeline_dir'] = pipeline_dir
-            self.save_config(self.cfg, os.path.join(pipeline_dir, 'base_config.yml'))
-            self.config_file_path_textedit.text_value = pipeline_dir
-            self.last_pipeline_dir = pipeline_dir
             self.__close_dialog__()
-
-            # Generate the configuration GUI from the configuration dictionary
-            cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
-            self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
-            self.generated_config.set_widget(cfg_gui)
+            try:
+                self.cfg = self.load_config(os.path.join(resolve_for_application_root(''), 'resources', 'config_template.yml'))
+                self.cfg['data']['pipeline_dir'] = pipeline_dir
+            except Exception as e:
+                self.log(f'Failed to load configuration template: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to create new configuration. See logs for details.')
+                return
+            try:
+                self.save_config(self.cfg, os.path.join(pipeline_dir, 'base_config.yml'))
+                self.last_pipeline_dir = pipeline_dir
+            except Exception as e:
+                self.log(f'Failed to save configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to create new configuration. See logs for details.')
+                return
             
-            # Call the callback functions for the 'new_config' action
-            for callback in self.callbacks['new_config']: callback(self.cfg)
+            try:
+                # Generate the configuration GUI from the configuration dictionary
+                cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
+                self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
+                self.config_file_path_textedit.text_value = pipeline_dir
+                self.generated_config.set_widget(cfg_gui)
+            except Exception as e:
+                self.log(f'Failed to update GUI from configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('New configuration is created but it could not be displayed. See logs for details.')
+            try:
+                # Call the callback functions for the 'new_config' action
+                for callback in self.callbacks['new_config']: callback(self.cfg)
+            except Exception as e:
+                self.log(f'Failed to call callback functions: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('New configuration is created but some erros occured post creation. See logs for details.')
         self.__show_path_dialog__("New Pipeline", gui.FileDialog.OPEN_DIR, resolve_for_default_workspace(''), "", "", create_base_pipeline)
 
     def __open_config__(self):
         # Define the function to load the configuration file, update GUI, and close the dialog
-        def load_pipeline(pipeline_dir):
+        def load_pipeline(file_path):
+            pipeline_dir = os.path.dirname(file_path)
             self.config_file_path_textedit.text_value = pipeline_dir
             self.last_pipeline_dir = pipeline_dir
             self.__close_dialog__()
             try:
-                self.cfg = self.load_config(os.path.join(pipeline_dir, 'base_config.yml'))
+                self.cfg = self.load_config(file_path)
                 self.cfg['data']['pipeline_dir'] = pipeline_dir
+            except Exception as e:
+                self.log(f'Failed to load configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to load configuration. See logs for details.')
+                return
+            try:
                 self.load_pipeline_algos()
                 for algo_type in self.cfg['proc']:
                     algo_priorities = zip(
@@ -438,25 +462,36 @@ class BaseConfiguration:
                     )
                     algo_priorities = sorted(algo_priorities, key=lambda x: x[1])
                     self.cfg['proc'][algo_type] = {algo_name: self.cfg['proc'][algo_type][algo_name] for algo_name, _ in algo_priorities}
-                    
+            except Exception as e:
+                self.log(f'Failed to load custom added algorithms: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to load custom added algorithms. See logs for details.')
+                
+            try:
                 cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
                 self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
                 self.generated_config.set_widget(cfg_gui)
+            except Exception as e:
+                self.log(f'Failed to update GUI from configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to update GUI from configuration. See logs for details.')
+            try:
                 # Call the callback functions for the 'open_config' action
                 for callback in self.callbacks['open_config']: callback(self.cfg)
             except:
-                self.__show_issue_dialog__('The selected directory is not a valid pipeline directory. Create a new pipeline or select a valid pipeline directory.')
+                self.log(f'Failed to call callback functions: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Configuration is loaded but some erros occured post loading. See logs for details.')
+        
         # make sure the last workspace directory exists
-        if not hasattr(self, 'last_pipeline_dir'):
-            self.last_pipeline_dir = resolve_for_default_workspace('')
-
+        if not hasattr(self, 'last_pipeline_dir'):self.last_pipeline_dir = resolve_for_default_workspace('')
         # Open the configuration file by asking the user for the path
-        self.__show_path_dialog__("Open Pipeline", gui.FileDialog.OPEN_DIR, self.last_pipeline_dir, "", "", load_pipeline)
+        self.__show_path_dialog__("Open Configuration", gui.FileDialog.OPEN, self.last_pipeline_dir, ".yml", "LiGuard base_config.yml File (*.yml)", load_pipeline)
 
     def __reload_config__(self):
+        try: self.cfg = self.load_config(os.path.join(self.cfg['data']['pipeline_dir'], 'base_config.yml'))
+        except Exception as e:
+            self.log(f'Failed to reload configuration: {e}', Logger.ERROR)
+            self.__show_issue_dialog__('Failed to reload configuration. See logs for details.')
+            return
         try:
-            self.cfg = self.load_config(os.path.join(self.last_pipeline_dir, 'base_config.yml'))
-            self.cfg['data']['pipeline_dir'] = self.last_pipeline_dir
             self.load_pipeline_algos()
             for algo_type in self.cfg['proc']:
                 algo_priorities = zip(
@@ -465,46 +500,64 @@ class BaseConfiguration:
                 )
                 algo_priorities = sorted(algo_priorities, key=lambda x: x[1])
                 self.cfg['proc'][algo_type] = {algo_name: self.cfg['proc'][algo_type][algo_name] for algo_name, _ in algo_priorities}
-                
+        except Exception as e:
+            self.log(f'Failed to load custom added algorithms: {e}', Logger.ERROR)
+            self.__show_issue_dialog__('Failed to load custom added algorithms. See logs for details.')
+        try:        
             cfg_gui = gui.Vert(self.em * 0.2, gui.Margins(self.em * 0.2, self.em * 0.2, self.em * 0.2, self.em * 0.2))
             self.__update_gui_from_cfg__(self.cfg, cfg_gui, ['cfg'])
             self.generated_config.set_widget(cfg_gui)
+        except Exception as e:
+            self.log(f'Failed to update GUI from configuration: {e}', Logger.ERROR)
+            self.__show_issue_dialog__('Failed to update GUI from configuration. See logs for details.')
+        try:
             # Call the callback functions for the 'open_config' action
             for callback in self.callbacks['open_config']: callback(self.cfg)
         except:
-            self.__show_issue_dialog__('Failed to reload pipeline. Make sure to open a pipeline first.')
+            self.log(f'Failed to call callback functions: {e}', Logger.ERROR)
+            self.__show_issue_dialog__('Configuration is reloaded but some erros occured post reloading. See logs for details.')
     
     def __save_config__(self):
-        # Update the configuration from the GUI and save it to the specified path
-        try:
-            self.__update_cfg_from_gui__(self.cfg, ['cfg'])
-            self.save_config(self.cfg, os.path.join(self.last_pipeline_dir, 'base_config.yml'))
-            # Call the callback functions for the 'save_config' action
-            for callback in self.callbacks['save_config']: callback(self.cfg)
-        except:
-            self.__show_issue_dialog__('Failed to save pipeline. Make sure to open a pipeline first.')
+        if hasattr(self, 'cfg'):
+            # Update the configuration from the GUI and save it to the specified path
+            try: self.__update_cfg_from_gui__(self.cfg, ['cfg'])
+            except Exception as e:
+                self.log(f'Failed to parse configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to save configuration. See logs for details.')
+                return
+            try: self.save_config(self.cfg, os.path.join(self.last_pipeline_dir, 'base_config.yml'))
+            except:
+                self.log(f'Failed to save configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to save configuration. See logs for details.')
+            try:
+                # Call the callback functions for the 'save_config' action
+                for callback in self.callbacks['save_config']: callback(self.cfg)
+            except:
+                self.log(f'Failed to call callback: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Configuration is saved but some erros occured post saving. See logs for details')
+        else:
+            self.__show_issue_dialog__('No configuration to save. Create/Open a configuration first.')
             
     def __apply_config__(self):
         # If the configuration exists
         if hasattr(self, 'cfg'):
             # Update the configuration from the GUI
-            self.__update_cfg_from_gui__(self.cfg, ['cfg'])
-        
-            # Call the callback functions for the 'apply_config' action
-            for callback in self.callbacks['apply_config']: callback(self.cfg)
+            try: self.__update_cfg_from_gui__(self.cfg, ['cfg'])
+            except Exception as e:
+                self.log(f'Failed to parse configuration: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Failed to parse configuration. See logs for details.')
+                return
+            try:
+                # Call the callback functions for the 'apply_config' action
+                def run_call_backs():
+                    for callback in self.callbacks['apply_config']: callback(self.cfg)
+                threading.Thread(target=run_call_backs).start()
+            except Exception as e:
+                self.log(f'Failed to call callback: {e}', Logger.ERROR)
+                self.__show_issue_dialog__('Configuration might not be applied completely. See logs for details.')
         else:
-            self.__show_issue_dialog__('No configuration to apply.')
+            self.__show_issue_dialog__('No configuration to apply. Create/Open a configuration first.')
         
     def __quit_config__(self):
-        print("Quitting...")
-
-        # If the configuration exists
-        if hasattr(self, 'cfg'):
-            # Call the callback functions for the 'quit_config' action
-            for callback in self.callbacks['quit_config']: callback(self.cfg)
-        else:
-            # Still call the callback functions for the 'quit_config' action to signal exit
-            for callback in self.callbacks['quit_config']: callback(None)
-
-        # Required by gui.Window.set_on_close
-        return True
+        for callback in self.callbacks['quit_config']: callback()
+        self.app.quit()
