@@ -110,7 +110,10 @@ class PointCloudVisualizer:
 
         # bboxes and trajectories
         self.bboxes = []
+        self.bbox_counter = 0
         self.trajectories = []
+        self.past_trajectory_counter = 0
+        self.future_trajectory_counter = 0
 
         # set camera
         center = np.array([0, 0, 0], dtype=np.float32)
@@ -168,21 +171,18 @@ class PointCloudVisualizer:
                 self.log("Failed to update point cloud colors", Logger.ERROR)
                 self.point_cloud.paint_uniform_color([1,1,1])
 
-        def _update_func():    
-            # update pcd
-            self.__add_geometry__('point_cloud', self.point_cloud)
-            
-            # update other geometries
-            self.__clear_bboxes__()
-            self.__clear_trajectories__()
-            
-            if "current_label_list" in data_dict:
-                for lbl in data_dict['current_label_list']:
-                    self.__add_bbox__(lbl)
-                    self.__add_cluster__(lbl)
-                    self.__add_trajectory__(lbl)
-
-        _update_func()
+        # update pcd
+        self.__add_geometry__('point_cloud', self.point_cloud)
+        
+        # update other geometries
+        self.__clear_bboxes__()
+        self.__clear_trajectories__()
+        
+        if "current_label_list" in data_dict:
+            for lbl in data_dict['current_label_list']:
+                self.__add_bbox__(lbl)
+                self.__add_cluster__(lbl)
+                self.__add_trajectory__(lbl)
         
         # release lock
         self.lock.release()
@@ -213,7 +213,8 @@ class PointCloudVisualizer:
             lidar_xyz_bbox = o3d.geometry.OrientedBoundingBox(xyz_center, rotation_matrix, xyz_extent)
             lidar_xyz_bbox.color = color
 
-            box_name = f'bbox_{str(len(self.bboxes)+1).zfill(4)}'
+            self.bbox_counter += 1
+            box_name = f'bbox_{str(self.bbox_counter).zfill(4)}'
             self.bboxes.append(box_name)
             self.__add_geometry__(box_name, lidar_xyz_bbox)
         except Exception as e:
@@ -277,7 +278,8 @@ class PointCloudVisualizer:
                 line_set.points = o3d.utility.Vector3dVector(past_trajectory)
                 line_set.lines = o3d.utility.Vector2iVector(lines)
                 line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
-                trajectory_name = f'past_trajectory_{str(len(self.trajectories)+1).zfill(4)}'
+                self.past_trajectory_counter += 1
+                trajectory_name = f'past_trajectory_{str(self.past_trajectory_counter).zfill(4)}'
                 self.trajectories.append(trajectory_name)
                 self.__add_geometry__(trajectory_name, line_set)
         except Exception as e:
@@ -291,7 +293,8 @@ class PointCloudVisualizer:
                 line_set.points = o3d.utility.Vector3dVector(future_trajectory)
                 line_set.lines = o3d.utility.Vector2iVector(lines)
                 line_set.colors = o3d.utility.Vector3dVector([color for _ in range(len(lines))])
-                trajectory_name = f'future_trajectory_{str(len(self.trajectories)+1).zfill(4)}'
+                self.future_trajectory_counter += 1
+                trajectory_name = f'future_trajectory_{str(self.future_trajectory_counter).zfill(4)}'
                 self.trajectories.append(trajectory_name)
                 self.__add_geometry__(trajectory_name, line_set)
         except Exception as e:
