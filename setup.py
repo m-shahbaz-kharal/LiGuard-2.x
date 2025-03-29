@@ -3,7 +3,7 @@ import glob
 
 setup(
     name="LiGuard",
-    version="2.1.3",
+    version="2.1.4",
     author="Muhammad Shahbaz",
     author_email="m.shahbaz.kharal@outlook.com",
     description=(
@@ -39,7 +39,7 @@ setup(
     install_requires=[
         "matplotlib",
         "numpy<2.0.0",
-        "open3d==0.18.0",
+        "open3d==0.19.0",
         "opencv-python",
         "pynput",
         "pillow",
