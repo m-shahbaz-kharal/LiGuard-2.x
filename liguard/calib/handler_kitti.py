@@ -33,7 +33,12 @@ def Handler(calib_path: str):
     calib['R0_rect'] = np.pad(calib['R0_rect'], ((0, 1), (0, 1)), mode='constant', constant_values=0) # 4x4
     calib['R0_rect'][3, 3] = 1
     
-    calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(3, 4) # 3x4
-    calib['Tr_velo_to_cam'] = np.vstack((calib['Tr_velo_to_cam'], np.array([0,0,0,1], dtype=np.float32))) # 4x4
+    if calib['Tr_velo_to_cam'].shape[0] == 12:
+        calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(3, 4) # 3x4
+        calib['Tr_velo_to_cam'] = np.vstack((calib['Tr_velo_to_cam'], np.array([0,0,0,1], dtype=np.float32))) # 4x4
+    elif calib['Tr_velo_to_cam'].shape[0] == 16:
+        calib['Tr_velo_to_cam'] = calib['Tr_velo_to_cam'].reshape(4, 4)
+    else:
+        raise ValueError(f"Invalid shape for Tr_velo_to_cam: {calib['Tr_velo_to_cam'].shape}")
 
     return calib

@@ -75,7 +75,10 @@ def Handler(label_path: str, calib_data: dict):
         # w l h -> x y z
         xyz_extent = np.array([width, length, height], dtype=np.float32)
         xyz_euler_angles = np.array([0, 0, -image_0_ry], dtype=np.float32)
-        rgb_color = np.array(colors[obj_class], dtype=np.float32)
+        if obj_class.lower().title() in colors:
+            rgb_color = np.array(colors[obj_class.lower().title()], dtype=np.float32)
+        else:
+            rgb_color = np.array([1, 1, 1], dtype=np.float32)
         
         # visualzer expect bbox_3d to be present in order to visualize the bounding boxes, so we add them here
         label['bbox_3d'] = {'xyz_center': xyz_center, 'xyz_extent': xyz_extent, 'xyz_euler_angles': xyz_euler_angles, 'rgb_color': rgb_color, 'predicted': False}
