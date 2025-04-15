@@ -3,7 +3,7 @@ import glob
 
 setup(
     name="LiGuard",
-    version="2.1.4",
+    version="2.1.4.post2",
     author="Muhammad Shahbaz",
     author_email="m.shahbaz.kharal@outlook.com",
     description=(

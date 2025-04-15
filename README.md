@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/m-shahbaz-kharal/LiGuard-2.x/?tab=readme-ov-file#installation">Installation</a> | <a href="https://github.com/m-shahbaz-kharal/LiGuard-2.x/?tab=readme-ov-file#usage">Usage</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/">Documentation</a> | <a href="https://github.com/m-shahbaz-kharal/LiGuard-2.x/?tab=readme-ov-file#contributing">Contributing</a> | <a href="https://github.com/m-shahbaz-kharal/LiGuard-2.x/blob/dev_2.x/LICENSE.txt">License</a>
+    <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/README.html#installation">Installation</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/README.html#usage">Usage</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/">Documentation</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/README.html#contributing">Contributing</a> | <a href="https://github.com/m-shahbaz-kharal/LiGuard-2.x/blob/dev_2.x/LICENSE.txt">License</a>
 </p>
 
 ![PyPI Release Version](https://img.shields.io/pypi/v/liguard?label=release)
@@ -20,7 +20,7 @@
 
 `LiGuard` features, out of the box, data reading for many common dataset formats including support for reading calibration and label data. Moreover, it provides (an increasing list of) commonly used algorithm components ranging from basic data preprocessors to advanced object detection and tracking algorithms. Additionally, it establishes a straightforward standard for adding custom functions/algorithms, allowing users to integrate unique components into their pipelines. Pipelines created in `LiGuard` are saved in structured directories, making it easy to share and reproduce results.
 
-![LiGuard Main Interface](https://github.com/m-shahbaz-kharal/LiGuard-2.x/blob/dev_2.x/docs/figs/liguard-main.png)
+![LiGuard Main Interface](https://raw.githubusercontent.com/m-shahbaz-kharal/LiGuard-2.x/refs/heads/dev_2.x/docs/figs/liguard-main.png)
 *LiGuard's GUI Layout (from left to right): Configuration Window, Visualization Windows (Point Cloud Feed and Image Feed), and Log Window.*
 
 # Installation
