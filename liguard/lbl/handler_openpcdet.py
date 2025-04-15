@@ -58,7 +58,8 @@ def Handler(label_path: str, calib_data: dict):
         xyz_center = xyz_dxdydz_rz[0:3]
         xyz_extent = xyz_dxdydz_rz[3:6]
         xyz_euler_angles = np.array([0, 0, xyz_dxdydz_rz[6]], dtype=np.float32)
-        rgb_color = np.array(colors[obj_class], dtype=np.float32)
+        if obj_class in colors: rgb_color = np.array(colors[obj_class], dtype=np.float32)
+        else: rgb_color = np.array([1,1,1], dtype=np.float32)
         
         # Create a dictionary to store the 3D bounding-box information
         label['bbox_3d'] = {
