@@ -32,9 +32,15 @@ class PointCloudVisualizer:
         # create visualizer
         self.viz = o3d.visualization.O3DVisualizer(title="PointCloud Feed", width=1000, height=1080)
         self.viz.set_on_close(lambda: False)
+
+        # scaling factor between OS pixels and device pixels
+        self.scaling = self.viz.scaling
+
         self.viz.show_menu(False)
         self.viz.show_settings = True
         self.viz.show_skybox(False)
+        self.viz.ground_plane = rendering.Scene.GroundPlane.XY
+        self.viz.enable_raw_mode(True)
 
         #
         self.materials = dict()
@@ -93,7 +99,7 @@ class PointCloudVisualizer:
     def _init_settings(self):
         # set render options
         if self.cfg:
-            self.viz.point_size = int(self.cfg['visualization']['lidar']['point_size'])
+            self.viz.point_size = int(self.scaling * self.cfg['visualization']['lidar']['point_size'])
             self.viz.set_background(np.append(self.cfg['visualization']['lidar']['space_color'], 1), None)
         else:
             self.viz.add_3d_label([0, 0, 0], "No Data")
@@ -134,8 +140,13 @@ class PointCloudVisualizer:
         else:
             mat = rendering.MaterialRecord()
             mat.shader = "defaultUnlit"
+            mat.point_size = self.viz.point_size # default point size
             self.materials[name] = mat
             self.geometries[name] = geometry
+        
+        # handle dynamic update in point size from O3DVisualizer's settings
+        if name =='point_cloud': self.materials[name].point_size = self.viz.point_size
+        
         self.viz.add_geometry(name, self.geometries[name], self.materials[name])
 
     def gui_update(self, data_dict):

@@ -228,7 +228,7 @@ visualization: # visualization parameters
     enabled: True # set True to visualize
     lidar:
         space_color: [0, 0, 0] # color of non-point-cloud space
-        point_size: 2.0 # rendered point size
+        point_size: 1.0 # rendered point size
         draw_cluster: True # visualize clusters
         draw_bbox_3d: True # visualize bounding boxes
         draw_trajectory: True # visualize trajectory
