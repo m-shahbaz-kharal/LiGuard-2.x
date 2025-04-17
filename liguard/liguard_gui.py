@@ -1,4 +1,5 @@
 import os
+import platform
 import traceback
 
 import open3d.visualization.gui as gui
@@ -20,6 +21,19 @@ from liguard.calib.file_io import FileIO as CLB_File_IO
 from liguard.lbl.file_io import FileIO as LBL_File_IO
 
 import pynput, threading, time
+
+# Quartz imports (only valid on macOS)
+try:
+    from Quartz import (
+        CGEventTapCreate, CGEventTapEnable, kCGHeadInsertEventTap,
+        CGEventMaskBit, kCGEventKeyDown,
+        kCGSessionEventTap, kCGEventTapOptionDefault,
+        kCGKeyboardEventKeycode
+    )
+    from Quartz.CoreGraphics import CGEventGetIntegerValueField
+    import CoreFoundation
+except ImportError:
+    CGEventTapCreate = None  # Quartz not available
 
 profiler = Profiler('main')
 
@@ -57,6 +71,7 @@ class LiGuard:
         
         # initialize the main lock
         self.pynput_listener = None
+        self.quartz_thread = None
         self.is_running = False # if the app is running
         self.is_focused = False # if the app is focused
         self.is_playing = False # if the frames are playing
@@ -90,6 +105,77 @@ class LiGuard:
             elif key == pynput.keyboard.KeyCode(char='['):
                 self.is_playing = False
                 self.config.show_input_dialog('Enter the frame index:', f'Jump to Frame (0-{self.data_dict["maximum_frame_index"]})', 'jump_to_frame')
+    
+    def start_keyboard_listener(self):
+        self.stop_keyboard_listener()
+
+        if platform.system() == 'Darwin' and CGEventTapCreate:
+            # macOS Quartz fallback
+            self._start_quartz_listener()
+        else:
+            # cross‑platform pynput
+            self.pynput_listener = pynput.keyboard.Listener(
+                on_press=self.handle_key_event
+            )
+            self.pynput_listener.start()
+
+    def stop_keyboard_listener(self):
+        # stop pynput if running
+        if self.pynput_listener:
+            self.pynput_listener.stop()
+            self.pynput_listener = None
+
+        # stop Quartz thread if running
+        if self.quartz_thread and self.quartz_thread.is_alive():
+            # Note: CFRunLoopRun() doesn’t exit unless you explicitly stop it.
+            # You can store the tap and call CGEventTapEnable(tap, False), or just leave it.
+            # For simplicity we won’t stop it here.
+            pass
+
+    def _start_quartz_listener(self):
+        def quartz_loop():
+            # mask only key‐down events
+            mask = CGEventMaskBit(kCGEventKeyDown)
+
+            def callback(proxy, type_, event, refcon):
+                keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode)
+                # Map raw keycodes to your pynput Key/KeyCode:
+                mapping = {
+                    124: pynput.keyboard.Key.right,
+                    123: pynput.keyboard.Key.left,
+                    49:  pynput.keyboard.Key.space,
+                    117:  pynput.keyboard.Key.delete,
+                    33:  pynput.keyboard.KeyCode(char='['),  # may vary by layout
+                }
+                key = mapping.get(keycode)
+                if key:
+                    self.handle_key_event(key)
+                return event
+
+            tap = CGEventTapCreate(
+                kCGSessionEventTap,
+                kCGHeadInsertEventTap,
+                kCGEventTapOptionDefault,
+                mask,
+                callback,
+                None
+            )
+            source = CoreFoundation.CFMachPortCreateRunLoopSource(
+                None, tap, 0
+            )
+            CoreFoundation.CFRunLoopAddSource(
+                CoreFoundation.CFRunLoopGetCurrent(),
+                source,
+                CoreFoundation.kCFRunLoopCommonModes
+            )
+            CGEventTapEnable(tap, True)
+            CoreFoundation.CFRunLoopRun()
+
+        self.quartz_thread = threading.Thread(
+            target=quartz_loop,
+            daemon=True
+        )
+        self.quartz_thread.start()
                     
     def reset(self, cfg):
         """
@@ -139,7 +225,7 @@ class LiGuard:
         os.makedirs(self.outputs_dir, exist_ok=True)
 
         # unlock the keyboard keys right, left, and space
-        if self.pynput_listener: self.pynput_listener.stop()
+        if self.pynput_listener: self.stop_keyboard_listener()
         
         # pause at the start
         self.is_running = False
@@ -343,8 +429,7 @@ class LiGuard:
         
         # start key event handling
         if self.pcd_io or self.img_io:
-            self.pynput_listener = pynput.keyboard.Listener(on_press=self.handle_key_event)
-            self.pynput_listener.start()
+            self.start_keyboard_listener()
         
         # the main loop
         while self.is_running:
@@ -489,7 +574,7 @@ class LiGuard:
         # stop the app
         if self.is_running: self.is_running = False
         # unhook the keyboard keys
-        if self.pynput_listener: self.pynput_listener.stop()
+        if self.pynput_listener: self.stop_keyboard_listener()
         
         # close the data sources
         if self.pcd_io: self.pcd_io.close()
