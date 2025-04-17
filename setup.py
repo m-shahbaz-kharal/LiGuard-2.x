@@ -3,7 +3,7 @@ import glob
 
 setup(
     name="LiGuard",
-    version="2.1.4.post2",
+    version="2.1.4.post4",
     author="Muhammad Shahbaz",
     author_email="m.shahbaz.kharal@outlook.com",
     description=(
@@ -14,10 +14,9 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/m-shahbaz-kharal/LiGuard-2.x",
     classifiers=[
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Development Status :: 3 - Alpha",
         "Environment :: Win32 (MS Windows)",
         "Environment :: X11 Applications",
@@ -29,13 +28,14 @@ setup(
         "Natural Language :: English",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
         "Topic :: Scientific/Engineering :: Image Processing",
         "Topic :: Scientific/Engineering :: Visualization",
         "Topic :: Multimedia :: Graphics :: Viewers",
         "Topic :: Utilities",
     ],
     keywords="point-cloud, image, processing, pipeline, dynamic, GUI, research, development, framework",
-    python_requires=">=3.8",
+    python_requires=">=3.10",
     install_requires=[
         "matplotlib",
         "numpy<2.0.0",
