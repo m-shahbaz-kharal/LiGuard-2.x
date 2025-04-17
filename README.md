@@ -25,7 +25,9 @@
 
 # Installation
 Requirements:
-- Windows 10 or later
+- OS
+  - Windows 10 or later
+  - macOS 10.14 Mojave or later
 - Python 3.8, 3.9, 3.10, or 3.11
 
 Install `LiGuard` with pip (from PyPI):
@@ -37,6 +39,9 @@ Run `LiGuard` by executing the following command in the terminal:
 ```bash
 liguard-gui
 ```
+
+**Note to macOS Users:** When launching `liguard-gui` for the first time on macOS, `liguard-gui` may request accessibility permissions in order to control this computer. This is a requirement for the keybindings to function properly. To grant these permissions, go to **System Preferences > Privacy & Security > Accessibility** and toggle the button next to **"Terminal"**.
+
 # Usage
 Test an example pipeline:
 
