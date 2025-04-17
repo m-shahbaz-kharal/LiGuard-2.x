@@ -72,23 +72,24 @@ class LiGuard:
         
     # handle the key events of right, left, and space keys
     def handle_key_event(self, key):
-        if key == pynput.keyboard.Key.right:
-            self.is_playing = False
-            if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
-                self.data_dict['current_frame_index'] += 1
-        elif key == pynput.keyboard.Key.left:
-            self.is_playing = False
-            if self.data_dict['current_frame_index'] > 0:
-                self.data_dict['current_frame_index'] -= 1
-        elif key == pynput.keyboard.Key.space:
-            self.is_playing = not self.is_playing
-        elif key == pynput.keyboard.Key.delete:
-            self.is_playing = False
-            self.data_dict['current_frame_index'] = 0
-            self.pcd_viz.load_view_status()
-        elif key == pynput.keyboard.KeyCode(char='['):
-            self.is_playing = False
-            self.config.show_input_dialog('Enter the frame index:', f'Jump to Frame (0-{self.data_dict["maximum_frame_index"]})', 'jump_to_frame')
+        if self.pcd_viz.viz.is_visible or self.img_viz.viz.is_visible:
+            if key == pynput.keyboard.Key.right:
+                self.is_playing = False
+                if self.data_dict['current_frame_index'] < self.data_dict['maximum_frame_index']:
+                    self.data_dict['current_frame_index'] += 1
+            elif key == pynput.keyboard.Key.left:
+                self.is_playing = False
+                if self.data_dict['current_frame_index'] > 0:
+                    self.data_dict['current_frame_index'] -= 1
+            elif key == pynput.keyboard.Key.space:
+                self.is_playing = not self.is_playing
+            elif key == pynput.keyboard.Key.delete:
+                self.is_playing = False
+                self.data_dict['current_frame_index'] = 0
+                self.pcd_viz.load_view_status()
+            elif key == pynput.keyboard.KeyCode(char='['):
+                self.is_playing = False
+                self.config.show_input_dialog('Enter the frame index:', f'Jump to Frame (0-{self.data_dict["maximum_frame_index"]})', 'jump_to_frame')
                     
     def reset(self, cfg):
         """
