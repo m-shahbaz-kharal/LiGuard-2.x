@@ -4,6 +4,8 @@ from liguard.gui.logger_gui import Logger
 from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 
 import os
+import platform
+isMacOS = (platform.system() == "Darwin")
 import sys
 import yaml
 import ast
@@ -43,7 +45,8 @@ class BaseConfiguration:
         self.callbacks = BaseConfiguration.get_callbacks_dict()
 
         # Create a window for the configuration GUI
-        self.mwin = app.create_window("Configuration", 480, 1080, x=0, y=30)
+        if isMacOS: self.mwin = app.create_window("Configuration", 480, 1080) # macOS has a bug with window position
+        else: self.mwin = app.create_window("Configuration", 480, 1080, x=0, y=30)
         # Define the em unit
         self.em = self.mwin.theme.font_size
         # Set the close callback

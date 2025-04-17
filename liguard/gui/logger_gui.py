@@ -1,6 +1,8 @@
 import open3d.visualization.gui as gui
 
 import os
+import platform
+isMacOS = (platform.system() == "Darwin")
 from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import time
 import yaml
@@ -29,7 +31,8 @@ class Logger:
 
             if self.app:
                 # create the logger window
-                self.mwin = app.create_window("Logs", 440, 1080, x=1480, y=30)
+                if isMacOS: self.mwin = app.create_window("Logs", 440, 1080) # macOS has a bug with window position
+                else: self.mwin = app.create_window("Logs", 440, 1080, x=1480, y=30)
                 self.mwin.set_on_close(lambda: False)
                 
                 # set layout
