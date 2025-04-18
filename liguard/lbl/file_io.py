@@ -11,35 +11,20 @@ supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_han
 
 class FileIO:
     """
-    Class for handling file input/output operations.
-
-    Args:
-        cfg (dict): Configuration dictionary.
-        calib_reader (callable): Callable object for reading calibration data.
-
-    Attributes:
-        cfg (dict): Configuration dictionary.
-        lbl_dir (str): Directory path for label files.
-        lbl_type (str): Type of label files.
-        lbl_start_idx (int): Index of the first label file to process.
-        lbl_count (int): Number of label files to process.
-        lbl_ext (str): Extension of label files.
-        reader (class): Handler class for reading label files.
-        clb_reader (callable): Callable object for reading calibration data.
-        files_basenames (list): List of file basenames.
-        data_lock (threading.Lock): Lock for thread safety.
-        data (list): List of tuples containing label file paths and annotations.
-        stop (threading.Event): Event for stopping the async read thread.
-
-    Methods:
-        get_abs_path(idx: int) -> str: Returns the absolute path of the label file at the given index.
-        __async_read_fn__(): Asynchronously reads label files and annotations.
-        __len__() -> int: Returns the number of label files.
-        __getitem__(idx) -> tuple: Returns the label file path and annotation at the given index.
-        close(): Stops the async read thread.
-
+    Class for handling file input/output operations related to label files.
     """
     def __init__(self, cfg: dict, calib_reader: callable):
+        """
+        Initializes a FileIO object.
+
+        Args:
+            cfg (dict): Configuration dictionary containing parameters for file IO.
+            calib_reader (callable): Function to read calibration data.
+
+        Raises:
+            NotImplementedError: If the calibration type is not supported.
+        """
+        # get params from config
         self.cfg = cfg
         main_dir = cfg['data']['main_dir']
         if not os.path.isabs(main_dir): main_dir = os.path.join(self.cfg['data']['pipeline_dir'], main_dir)
@@ -51,10 +36,10 @@ class FileIO:
         self.lbl_end_idx = self.lbl_start_idx + cfg['data']['count']
         
         # Add custom supported calibration types to the list
-        custom_data_handler_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler')
-        custom_label_data_handlers_dir = os.path.join(custom_data_handler_dir, 'label')
+        custom_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler')
+        custom_label_data_handlers_dir = os.path.join(custom_data_handlers_dir, 'label')
         if os.path.exists(custom_label_data_handlers_dir):
-            if custom_data_handler_dir not in sys.path: sys.path.append(custom_data_handler_dir)
+            if custom_data_handlers_dir not in sys.path: sys.path.append(custom_data_handlers_dir)
             custom_supported_label_types = [lbl_handler.split('_')[1].replace('.py','') for lbl_handler in os.listdir(custom_label_data_handlers_dir) if 'handler' in lbl_handler]
             supported_label_types.extend(custom_supported_label_types)
         else:
@@ -75,6 +60,8 @@ class FileIO:
         # Sort the file basenames based on the numbers in the filenames
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
         self.files_basenames = file_basenames[self.lbl_start_idx:self.lbl_end_idx][self.global_zero:]
+
+        # read the calibration files in async mode
         
         self.data_lock = threading.Lock()
         self.data = []
@@ -113,7 +100,6 @@ class FileIO:
 
         Returns:
             int: Number of label files.
-
         """
         return len(self.files_basenames)
     
@@ -126,7 +112,6 @@ class FileIO:
 
         Returns:
             tuple: Label file path and annotation.
-
         """
         try:
             with self.data_lock: return self.data[idx]

@@ -1,10 +1,12 @@
 import os
+import sys
 from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
 import glob
 import time
 import threading
 
 calib_dir = os.path.dirname(os.path.realpath(__file__))
+
 supported_calib_types = [clb_handler.split('_')[1].replace('.py','') for clb_handler in os.listdir(calib_dir) if 'handler' in clb_handler]
 
 class FileIO:
@@ -20,7 +22,7 @@ class FileIO:
             cfg (dict): Configuration dictionary containing parameters for file IO.
 
         Raises:
-            NotImplementedError: If the calibration type is not supported.
+            NotImplementedError: If the label type is not supported.
         """
         # get params from config
         self.cfg = cfg
@@ -34,8 +36,10 @@ class FileIO:
         self.clb_end_idx = self.clb_start_idx + cfg['data']['count']
         
         # Add custom supported calibration types to the list
-        custom_calib_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler', 'calib')
+        custom_data_handlers_dir = os.path.join(cfg['data']['pipeline_dir'], 'data_handler')
+        custom_calib_data_handlers_dir = os.path.join(custom_data_handlers_dir, 'calib')
         if os.path.exists(custom_calib_data_handlers_dir):
+            if custom_data_handlers_dir not in sys.path: sys.path.append(custom_data_handlers_dir)
             custom_supported_calib_types = [clb_handler.split('_')[1].replace('.py','') for clb_handler in os.listdir(custom_calib_data_handlers_dir) if 'handler' in clb_handler]
             supported_calib_types.extend(custom_supported_calib_types)
         else:
@@ -44,7 +48,7 @@ class FileIO:
         if self.clb_type not in supported_calib_types: raise NotImplementedError("Calib type not supported. Supported file types: " + ', '.join(supported_calib_types) + ".")
         # Import the calibration handler
         if self.clb_type in custom_supported_calib_types:
-            h = __import__(f'handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
+            h = __import__(f'calib.handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
         else:
             h = __import__('liguard.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
         self.clb_ext, self.reader = h.calib_file_extension, h.Handler
@@ -53,18 +57,20 @@ class FileIO:
         files = glob.glob(os.path.join(self.clb_dir, '*' + self.clb_ext))
         if len(files) == 0: raise FileNotFoundError(f'No calibration files found in {self.clb_dir}.')
         file_basenames = [os.path.splitext(os.path.basename(file))[0] for file in files]
+        # Sort the file basenames based on the numbers in the filenames
         file_basenames.sort(key=lambda file_name: int(''.join(filter(str.isdigit, file_name))))
         self.files_basenames = file_basenames[self.clb_start_idx:self.clb_end_idx][self.global_zero:]
-        
+
         # read the calibration files in async mode
+
         self.data_lock = threading.Lock()
         self.data = []
         self.stop = threading.Event()
         threading.Thread(target=self.__async_read_fn__).start()
         
-    def get_abs_path(self, idx: int):
+    def get_abs_path(self, idx: int) -> str:
         """
-        Get the absolute path of the calibration file at the specified index.
+        Returns the absolute path of the calibration file at the given index.
 
         Args:
             idx (int): Index of the calibration file.
@@ -77,7 +83,7 @@ class FileIO:
     
     def __async_read_fn__(self):
         """
-        Asynchronously read all the calibration files.
+        Asynchronously reads calibration files.
         """
         for idx in range(len(self.files_basenames)):
             if self.stop.is_set(): break
@@ -88,7 +94,7 @@ class FileIO:
         
     def __len__(self):
         """
-        Get the number of calibration files.
+        Returns the number of calibration files.
 
         Returns:
             int: Number of calibration files.
@@ -97,7 +103,7 @@ class FileIO:
     
     def __getitem__(self, idx):
         """
-        Get the calibration file at the specified index.
+        Returns the calibration file path at the given index.
 
         Args:
             idx: Index of the calibration file.
