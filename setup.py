@@ -20,6 +20,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "Environment :: Win32 (MS Windows)",
         "Environment :: X11 Applications",
+        "Environment :: MacOS X",
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Intended Audience :: Other Audience",

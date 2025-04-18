@@ -15,6 +15,7 @@ Requirements:
 - OS
   - Windows 10 or later
   - macOS 10.14 Mojave or later
+  - Ubuntu 18.04 or later
 - Python 3.10 or later
 
 Install `LiGuard` with pip (from PyPI):
