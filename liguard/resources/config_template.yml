@@ -231,6 +231,7 @@ visualization: # visualization parameters
         point_size: 1.0 # rendered point size
         draw_cluster: True # visualize clusters
         draw_bbox_3d: True # visualize bounding boxes
+        draw_bbox_3d_class: True # visualize 3D bounding box labels
         draw_trajectory: True # visualize trajectory
         save_images: False # save images
     camera:

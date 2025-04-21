@@ -186,6 +186,7 @@ class PointCloudVisualizer:
         self.__add_geometry__('point_cloud', self.point_cloud)
         
         # update other geometries
+        self.viz.clear_3d_labels()
         self.__clear_bboxes__()
         self.__clear_trajectories__()
         
@@ -206,6 +207,7 @@ class PointCloudVisualizer:
             label_dict: A dictionary containing the label information.
         """
         enabled = self.cfg['visualization']['lidar']['draw_bbox_3d']
+        enabled_draw_class = self.cfg['visualization']['lidar']['draw_bbox_3d_class']
         have_bbox = 'bbox_3d' in label_dict
         if not enabled or not have_bbox: return
         
@@ -228,6 +230,8 @@ class PointCloudVisualizer:
             box_name = f'bbox_{str(self.bbox_counter).zfill(4)}'
             self.bboxes.append(box_name)
             self.__add_geometry__(box_name, lidar_xyz_bbox)
+            if enabled_draw_class and 'class' in label_dict:
+                self.viz.add_3d_label(xyz_center, label_dict['class'].lower().title())
         except Exception as e:
             self.log(f"Failed to add bounding box: {e}", Logger.ERROR)
         
