@@ -160,6 +160,9 @@ class BaseConfiguration:
         Returns:
             None
         """
+        # remove temporary configs from the main config
+        if 'temporary' in cfg: cfg.pop('temporary')
+        
         # remove custom algo configs from the main config
         if hasattr(self, 'custom_algos_cfg'):
             for algo_type in self.custom_algos_cfg:
