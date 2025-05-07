@@ -7,10 +7,8 @@ colors = {
     # 'CLASS_B': [0, 0, 1],
     # ...
 }
-label_file_extension = '.txt' # this tells the extension of the label files in directory given by config['data']['label_subdir']
 
-import os
-import numpy as np
+label_file_extension = '.txt' # this tells the extension of the label files in directory given by config['data']['label_subdir']
 
 def Handler(label_path: str, calib_data: dict): # don't change the function signature
     """

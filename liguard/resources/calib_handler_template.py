@@ -3,7 +3,6 @@ import numpy as np
 
 calib_file_extension = '.txt' # this tells the extension of the calibration files in directory given by config['data']['calib_subdir']
 
-
 def Handler(calib_path: str): # don't change the function signature
     """
     Process a calibration file and generate a dictionary containing the calibration data in KITTI format.
