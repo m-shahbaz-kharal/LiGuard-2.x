@@ -1,3 +1,63 @@
 [build-system]
-requires = ['setuptools>=42']
-build-backend = 'setuptools.build_meta'
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "LiGuard"
+version = "2.1.5.post1"
+description = "A research-purposed, GUI-powered, Python-based framework that allows easy development of dynamic point-cloud (and accompanying image) data processing pipelines."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+authors = [
+  { name = "Muhammad Shahbaz", email = "m.shahbaz.kharal@outlook.com" },
+]
+dependencies = [
+  "matplotlib",
+  "numpy<2.0.0",
+  "open3d==0.19.0",
+  "opencv-python",
+  "pynput",
+  "pillow",
+  "pyyaml",
+  "scipy",
+  "tqdm",
+]
+keywords = ["point-cloud", "image", "processing", "pipeline", "dynamic", "GUI", "research", "development", "framework"]
+classifiers = [
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Development Status :: 3 - Alpha",
+  "Environment :: Win32 (MS Windows)",
+  "Environment :: X11 Applications",
+  "Environment :: MacOS X",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Other Audience",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS :: MacOS X",
+  "Topic :: Scientific/Engineering :: Image Processing",
+  "Topic :: Scientific/Engineering :: Visualization",
+  "Topic :: Multimedia :: Graphics :: Viewers",
+  "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/m-shahbaz-kharal/LiGuard-2.x"
+
+[project.entry-points.console_scripts]
+liguard-gui = "liguard.liguard_gui:main"
+liguard-cmd = "liguard.liguard_cmd:main"
+liguard-profiler = "liguard.liguard_profiler:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
