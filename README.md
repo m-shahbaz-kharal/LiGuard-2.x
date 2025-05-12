@@ -41,6 +41,26 @@ Run `LiGuard` by executing the following command in the terminal:
 liguard-gui
 ```
 
+**Alternative Quick Launch:**  
+If you have `uv` installed, you can start the GUI directly without installing the package:
+```bash
+uvx --from LiGuard liguard-gui
+```
+
+**Developmental Build**  
+
+Install the latest development version directly from GitHub:  
+```bash
+pip install git+https://github.com/m-shahbaz-kharal/LiGuard-2.x.git@dev_2.x
+```  
+
+Alternatively, clone and install in editable mode:
+```bash
+git clone https://github.com/m-shahbaz-kharal/LiGuard-2.x.git
+cd LiGuard-2.x
+pip install -e .
+```
+
 **Note to macOS Users:** When launching `liguard-gui` for the first time on macOS, `liguard-gui` may request accessibility permissions in order to control this computer. This is a requirement for the keybindings to function properly. To grant these permissions, go to **System Preferences > Privacy & Security > Accessibility** and toggle the button next to **"Terminal"**.
 
 # Usage
