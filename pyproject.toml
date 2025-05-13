@@ -23,6 +23,7 @@ dependencies = [
   "pyyaml",
   "scipy",
   "tqdm",
+  "dask"
 ]
 keywords = ["point-cloud", "image", "processing", "pipeline", "dynamic", "GUI", "research", "development", "framework"]
 classifiers = [
