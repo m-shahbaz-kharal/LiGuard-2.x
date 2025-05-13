@@ -333,13 +333,13 @@ class LiGuard:
             enabled = cfg['proc']['pre'][proc]['enabled']
             if enabled:
                 try:
-                    priority = cfg['proc']['pre'][proc]['priority']
+                    order = cfg['proc']['pre'][proc]['order']
                     if proc in built_in_pre_modules: process = built_in_pre_modules[proc]
                     else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-                    self.pre_processes[priority] = process
+                    self.pre_processes[order] = process
                 except Exception:
                     self.logger.log(f'pre_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
-        self.pre_processes = [self.pre_processes[priority] for priority in sorted(self.pre_processes.keys())]
+        self.pre_processes = [self.pre_processes[order] for order in sorted(self.pre_processes.keys())]
         self.logger.log(f'enabled pre_processes: {[f.__name__ for f in self.pre_processes]}', Logger.DEBUG)
         
         # lidar processes
@@ -349,13 +349,13 @@ class LiGuard:
             enabled = cfg['proc']['lidar'][proc]['enabled']
             if enabled:
                 try:
-                    priority = cfg['proc']['lidar'][proc]['priority']
+                    order = cfg['proc']['lidar'][proc]['order']
                     if proc in built_in_lidar_modules: process = built_in_lidar_modules[proc]
                     else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-                    self.lidar_processes[priority] = process
+                    self.lidar_processes[order] = process
                 except Exception:
                     self.logger.log(f'lidar_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
-        self.lidar_processes = [self.lidar_processes[priority] for priority in sorted(self.lidar_processes.keys())]
+        self.lidar_processes = [self.lidar_processes[order] for order in sorted(self.lidar_processes.keys())]
         self.logger.log(f'enabled lidar_processes: {[f.__name__ for f in self.lidar_processes]}', Logger.DEBUG)
         
         # camera processes
@@ -365,13 +365,13 @@ class LiGuard:
             enabled = cfg['proc']['camera'][proc]['enabled']
             if enabled:
                 try:
-                    priority = cfg['proc']['camera'][proc]['priority']
+                    order = cfg['proc']['camera'][proc]['order']
                     if proc in built_in_camera_modules: process = built_in_camera_modules[proc]
                     else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-                    self.camera_processes[priority] = process
+                    self.camera_processes[order] = process
                 except Exception:
                     self.logger.log(f'camera_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
-        self.camera_processes = [self.camera_processes[priority] for priority in sorted(self.camera_processes.keys())]
+        self.camera_processes = [self.camera_processes[order] for order in sorted(self.camera_processes.keys())]
         self.logger.log(f'enabled camera_processes: {[f.__name__ for f in self.camera_processes]}', Logger.DEBUG)
 
         # calib processes
@@ -381,13 +381,13 @@ class LiGuard:
             enabled = cfg['proc']['calib'][proc]['enabled']
             if enabled:
                 try:
-                    priority = cfg['proc']['calib'][proc]['priority']
+                    order = cfg['proc']['calib'][proc]['order']
                     if proc in built_in_calib_modules: process = built_in_calib_modules[proc]
                     else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-                    self.calib_processes[priority] = process
+                    self.calib_processes[order] = process
                 except Exception:
                     self.logger.log(f'calib_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
-        self.calib_processes = [self.calib_processes[priority] for priority in sorted(self.calib_processes.keys())]
+        self.calib_processes = [self.calib_processes[order] for order in sorted(self.calib_processes.keys())]
         self.logger.log(f'enabled calib_processes: {[f.__name__ for f in self.calib_processes]}', Logger.DEBUG)
 
         # label processes
@@ -397,13 +397,13 @@ class LiGuard:
             enabled = cfg['proc']['label'][proc]['enabled']
             if enabled:
                 try:
-                    priority = cfg['proc']['label'][proc]['priority']
+                    order = cfg['proc']['label'][proc]['order']
                     if proc in built_in_label_modules: process = built_in_label_modules[proc]
                     else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-                    self.label_processes[priority] = process
+                    self.label_processes[order] = process
                 except Exception:
                     self.logger.log(f'label_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
-        self.label_processes = [self.label_processes[priority] for priority in sorted(self.label_processes.keys())]
+        self.label_processes = [self.label_processes[order] for order in sorted(self.label_processes.keys())]
         self.logger.log(f'enabled label_processes: {[f.__name__ for f in self.label_processes]}', Logger.DEBUG)
         
         # post processes
@@ -413,14 +413,14 @@ class LiGuard:
             enabled = cfg['proc']['post'][proc]['enabled']
             if enabled:
                 try:
-                    priority = cfg['proc']['post'][proc]['priority']
+                    order = cfg['proc']['post'][proc]['order']
                     if proc in built_in_post_modules: process = built_in_post_modules[proc]
                     else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-                    self.post_processes[priority] = process
+                    self.post_processes[order] = process
                 except Exception:
                     self.logger.log(f'post_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
             
-        self.post_processes = [self.post_processes[priority] for priority in sorted(self.post_processes.keys())]
+        self.post_processes = [self.post_processes[order] for order in sorted(self.post_processes.keys())]
         self.logger.log(f'enabled post_processes: {[f.__name__ for f in self.post_processes]}', Logger.DEBUG)
         
     def start(self, cfg):

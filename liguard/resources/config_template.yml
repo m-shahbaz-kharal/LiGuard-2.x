@@ -49,17 +49,17 @@ proc: # liguard processing configurations
     pre:
         remove_nan_inf_allzero_from_pcd: # remove nan points from point cloud
             enabled: True # set True to remove nan points
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
         manual_calibration:
             enabled: False # set True to manually calibrate camera and lidar
-            priority: 2 # priority of process - lower is higher
+            order: 2 # order of process - lower executes first
             T_lidar_to_cam_4x4: "1.0 0.0 0.0 0.0 0.0 -1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0" #4x4 transformation matrix from lidar to camera
             rotation_matrix_4x4: "0.0 1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0" # 4x4 rotation matrix
             cam_intrinsic_3x4: "1000.0 0.0 960.0 0.0 0.0 1000.0 540.0 0.0 0.0 0.0 1.0 0.0" # 3x4 camera intrinsic matrix
     lidar:
         BGFilterDHistDPP: # Discrete Histogram of Distances-Per-Point
             enabled: False # set True to filter background using Discrete Histogram of Distances-Per-Point
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
             number_of_frame_gather_iters: 6 # number of iterations to gather frames
             number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
             number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
@@ -71,16 +71,16 @@ proc: # liguard processing configurations
             load_filter: False # set True to load filter
         rotate: # rotate point cloud
             enabled: False # set True to rotate point cloud
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
             angles: [0.0, 0.0, 0.0] # rotation angles in degrees
         crop:
-            priority: 2 # priority of process - lower is higher
+            order: 2 # order of process - lower executes first
             enabled: False # set True to crop point cloud
             min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
             max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
         BGFilterSTDF: # Spatio-Temporal Density Filter
             enabled: False # set True to filter background using Simple Density Filter Filter
-            priority: 3 # priority of process - lower is higher
+            order: 3 # order of process - lower executes first
             number_of_frame_gather_iters: 6 # number of iterations to gather frames
             number_of_frames_in_each_gather_iter: 10 # number of frames gathered in each iteration
             number_of_skip_frames_after_each_iter: 100 # number of frames to skip after each iteration
@@ -92,17 +92,17 @@ proc: # liguard processing configurations
             load_filter: False # set True to load filter
         Clusterer_TEPP_DBSCAN: # Theoretically Efficient and Practical Parallel DBSCAN point clustering algorithm
             enabled: False # set True to cluster point cloud using TEPP DBSCAN
-            priority: 4 # priority of process - lower is higher
+            order: 4 # order of process - lower executes first
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
         O3D_DBSCAN: # DBSCAN point clustering algorithm in Open3D
             enabled: False # set True to cluster point cloud using Open3D DBSCAN
-            priority: 4 # priority of process - lower is higher
+            order: 4 # order of process - lower executes first
             eps: 0.5 # maximum radius to search
             min_samples: 5 # minimum number of points to consider a cluster valid
         Cluster2Object:
             enabled: False
-            priority: 5
+            order: 5
             ground_level: -3.2
             max_foot_level: 1.4
             min_height: 0.6
@@ -135,24 +135,24 @@ proc: # liguard processing configurations
                 Bus: [0, 1, 1]
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
-            priority: 6 # priority of process - lower is higher
+            order: 6 # order of process - lower executes first
         PointPillarDetection:
             enabled: False
-            priority: 7
+            order: 7
             github_repo_dir: 'algo/nn/PointPillars' # clone https://github.com/zhulf0804/PointPillars to this path and install the requirements
             ckpt_file: 'algo/nn/PointPillars/pretrained/epoch_160.pth' # path to checkpoint file
             score_threshold: 0.5
         gen_bbox_2d:
             enabled: False
-            priority: 8
+            order: 8
             visualize: True
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
         UltralyticsYOLOv5:
             enabled: False
-            priority: 2
+            order: 2
             model: 'yolov5s' # can be yolov5s, yolov5m, yolov5l, yolov5x https://pytorch.org/hub/ultralytics_yolov5
             class_colors: # in RGB format 
                 Person: [1, 0, 0]
@@ -165,21 +165,21 @@ proc: # liguard processing configurations
     calib:
         dummy: # dummy calibration process
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: False # set True to crop labels
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
             use_lidar_range: False # set True to crop using lidar crop
             use_image_size: False # set True to crop using image size
         remove_less_point_labels: # remove labels with no points
             enabled: False # set True to remove labels
-            priority: 2 # priority of process - lower is higher
+            order: 2 # order of process - lower executes first
             min_points: 6 # minimum number of points to consider a label valid
     post:
         Fuse2DPredictedBBoxes: # use KDTree matching to fuse 2D bounding boxes information
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
             ModalityA: # first modality
                 algo_src: Cluster2Object_2d # bbox_2d 'added_by' field value
                 img_extras: # extra visualization options
@@ -193,33 +193,33 @@ proc: # liguard processing configurations
             max_match_distance: 150.0 # maximum euclidean distance between pixel indices (x,y) of two bbox_2d
         GenerateKDTreePastTrajectory: # generate past trajectory using KDTree matching
             enabled: False # set True to generate past trajectory
-            priority: 2 # priority of process - lower is higher
+            order: 2 # order of process - lower executes first
             max_match_distance: 4.0 # maximum euclidean distance for matching last and current bbox_3d
             history_size: 10 # number of past frames to consider
         GenerateCubicSplineFutureTrajectory: # generate future trajectory using cubic spline interpolation
             enabled: False # set True to generate future trajectory
-            priority: 3 # priority of process - lower is higher
+            order: 3 # order of process - lower executes first
             t_minimum: 10 # minimum need past trajectory length (ms)
             t_plus_steps: 10 # number of steps to predict in future (ms)
         GeneratePolyFitFutureTrajectory: # generate future trajectory using polynomial fitting
             enabled: False # set True to generate future trajectory
-            priority: 3 # priority of process - lower is higher
+            order: 3 # order of process - lower executes first
             t_minimum: 10 # minimum need past trajectory length (ms)
             t_plus_steps: 20 # number of steps to predict in future (ms)
             poly_degree: 3 # degree of polynomial fitting
         GenerateVelocityFromTrajectory: # generate velocity from trajectory
             enabled: False # set True to generate velocity from trajectory
-            priority: 4 # priority of process - lower is higher
+            order: 4 # order of process - lower executes first
             t_delta: 0.1 # time delta between two points in trajectory (ms) = 1/fps
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
         create_pcdet_dataset: # create dataset in pcdet format
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
         visualize_in_vr:
             enabled: False
-            priority: 2
+            order: 2
             server_ip: '127.0.0.1'
             server_port: 5254
 

@@ -12,7 +12,7 @@ Once installation is complete, add the following entry under `proc/camera/` in `
 ```yaml
 UltralyticsYOLOv5:
     enabled: True
-    priority: 1 # priority of process - lower is higher
+    order: 1 # order of process - lower executes first
     model: 'yolov5s' # can be yolov5s, yolov5m, yolov5l, yolov5x https://pytorch.org/hub/ultralytics_yolov5
     class_colors: # the classes you need to detect and their corresponding bbox colors in RGB format 
         Person: [1, 0, 0]
@@ -36,7 +36,7 @@ Once installation is complete, add the following entry under `proc/lidar/` in `b
 ```yaml
 PointPillarDetection:
     enabled: True
-    priority: 1 # priority of process - lower is higher
+    order: 1 # order of process - lower executes first
     github_repo_dir: 'algo/nn/PointPillars' # clone https://github.com/zhulf0804/PointPillars to this path and install the requirements
     ckpt_file: 'algo/nn/PointPillars/pretrained/epoch_160.pth' # path to checkpoint file
     score_threshold: 0.5 # minimum score threshold for detection

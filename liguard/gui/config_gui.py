@@ -465,7 +465,7 @@ class BaseConfiguration:
                 for algo_type in self.cfg['proc']:
                     algo_priorities = zip(
                         [algo_name for algo_name in self.cfg['proc'][algo_type]],
-                        [algo_cfg['priority'] for algo_cfg in self.cfg['proc'][algo_type].values()]
+                        [algo_cfg['order'] for algo_cfg in self.cfg['proc'][algo_type].values()]
                     )
                     algo_priorities = sorted(algo_priorities, key=lambda x: x[1])
                     self.cfg['proc'][algo_type] = {algo_name: self.cfg['proc'][algo_type][algo_name] for algo_name, _ in algo_priorities}
@@ -506,7 +506,7 @@ class BaseConfiguration:
             for algo_type in self.cfg['proc']:
                 algo_priorities = zip(
                     [algo_name for algo_name in self.cfg['proc'][algo_type]],
-                    [algo_cfg['priority'] for algo_cfg in self.cfg['proc'][algo_type].values()]
+                    [algo_cfg['order'] for algo_cfg in self.cfg['proc'][algo_type].values()]
                 )
                 algo_priorities = sorted(algo_priorities, key=lambda x: x[1])
                 self.cfg['proc'][algo_type] = {algo_name: self.cfg['proc'][algo_type][algo_name] for algo_name, _ in algo_priorities}

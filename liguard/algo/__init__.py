@@ -14,7 +14,7 @@ Sub-Modules and Their Purposes
 
 Execution Order
 ---------------
-The order of execution for algorithms within each sub-module is determined by the `priority` parameter in the `base_config.yml` file. Lower priority values correspond to earlier execution. This parameter can be modified in the GUI configuration window. The execution order across sub-modules follows this sequence: `pre` -> `lidar` -> `camera` -> `calib` -> `label` -> `post`.
+The order of execution for algorithms within each sub-module is determined by the `order` parameter in the `base_config.yml` file. Lower order values correspond to earlier execution. This parameter can be modified in the GUI configuration window. The execution order across sub-modules follows this sequence: `pre` -> `lidar` -> `camera` -> `calib` -> `label` -> `post`.
 
 Contributing a New Algorithm
 -----------------------------
@@ -32,7 +32,7 @@ For example to add a new lidar algorithm named `dummy`, you would follow these s
     # configuration for a function in LiGuard is defined in yaml format
     dummy: # name of the function
         enabled: False # bool -- adds the function to pipeline if True -- necessary parameter, don't remove
-        priority: 3 # int -- priority of process, lower is higher -- necessary parameter, don't remove
+        order: 3 # int -- order of process, lower executes first -- necessary parameter, don't remove
         # parameters are defined as key-value pairs: param_name: param_value
         # `param_name` should always be a string and `param_value` can be any of these types: int, float, bool, str, list, dict
         # examples:

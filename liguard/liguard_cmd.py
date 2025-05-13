@@ -113,11 +113,11 @@ def bulk_process(args):
     built_in_pre_modules = __import__('liguard.algo.pre', fromlist=['*']).__dict__
     for proc in cfg['proc']['pre']:
         if not cfg['proc']['pre'][proc]['enabled']: continue
-        priority = cfg['proc']['pre'][proc]['priority']
+        order = cfg['proc']['pre'][proc]['order']
         if proc in built_in_pre_modules: process = built_in_pre_modules[proc]
         else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-        pre_processes_dict[priority] = process
-    pre_processes = [pre_processes_dict[priority] for priority in sorted(pre_processes_dict.keys())]
+        pre_processes_dict[order] = process
+    pre_processes = [pre_processes_dict[order] for order in sorted(pre_processes_dict.keys())]
 
     @delayed
     def run_pre_processing(data):
@@ -131,11 +131,11 @@ def bulk_process(args):
     built_in_lidar_modules = __import__('liguard.algo.lidar', fromlist=['*']).__dict__
     for proc in cfg['proc']['lidar']:
         if not cfg['proc']['lidar'][proc]['enabled']: continue
-        priority = cfg['proc']['lidar'][proc]['priority']
+        order = cfg['proc']['lidar'][proc]['order']
         if proc in built_in_lidar_modules: process = built_in_lidar_modules[proc]
         else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-        lidar_processes_dict[priority] = process
-    lidar_processes = [lidar_processes_dict[priority] for priority in sorted(lidar_processes_dict.keys())]
+        lidar_processes_dict[order] = process
+    lidar_processes = [lidar_processes_dict[order] for order in sorted(lidar_processes_dict.keys())]
 
     @delayed
     def run_lidar_processing(data):
@@ -150,11 +150,11 @@ def bulk_process(args):
     built_in_camera_modules = __import__('liguard.algo.camera', fromlist=['*']).__dict__
     for proc in cfg['proc']['camera']:
         if not cfg['proc']['camera'][proc]['enabled']: continue
-        priority = cfg['proc']['camera'][proc]['priority']
+        order = cfg['proc']['camera'][proc]['order']
         if proc in built_in_camera_modules: process = built_in_camera_modules[proc]
         else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-        camera_processes_dict[priority] = process
-    camera_processes = [camera_processes_dict[priority] for priority in sorted(camera_processes_dict.keys())]
+        camera_processes_dict[order] = process
+    camera_processes = [camera_processes_dict[order] for order in sorted(camera_processes_dict.keys())]
 
     @delayed
     def run_camera_processing(data):
@@ -169,11 +169,11 @@ def bulk_process(args):
     built_in_calib_modules = __import__('liguard.algo.calib', fromlist=['*']).__dict__
     for proc in cfg['proc']['calib']:
         if not cfg['proc']['calib'][proc]['enabled']: continue
-        priority = cfg['proc']['calib'][proc]['priority']
+        order = cfg['proc']['calib'][proc]['order']
         if proc in built_in_calib_modules: process = built_in_calib_modules[proc]
         else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-        calib_processes_dict[priority] = process
-    calib_processes = [calib_processes_dict[priority] for priority in sorted(calib_processes_dict.keys())]
+        calib_processes_dict[order] = process
+    calib_processes = [calib_processes_dict[order] for order in sorted(calib_processes_dict.keys())]
 
     @delayed
     def run_calib_processing(data):
@@ -188,11 +188,11 @@ def bulk_process(args):
     built_in_label_modules = __import__('liguard.algo.label', fromlist=['*']).__dict__
     for proc in cfg['proc']['label']:
         if not cfg['proc']['label'][proc]['enabled']: continue
-        priority = cfg['proc']['label'][proc]['priority']
+        order = cfg['proc']['label'][proc]['order']
         if proc in built_in_label_modules: process = built_in_label_modules[proc]
         else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-        label_processes_dict[priority] = process
-    label_processes = [label_processes_dict[priority] for priority in sorted(label_processes_dict.keys())]
+        label_processes_dict[order] = process
+    label_processes = [label_processes_dict[order] for order in sorted(label_processes_dict.keys())]
 
     @delayed
     def run_label_processing(data):
@@ -207,11 +207,11 @@ def bulk_process(args):
     built_in_post_modules = __import__('liguard.algo.post', fromlist=['*']).__dict__
     for proc in cfg['proc']['post']:
         if not cfg['proc']['post'][proc]['enabled']: continue
-        priority = cfg['proc']['post'][proc]['priority']
+        order = cfg['proc']['post'][proc]['order']
         if proc in built_in_post_modules: process = built_in_post_modules[proc]
         else: process = __import__(proc, fromlist=['*']).__dict__[proc]
-        post_processes_dict[priority] = process
-    post_processes = [post_processes_dict[priority] for priority in sorted(post_processes_dict.keys())]
+        post_processes_dict[order] = process
+    post_processes = [post_processes_dict[order] for order in sorted(post_processes_dict.keys())]
 
     @delayed
     def run_postprocessing(data):

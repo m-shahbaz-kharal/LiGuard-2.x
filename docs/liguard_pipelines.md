@@ -1,5 +1,5 @@
 # An In-Depth Look into LiGuard Pipelines
-In `LiGuard`, a `pipeline` is a sequence of components that process LIDAR and/or image data. In other words, it defines an algorithm that performs a sequence of steps on given LIDAR and/or image data. Each component in the pipeline performs a specific task such as reading data, preprocessing, data analysis, or postprocessing. The components are connected in a sequence, and the data flows from one component to the next based on the defined priority of the components. The pipeline is executed in real-time, and the results are visualized in the GUI and/or stored.
+In `LiGuard`, a `pipeline` is a sequence of components that process LIDAR and/or image data. In other words, it defines an algorithm that performs a sequence of steps on given LIDAR and/or image data. Each component in the pipeline performs a specific task such as reading data, preprocessing, data analysis, or postprocessing. The components are connected in a sequence, and the data flows from one component to the next based on the defined order of the components. The pipeline is executed in real-time, and the results are visualized in the GUI and/or stored.
 
 ## Pipeline Directory Structure
 A `LiGuard` pipeline is organized in a structured directory format. The pipeline directory structure is automatically managed by `LiGuard`, minimizing the need for manual modifications. However, understanding this structure is beneficial, particularly when sharing pipelines with others. Below, we provide a detailed overview to enhance your comprehension of the directory layout and its components.
@@ -178,7 +178,7 @@ The YAML configuration file defines the component's settings and parameters. It 
 # configuration for a function in LiGuard is defined in yaml format
 FUNCTION_NAME: # name of the function
   enabled: False # bool -- adds the function to pipeline if True -- necessary parameter, don't remove
-  priority: 3 # int -- priority of process, lower is higher -- necessary parameter, don't remove
+  order: 3 # int -- order of process, lower executes first -- necessary parameter, don't remove
   # parameters are defined as key-value pairs: param_name: param_value
   # `param_name` should always be a string and `param_value` can be any of these types: int, float, bool, str, list, dict
   # examples:
@@ -272,7 +272,7 @@ Here, `FUNCTION_NAME` is the name of the component, `AGLO_TYPE` is the type of t
         - Modify the YAML configuration file to define the parameters for the component.
         - Implement the algorithm in the Python script by following the structure described above or in the comments in the script.
         - Save the files and click `Reload` button in the `Configuration` window to load the new component, and then click `Apply` to execute it as part of the pipeline.
-        - From now on, you can enable/disable this custom component, adjust its parameters, reorder it in the pipeline using `priority` parameter. Please make sure to click `Apply` after making any changes to the component to see the results.
+        - From now on, you can enable/disable this custom component, adjust its parameters, reorder it in the pipeline using `order` parameter. Please make sure to click `Apply` after making any changes to the component to see the results.
 
         - Note: You can also do this manually by creating the YAML configuration file and the Python script according to the structure described above. Make sure to follow the naming convention and the structure of the files to ensure that `LiGuard` can load and execute the components correctly.
 

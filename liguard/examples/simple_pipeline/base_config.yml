@@ -32,41 +32,41 @@ proc: # liguard processing configurations
     pre:
         remove_nan_inf_allzero_from_pcd: # remove nan points from point cloud
             enabled: True # set True to remove nan points
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
     lidar:
         crop:
-            priority: 2 # priority of process - lower is higher
+            order: 2 # order of process - lower executes first
             enabled: False # set True to crop point cloud
             min_xyz: [-40.0, -40.0, -4.0] # minimum x, y, z
             max_xyz: [+40.0, +40.0, +2.0] # maximum x, y, z
         project_image_pixel_colors:
             enabled: False # set True to paint point cloud with rgb
-            priority: 6 # priority of process - lower is higher
+            order: 6 # order of process - lower executes first
     camera:
         project_point_cloud_points: # project point cloud points to camera image
             enabled: False # set True to project point cloud points to camera image
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
     calib:
         dummy: # dummy calibration process
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
     label:
         remove_out_of_bound_labels: # crop out of bound bboxes
             enabled: False # set True to crop labels
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
             use_lidar_range: False # set True to crop using lidar crop
             use_image_size: False # set True to crop using image size
         remove_less_point_labels: # remove labels with no points
             enabled: True # set True to remove labels
-            priority: 2 # priority of process - lower is higher
+            order: 2 # order of process - lower executes first
             min_points: 6 # minimum number of points to consider a label valid
     post:
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
         create_pcdet_dataset: # create dataset in pcdet format
             enabled: False # set True to enable
-            priority: 1 # priority of process - lower is higher
+            order: 1 # order of process - lower executes first
 
 # ----------------------------------------------------------------------------------------------------
 # DONT REMOVE ANY VARIABLES BELOW THIS LINE, THEIR VALUES CAN BE CHANGED BUT REMOVAL WILL CAUSE ERRORS
