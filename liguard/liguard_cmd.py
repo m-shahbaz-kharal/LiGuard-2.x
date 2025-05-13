@@ -1,7 +1,12 @@
 import os
 import sys
+import time
+
 from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+
+import argparse
 import yaml
+from tqdm import tqdm
 
 from liguard.pcd.file_io import FileIO as PCD_File_IO
 from liguard.img.file_io import FileIO as IMG_File_IO
@@ -10,68 +15,19 @@ from liguard.lbl.file_io import FileIO as LBL_File_IO
 
 from liguard.gui.logger_gui import Logger
 
-import time
-import signal
-from threading import Thread, Event
-from queue import Queue
+import dask
+from dask import delayed, compute
+from dask.diagnostics import ProgressBar
 
-from tqdm import tqdm
-
-stop_event = Event()
-
-def reader2queue(reader, size, target_queue):
-    for idx in range(size):
-        if stop_event.is_set():
-            target_queue.put(None)
-            break
-        target_queue.put(reader[idx])
-
-def queue2dict2queue(source_queue, key1, key2, target_queue):
-    while True:
-        data = source_queue.get()
-        if data is None:
-            target_queue.put(None)
-            source_queue.task_done()
-            break
-        data_dict = {key1: data[0], key2: data[1]}
-        target_queue.put(data_dict)
-        source_queue.task_done()
-    
-def dicts2singledict(source_queues, target_queue, p_bar):
-    while True:
-        data = [source_queues[i].get() for i in range(len(source_queues))]
-        if None in data:
-            target_queue.put(None)
-            for i in range(len(source_queues)): source_queues[i].task_done()
-            break
-        data_dict = dict()
-        for d in data: data_dict.update(d)
-        target_queue.put(data_dict)
-        for i in range(len(source_queues)): source_queues[i].task_done()
-        p_bar.update(1)
-
-def dict2proc2dict(source_queue, cfg, logger, processes, target_queue, p_bar):
-    while True:
-        data = source_queue.get()
-        if data is None:
-            if target_queue: target_queue.put(None)
-            source_queue.task_done()
-            break
-        for process in processes: process(data, cfg, logger)
-        if target_queue: target_queue.put(data)
-        source_queue.task_done()
-        p_bar.update(1)
-
-def signal_handler(sig, frame):
-    print("\nCtrl + C detected! Stopping ...")
-    stop_event.set()  # Signal all threads to stop
 
 def bulk_process(args):
+    # load config
     pipeline_dir = args.pipeline_dir
     base_cfg_path = os.path.join(pipeline_dir, 'base_config.yml')
     with open(base_cfg_path) as f:cfg = yaml.safe_load(f)
     cfg['data']['pipeline_dir'] = pipeline_dir
-    
+
+    # load custom algorithms
     custom_algo_dir = os.path.join(pipeline_dir, 'algo')
     custom_algos_cfg = dict()
     if os.path.exists(custom_algo_dir):
@@ -86,88 +42,73 @@ def bulk_process(args):
                 with open(os.path.join(algo_type_path, algo_file_name)) as f: cust_algo_cfg = yaml.safe_load(f)
                 custom_algos_cfg[algo_type].update(cust_algo_cfg)
             cfg['proc'][algo_type].update(custom_algos_cfg[algo_type])
-    
+
+    # init logger
     logger = Logger()
     if cfg['logging']['level'] < Logger.WARNING:
         print('Logging level is too low. Setting to WARNING to prevent spam.')
         cfg['logging']['level'] = Logger.WARNING
     logger.reset(cfg)
 
-    # create dirs
+    # create output directory
     data_outputs_dir = cfg['data']['outputs_dir']
     if not os.path.isabs(data_outputs_dir): data_outputs_dir = os.path.join(pipeline_dir, data_outputs_dir)
     os.makedirs(data_outputs_dir, exist_ok=True)
 
-    # signal handler
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    # reader queues
-    pcd_input_queue = Queue(maxsize=args.max_queue_size)
-    img_input_queue = Queue(maxsize=args.max_queue_size)
-    clb_input_queue = Queue(maxsize=args.max_queue_size)
-    lbl_input_queue = Queue(maxsize=args.max_queue_size)
-
-    # readers
+    # init data readers
     pcd_reader = PCD_File_IO(cfg) if cfg['data']['lidar']['enabled'] else None
     img_reader = IMG_File_IO(cfg) if cfg['data']['camera']['enabled'] else None
     clb_reader = CLB_File_IO(cfg) if cfg['data']['calib']['enabled'] else None
     lbl_reader = LBL_File_IO(cfg, clb_reader.__getitem__ if clb_reader else None) if cfg['data']['label']['enabled'] else None
 
-    # reader threads
-    if pcd_reader:
-        pcd_io_thread = Thread(target=reader2queue, args=(pcd_reader, len(pcd_reader), pcd_input_queue))
-        pcd_io_thread.start()
-    if img_reader:
-        img_io_thread = Thread(target=reader2queue, args=(img_reader, len(img_reader), img_input_queue))
-        img_io_thread.start()
-    if clb_reader:
-        clb_io_thread = Thread(target=reader2queue, args=(clb_reader, len(clb_reader), clb_input_queue))
-        clb_io_thread.start()
-    if lbl_reader:
-        lbl_io_thread = Thread(target=reader2queue, args=(lbl_reader, len(lbl_reader), lbl_input_queue))
-        lbl_io_thread.start()
+    # delayed data readers
+    d_pcd_reader = delayed(pcd_reader.__getitem__) if pcd_reader else None
+    d_img_reader = delayed(img_reader.__getitem__) if img_reader else None
+    d_clb_reader = delayed(clb_reader.__getitem__) if clb_reader else None
+    d_lbl_reader = delayed(lbl_reader.__getitem__) if lbl_reader else None
 
-    # data dict queues
-    pcd_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    img_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    clb_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    lbl_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    common_data_dict_queue = Queue(maxsize=args.max_queue_size)
+    # delayed data reader tasks
+    pcd_reader_tasks = [d_pcd_reader(i) for i in range(len(pcd_reader))] if pcd_reader else None
+    img_reader_tasks = [d_img_reader(i) for i in range(len(img_reader))] if img_reader else None
+    clb_reader_tasks = [d_clb_reader(i) for i in range(len(clb_reader))] if clb_reader else None
+    lbl_reader_tasks = [d_lbl_reader(i) for i in range(len(lbl_reader))] if lbl_reader else None
 
-    # queue to dict threads
-    if pcd_reader:
-        pcd_io_to_data_dict_thread = Thread(target=queue2dict2queue, args=(pcd_input_queue, 'current_point_cloud_path', 'current_point_cloud_numpy', pcd_data_dict_queue))
-        pcd_io_to_data_dict_thread.start()
-    if img_reader:
-        img_io_to_data_dict_thread = Thread(target=queue2dict2queue, args=(img_input_queue, 'current_image_path', 'current_image_numpy', img_data_dict_queue))
-        img_io_to_data_dict_thread.start()
-    if clb_reader:
-        clb_io_to_data_dict_thread = Thread(target=queue2dict2queue, args=(clb_input_queue, 'current_calib_path', 'current_calib_data', clb_data_dict_queue))
-        clb_io_to_data_dict_thread.start()
-    if lbl_reader:
-        lbl_io_to_data_dict_thread = Thread(target=queue2dict2queue, args=(lbl_input_queue, 'current_label_path', 'current_label_list', lbl_data_dict_queue))
-        lbl_io_to_data_dict_thread.start()
-    
-    # dict to single dict thread
-    data_dicts = []
-    min_len = 1e9
-    if pcd_reader:
-        if len(pcd_reader) < min_len: min_len = len(pcd_reader)
-        data_dicts.append(pcd_data_dict_queue)
-    if img_reader:
-        if len(img_reader) < min_len: min_len = len(img_reader)
-        data_dicts.append(img_data_dict_queue)
-    if clb_reader:
-        if len(clb_reader) < min_len: min_len = len(clb_reader)
-        data_dicts.append(clb_data_dict_queue)
-    if lbl_reader:
-        if len(lbl_reader) < min_len: min_len = len(lbl_reader)
-        data_dicts.append(lbl_data_dict_queue)
-    reader_tqdm = tqdm(total=min_len, desc='Reading data', position=0)
-    data_dict_thread = Thread(target=dicts2singledict, args=(data_dicts, common_data_dict_queue, reader_tqdm))
-    data_dict_thread.start()
+    # form data dict
+    @delayed
+    def form_data_dict(pcd_path_and_data=None, img_path_and_data=None, clb_path_and_data=None, lbl_path_and_data=None):
+        data_dict = {}
+        if pcd_path_and_data:
+            data_dict['current_point_cloud_path'] = pcd_path_and_data[0]
+            data_dict['current_point_cloud_numpy'] = pcd_path_and_data[1]
+        if img_path_and_data:
+            data_dict['current_image_path'] = img_path_and_data[0]
+            data_dict['current_image_numpy'] = img_path_and_data[1]
+        if clb_path_and_data:
+            data_dict['current_calib_path'] = clb_path_and_data[0]
+            data_dict['current_calib_data'] = clb_path_and_data[1]
+        if lbl_path_and_data:
+            data_dict['current_label_path'] = lbl_path_and_data[0]
+            data_dict['current_label_list'] = lbl_path_and_data[1]
+        return data_dict
 
-    # processes
+    min_len = min(
+        len(pcd_reader) if pcd_reader else float('inf'),
+        len(img_reader) if img_reader else float('inf'),
+        len(clb_reader) if clb_reader else float('inf'),
+        len(lbl_reader) if lbl_reader else float('inf'),
+    )
+
+    merged_tasks = [
+        form_data_dict(
+            pcd_reader_tasks[i] if pcd_reader else None,
+            img_reader_tasks[i] if img_reader else None,
+            clb_reader_tasks[i] if clb_reader else None,
+            lbl_reader_tasks[i] if lbl_reader else None,
+        )
+        for i in range(min_len)
+    ]
+
+    # pre process
     pre_processes_dict = dict()
     built_in_pre_modules = __import__('liguard.algo.pre', fromlist=['*']).__dict__
     for proc in cfg['proc']['pre']:
@@ -178,6 +119,14 @@ def bulk_process(args):
         pre_processes_dict[priority] = process
     pre_processes = [pre_processes_dict[priority] for priority in sorted(pre_processes_dict.keys())]
 
+    @delayed
+    def run_pre_processing(data):
+        for func in pre_processes:
+            func(data, cfg, logger)
+        return data
+    pre_processed_tasks = [run_pre_processing(task) for task in merged_tasks]
+
+    # lidar process
     lidar_processes_dict = dict()
     built_in_lidar_modules = __import__('liguard.algo.lidar', fromlist=['*']).__dict__
     for proc in cfg['proc']['lidar']:
@@ -188,6 +137,15 @@ def bulk_process(args):
         lidar_processes_dict[priority] = process
     lidar_processes = [lidar_processes_dict[priority] for priority in sorted(lidar_processes_dict.keys())]
 
+    @delayed
+    def run_lidar_processing(data):
+        for func in lidar_processes:
+            func(data, cfg, logger)
+        return data
+
+    lidar_processed_tasks = [run_lidar_processing(task) for task in pre_processed_tasks]
+
+    # camera process
     camera_processes_dict = dict()
     built_in_camera_modules = __import__('liguard.algo.camera', fromlist=['*']).__dict__
     for proc in cfg['proc']['camera']:
@@ -198,6 +156,15 @@ def bulk_process(args):
         camera_processes_dict[priority] = process
     camera_processes = [camera_processes_dict[priority] for priority in sorted(camera_processes_dict.keys())]
 
+    @delayed
+    def run_camera_processing(data):
+        for func in camera_processes:
+            func(data, cfg, logger)
+        return data
+
+    camera_processed_tasks = [run_camera_processing(task) for task in lidar_processed_tasks]
+
+    # calib process
     calib_processes_dict = dict()
     built_in_calib_modules = __import__('liguard.algo.calib', fromlist=['*']).__dict__
     for proc in cfg['proc']['calib']:
@@ -208,6 +175,15 @@ def bulk_process(args):
         calib_processes_dict[priority] = process
     calib_processes = [calib_processes_dict[priority] for priority in sorted(calib_processes_dict.keys())]
 
+    @delayed
+    def run_calib_processing(data):
+        for func in calib_processes:
+            func(data, cfg, logger)
+        return data
+
+    calib_processed_tasks = [run_calib_processing(task) for task in camera_processed_tasks]
+
+    # label process
     label_processes_dict = dict()
     built_in_label_modules = __import__('liguard.algo.label', fromlist=['*']).__dict__
     for proc in cfg['proc']['label']:
@@ -218,6 +194,15 @@ def bulk_process(args):
         label_processes_dict[priority] = process
     label_processes = [label_processes_dict[priority] for priority in sorted(label_processes_dict.keys())]
 
+    @delayed
+    def run_label_processing(data):
+        for func in label_processes:
+            func(data, cfg, logger)
+        return data
+
+    label_processed_tasks = [run_label_processing(task) for task in calib_processed_tasks]
+
+    # post process
     post_processes_dict = dict()
     built_in_post_modules = __import__('liguard.algo.post', fromlist=['*']).__dict__
     for proc in cfg['proc']['post']:
@@ -228,83 +213,94 @@ def bulk_process(args):
         post_processes_dict[priority] = process
     post_processes = [post_processes_dict[priority] for priority in sorted(post_processes_dict.keys())]
 
-    # preprocess
-    preprocessed_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    preprocess_tqdm = tqdm(total=min_len, desc='Preprocessing data', position=1)
-    preprocess_thread = Thread(target=dict2proc2dict, args=(common_data_dict_queue, cfg, logger, pre_processes, preprocessed_data_dict_queue, preprocess_tqdm))
-    preprocess_thread.start()
+    @delayed
+    def run_postprocessing(data):
+        for func in post_processes:
+            func(data, cfg, logger)
+        return data
 
-    # sequential processing
-    seq_processed_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    seq_process_tqdm = tqdm(total=min_len, desc='Processing data', position=2)
-    lidar_thread = Thread(target=dict2proc2dict, args=(preprocessed_data_dict_queue, cfg, logger, lidar_processes + camera_processes + calib_processes, seq_processed_data_dict_queue, seq_process_tqdm))
-    lidar_thread.start()
+    post_processed_tasks = [run_postprocessing(task) for task in label_processed_tasks]
 
-    # label processing
-    label_processed_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    label_process_tqdm = tqdm(total=min_len, desc='Processing labels', position=3)
-    label_thread = Thread(target=dict2proc2dict, args=(seq_processed_data_dict_queue, cfg, logger, label_processes, label_processed_data_dict_queue, label_process_tqdm))
-    label_thread.start()
+    # results
+    with ProgressBar():
+        results = compute(*post_processed_tasks, scheduler='threads', num_workers=args.num_workers)
+        if args.save_raw_results:
+            save_raw_results(results, data_outputs_dir)
+            
+def save_raw_results(results, data_outputs_dir):
+    # data related imports
+    import open3d as o3d
+    import cv2
 
-    # postprocess
-    postprocessed_data_dict_queue = Queue(maxsize=args.max_queue_size)
-    postprocess_tqdm = tqdm(total=min_len, desc='Postprocessing data', position=4)
-    postprocess_thread = Thread(target=dict2proc2dict, args=(label_processed_data_dict_queue, cfg, logger, post_processes, None, postprocess_tqdm))
-    postprocess_thread.start()
+    # create output dirs
+    results_dir = os.path.join(data_outputs_dir, 'raw_results', time.strftime("%Y%m%d-%H%M%S"))
+    print(f'Saving raw results to {results_dir} ...')
+    results_pcd_dir = os.path.join(results_dir, 'point_clouds')
+    os.makedirs(results_pcd_dir, exist_ok=True)
+    results_img_dir = os.path.join(results_dir, 'images')
+    os.makedirs(results_img_dir, exist_ok=True)
+    results_clb_dir = os.path.join(results_dir, 'calibs')
+    os.makedirs(results_clb_dir, exist_ok=True)
+    results_lbl_dir = os.path.join(results_dir, 'labels')
+    os.makedirs(results_lbl_dir, exist_ok=True)
+    os.makedirs(results_dir, exist_ok=True)
 
-    # signal handler
-    # sigint handler
-    try:
-        while not stop_event.is_set(): time.sleep(0.1)  # Sleep for a short time to keep the loop efficient
-    except KeyboardInterrupt:
-        # Handle Ctrl + C pressed in the main thread
-        signal_handler(None, None)
+    # save results
+    for i, result in tqdm(enumerate(results), total=len(results), unit='frames'):
+        # point clouds
+        current_point_cloud_path = result.get('current_point_cloud_path', None)
+        if current_point_cloud_path is not None:
+            output_point_cloud_path = os.path.join(results_pcd_dir, os.path.basename(current_point_cloud_path).split('.')[0] + '.pcd')
+            current_point_cloud_numpy = result.get('current_point_cloud_numpy', None)
+            if current_point_cloud_numpy is not None:
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(current_point_cloud_numpy[:, :3])
+                o3d.io.write_point_cloud(output_point_cloud_path, pcd)
+                
+        # images
+        current_image_path = result.get('current_image_path', None)
+        if current_image_path is not None:
+            output_image_path = os.path.join(results_img_dir, os.path.basename(current_image_path).split('.')[0] + '.png')
+            current_image_numpy = result.get('current_image_numpy', None)
+            if current_image_numpy is not None:
+                if current_image_numpy.shape[2] == 3:
+                    current_image_numpy = cv2.cvtColor(current_image_numpy, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite(output_image_path, current_image_numpy)
+                elif current_image_numpy.shape[2] == 4:
+                    current_image_numpy = cv2.cvtColor(current_image_numpy, cv2.COLOR_RGBA2BGR)
+                    cv2.imwrite(output_image_path, current_image_numpy)
 
-    # cleanup
-    if pcd_reader:
-        pcd_io_thread.join()
-        pcd_io_to_data_dict_thread.join()
-    if img_reader:
-        img_io_thread.join()
-        img_io_to_data_dict_thread.join()
-    if clb_reader:
-        clb_io_thread.join()
-        clb_io_to_data_dict_thread.join()
-    if lbl_reader:
-        lbl_io_thread.join()
-        lbl_io_to_data_dict_thread.join()
-    
-    data_dict_thread.join()
-    print('Data reading complete.')
-    preprocess_thread.join()
-    print('Preprocessing complete.')
-    lidar_thread.join()
-    print('Sequential processing complete.')
-    label_thread.join()
-    print('Label processing complete.')
-    postprocess_thread.join()
-    print('Postprocessing complete.')
+        # calibration data
+        current_calib_path = result.get('current_calib_path', None)
+        if current_calib_path is not None:
+            output_calib_path = os.path.join(results_clb_dir, os.path.basename(current_calib_path).split('.')[0] + '.yaml')
+            current_calib_data = result.get('current_calib_data', None)
+            if current_calib_data is not None:
+                with open(output_calib_path, 'w') as f:
+                    yaml.dump(current_calib_data, f)
 
-    reader_tqdm.close()
-    preprocess_tqdm.close()
-    seq_process_tqdm.close()
-    label_process_tqdm.close()
-    postprocess_tqdm.close()
-
-    logger.log('Processing complete.', Logger.INFO)
+        # label data
+        current_label_path = result.get('current_label_path', None)
+        if current_label_path is not None:
+            output_label_path = os.path.join(results_lbl_dir, os.path.basename(current_label_path).split('.')[0] + '.yaml')
+            current_label_list = result.get('current_label_list', None)
+            if current_label_list is not None:
+                with open(output_label_path, 'w') as f:
+                    yaml.dump(current_label_list, f)
 
 def main():
+    # banner
     banner = \
     """
-    #########################################################
-        _      _  _____                     _   ___    ___  
-        | |    (_)/ ____|                   | | |__ \  / _ \ 
-        | |     _| |  __ _   _  __ _ _ __ __| |    ) || | | |
-        | |    | | | |_ | | | |/ _` | '__/ _` |   / / | | | |
-        | |____| | |__| | |_| | (_| | | | (_| |  / /_ | |_| |
-        |______|_|\_____|\__,_|\__,_|_|  \__,_| |____(_)___/ 
-                                       Headless Bulk Processor
-    ##########################################################
+    #######################################################
+        _      _  _____                     _   ___   
+        | |    (_)/ ____|                   | | |__ \  
+        | |     _| |  __ _   _  __ _ _ __ __| |    ) |
+        | |    | | | |_ | | | |/ _` | '__/ _` |   / / 
+        | |____| | |__| | |_| | (_| | | | (_| |  / /_
+        |______|_|\_____|\__,_|\__,_|_|  \__,_| |____|
+                           Headless Bulk Processing Utility
+    #######################################################
     LiGuard's utility for no-GUI bulk data processing.
     """
     print(banner)
@@ -312,21 +308,37 @@ def main():
     """
     Description:
     Once you have created a pipeline using LiGuard's interactive
-    interface, you can take your configuration file (.yml) and use
-    this script to process entire datasets faster. This script processes
-    the data faster by utilizing multiple threads and removing GUI and
-    other interactive elements.
+    interface, you can pass your pipeline folder path and use this script
+    to process the entire dataset faster. This script processes the data faster
+    by utilizing dask for parallelism, and removing GUI and other interactive elements.
 
     Note 1: Currently, this doesn't work with live sensor data streams.
     Note 2: Currently, this doesn't work with multi-frame dependent algorithms
     such as calculating background filters using multiple frames (you can use a pre-calculated filter though), tracking, etc.
     """
-    import argparse
+
+    # argument parse
     parser = argparse.ArgumentParser(description=f'{description}')
     parser.add_argument('pipeline_dir', type=str, help='Path to the pipleine directory.')
-    parser.add_argument('--max_queue_size', type=int, default=10, help='Maximum size of the queues.')
+    parser.add_argument('--num_workers', type=int, default=4, help='Number of workers to use. Default: 4')
+    parser.add_argument('--save_raw_results', action='store_true', help='Save raw processed data dictionary to the output directory. Default: False')
     args = parser.parse_args()
-    bulk_process(args)
+
+    # copy examples
+    default_workspace_dir = resolve_for_default_workspace('')
+    if not os.path.exists(default_workspace_dir): os.makedirs(default_workspace_dir)
+    if not os.path.exists(os.path.join(default_workspace_dir, 'examples')):
+        import shutil
+        shutil.copytree(resolve_for_application_root('examples'), resolve_for_default_workspace('examples'))
+    
+    # bulk process
+    try: bulk_process(args)
+    except KeyboardInterrupt:
+        print("\nKeyboardInterrupt: Exiting, Please Wait ...")
+        sys.exit(1)
+    
+    # complete
+    print('Processing complete.')
 
 if __name__ == '__main__':
     main()
