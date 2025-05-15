@@ -5,7 +5,7 @@ import traceback
 import open3d.visualization.gui as gui
 
 from liguard.gui.config_gui import BaseConfiguration as BaseConfigurationGUI
-from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace, import_module
 from liguard.gui.logger_gui import Logger
 from liguard.liguard_profiler import Profiler
 
@@ -328,14 +328,14 @@ class LiGuard:
         ##########################################
         # pre processes
         self.pre_processes = dict()
-        built_in_pre_modules = __import__('liguard.algo.pre', fromlist=['*']).__dict__
+        built_in_pre_modules = import_module('liguard.algo.pre', fromlist=['*']).__dict__
         for proc in cfg['proc']['pre']:
             enabled = cfg['proc']['pre'][proc]['enabled']
             if enabled:
                 try:
                     order = cfg['proc']['pre'][proc]['order']
                     if proc in built_in_pre_modules: process = built_in_pre_modules[proc]
-                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
+                    else: process = import_module(proc, fromlist=['*']).__dict__[proc]
                     self.pre_processes[order] = process
                 except Exception:
                     self.logger.log(f'pre_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -344,14 +344,14 @@ class LiGuard:
         
         # lidar processes
         self.lidar_processes = dict()
-        built_in_lidar_modules = __import__('liguard.algo.lidar', fromlist=['*']).__dict__
+        built_in_lidar_modules = import_module('liguard.algo.lidar', fromlist=['*']).__dict__
         for proc in cfg['proc']['lidar']:
             enabled = cfg['proc']['lidar'][proc]['enabled']
             if enabled:
                 try:
                     order = cfg['proc']['lidar'][proc]['order']
                     if proc in built_in_lidar_modules: process = built_in_lidar_modules[proc]
-                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
+                    else: process = import_module(proc, fromlist=['*']).__dict__[proc]
                     self.lidar_processes[order] = process
                 except Exception:
                     self.logger.log(f'lidar_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -360,14 +360,14 @@ class LiGuard:
         
         # camera processes
         self.camera_processes = dict()
-        built_in_camera_modules = __import__('liguard.algo.camera', fromlist=['*']).__dict__
+        built_in_camera_modules = import_module('liguard.algo.camera', fromlist=['*']).__dict__
         for proc in cfg['proc']['camera']:
             enabled = cfg['proc']['camera'][proc]['enabled']
             if enabled:
                 try:
                     order = cfg['proc']['camera'][proc]['order']
                     if proc in built_in_camera_modules: process = built_in_camera_modules[proc]
-                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
+                    else: process = import_module(proc, fromlist=['*']).__dict__[proc]
                     self.camera_processes[order] = process
                 except Exception:
                     self.logger.log(f'camera_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -376,14 +376,14 @@ class LiGuard:
 
         # calib processes
         self.calib_processes = dict()
-        built_in_calib_modules = __import__('liguard.algo.calib', fromlist=['*']).__dict__
+        built_in_calib_modules = import_module('liguard.algo.calib', fromlist=['*']).__dict__
         for proc in cfg['proc']['calib']:
             enabled = cfg['proc']['calib'][proc]['enabled']
             if enabled:
                 try:
                     order = cfg['proc']['calib'][proc]['order']
                     if proc in built_in_calib_modules: process = built_in_calib_modules[proc]
-                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
+                    else: process = import_module(proc, fromlist=['*']).__dict__[proc]
                     self.calib_processes[order] = process
                 except Exception:
                     self.logger.log(f'calib_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -392,14 +392,14 @@ class LiGuard:
 
         # label processes
         self.label_processes = dict()
-        built_in_label_modules = __import__('liguard.algo.label', fromlist=['*']).__dict__
+        built_in_label_modules = import_module('liguard.algo.label', fromlist=['*']).__dict__
         for proc in cfg['proc']['label']:
             enabled = cfg['proc']['label'][proc]['enabled']
             if enabled:
                 try:
                     order = cfg['proc']['label'][proc]['order']
                     if proc in built_in_label_modules: process = built_in_label_modules[proc]
-                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
+                    else: process = import_module(proc, fromlist=['*']).__dict__[proc]
                     self.label_processes[order] = process
                 except Exception:
                     self.logger.log(f'label_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)
@@ -408,14 +408,14 @@ class LiGuard:
         
         # post processes
         self.post_processes = dict()
-        built_in_post_modules = __import__('liguard.algo.post', fromlist=['*']).__dict__
+        built_in_post_modules = import_module('liguard.algo.post', fromlist=['*']).__dict__
         for proc in cfg['proc']['post']:
             enabled = cfg['proc']['post'][proc]['enabled']
             if enabled:
                 try:
                     order = cfg['proc']['post'][proc]['order']
                     if proc in built_in_post_modules: process = built_in_post_modules[proc]
-                    else: process = __import__(proc, fromlist=['*']).__dict__[proc]
+                    else: process = import_module(proc, fromlist=['*']).__dict__[proc]
                     self.post_processes[order] = process
                 except Exception:
                     self.logger.log(f'post_processes creation failed for {proc}:\n{traceback.format_exc()}', Logger.CRITICAL)

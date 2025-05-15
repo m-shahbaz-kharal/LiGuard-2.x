@@ -1,5 +1,5 @@
 import os
-from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace, import_module
 
 img_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -47,7 +47,7 @@ class SensorIO:
         self.img_start_idx = cfg['data']['start']['camera']
         self.img_count = cfg['data']['count']
         # Import the handler for the sensor data
-        handler = __import__('liguard.img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
+        handler = import_module('liguard.img.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         self.handle = handler(self.cfg)
         self.reader = self.handle.reader
         self.idx = -1

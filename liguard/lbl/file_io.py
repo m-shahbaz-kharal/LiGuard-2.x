@@ -1,6 +1,6 @@
 import os
 import sys
-from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace, import_module
 import glob
 import time
 import threading
@@ -48,9 +48,9 @@ class FileIO:
         if self.lbl_type not in supported_label_types: raise NotImplementedError("Label type not supported. Supported file types: " + ', '.join(supported_label_types) + ".")
         # Import the handler for the label type
         if self.lbl_type in custom_supported_label_types:
-            h = __import__(f'label.handler_{self.lbl_type}', fromlist=['label_file_extension', 'Handler'])
+            h = import_module(f'label.handler_{self.lbl_type}', fromlist=['label_file_extension', 'Handler'])
         else:
-            h = __import__('liguard.lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
+            h = import_module('liguard.lbl.handler_'+self.lbl_type, fromlist=['label_file_extension', 'Handler'])
         self.lbl_ext, self.reader = h.label_file_extension, h.Handler
         self.clb_reader = calib_reader
         

@@ -1,6 +1,6 @@
 import os
 import sys
-from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace, import_module
 import glob
 import time
 import threading
@@ -48,9 +48,9 @@ class FileIO:
         if self.clb_type not in supported_calib_types: raise NotImplementedError("Calib type not supported. Supported file types: " + ', '.join(supported_calib_types) + ".")
         # Import the calibration handler
         if self.clb_type in custom_supported_calib_types:
-            h = __import__(f'calib.handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
+            h = import_module(f'calib.handler_{self.clb_type}', fromlist=['calib_file_extension', 'Handler'])
         else:
-            h = __import__('liguard.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
+            h = import_module('liguard.calib.handler_'+self.clb_type, fromlist=['calib_file_extension', 'Handler'])
         self.clb_ext, self.reader = h.calib_file_extension, h.Handler
         
         # read all the calibration files

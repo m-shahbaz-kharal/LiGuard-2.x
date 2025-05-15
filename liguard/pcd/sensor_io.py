@@ -1,5 +1,5 @@
 import os
-from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace
+from liguard.gui.gui_utils import resolve_for_application_root, resolve_for_default_workspace, import_module
 
 pcd_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -34,7 +34,7 @@ class SensorIO:
         self.pcd_count = cfg['data']['count']
         
         # Import the appropriate handler based on the manufacturer and model
-        handler = __import__('liguard.pcd.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
+        handler = import_module('liguard.pcd.handler_'+self.manufacturer+'_'+self.model, fromlist=['Handler']).Handler
         
         self.handle = handler(self.cfg)
         self.reader = self.handle.reader
