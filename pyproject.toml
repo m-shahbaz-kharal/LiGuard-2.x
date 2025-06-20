@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "LiGuard"
-version = "2.1.5.post2"
+version = "2.1.5.post3"
 description = "A research-purposed, GUI-powered, Python-based framework that allows easy development of dynamic point-cloud (and accompanying image) data processing pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
