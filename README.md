@@ -10,6 +10,7 @@
     <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/README.html#installation">Installation</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/README.html#usage">Usage</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/">Documentation</a> | <a href="https://m-shahbaz-kharal.github.io/LiGuard-2.x/README.html#contributing">Contributing</a> | <a href="https://github.com/m-shahbaz-kharal/LiGuard-2.x/blob/dev_2.x/LICENSE.txt">License</a>
 </p>
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.06751/status.svg)](https://doi.org/10.21105/joss.06751)
 ![PyPI Release Version](https://img.shields.io/pypi/v/liguard?label=release)
 ![Docs Build Status](https://img.shields.io/github/actions/workflow/status/m-shahbaz-kharal/LiGuard-2.x/build_and_deploy_sphinx_docs.yml?label=docs)
 ![Tests Run Status](https://img.shields.io/github/actions/workflow/status/m-shahbaz-kharal/LiGuard-2.x/run_tests.yml?label=tests)
