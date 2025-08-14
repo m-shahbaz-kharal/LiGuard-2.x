@@ -20,6 +20,7 @@ data: # dataset configurations
     camera:
         enabled: False # set True to read images from disk
         img_type: '.png' # most image types are supported
+        raw_format: 'rgb' # color format for raw images: 'rgb', 'bgr', or 'grayscale'
     calib:
         enabled: False # set True to read calibration files from disk
         clb_type: 'kitti' # can be kitti or sustechpoints
