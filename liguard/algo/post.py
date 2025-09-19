@@ -456,6 +456,77 @@ def GenerateVelocityFromTrajectory(data_dict: dict, cfg_dict: dict, logger: Logg
     if processed_frames_key not in data_dict: data_dict[processed_frames_key] = [data_dict['current_frame_index']]
     else: data_dict[processed_frames_key].append(data_dict['current_frame_index'])
 
+@algo_func(required_data=['current_label_list'])
+def GenerateProactiveAlerts(data_dict: dict, cfg_dict: dict, logger: Logger):
+    """
+    Proactive Alerts module.
+
+    Technical Workflow:
+    1. Extract past trajectories from KDTree tracking.
+    2. Predict future trajectories using PolyFit or CubicSpline.
+    3. Compare trajectories pairwise to detect spatio-temporal conflicts.
+    4. Compute severity metric based on minimum predicted distance.
+    5. Transmit conflict alerts via TCP socket in JSON format.
+
+    Args:
+        data_dict (dict): Contains trajectory data and actor labels.
+        cfg_dict (dict): Contains parameters (conflict thresholds, socket settings).
+        logger (Logger): GUI logger for messages.
+    """
+    #########################################################################################################################
+    algo_name = inspect.stack()[0].function
+    params = get_algo_params(cfg_dict, algo_type, algo_name, logger)
+
+    for key in GenerateProactiveAlerts.required_data:
+        if key not in data_dict:
+            logger.log(f'{key} not found in data_dict', Logger.ERROR)
+            return
+    #########################################################################################################################
+
+    import numpy as np
+    import socket, json
+
+    # extract future trajectories
+    future_trajs = []
+    for i, label_dict in enumerate(data_dict['current_label_list']):
+        if 'bbox_3d' not in label_dict: continue
+        if 'future_trajectory' not in label_dict['bbox_3d']: continue
+        future_trajs.append((i, label_dict['bbox_3d']['future_trajectory']))
+
+    alerts = []
+    for idx_a, traj_a in future_trajs:
+        for idx_b, traj_b in future_trajs:
+            if idx_a >= idx_b: continue
+            min_len = min(len(traj_a), len(traj_b))
+            distances = np.linalg.norm(traj_a[:min_len] - traj_b[:min_len], axis=1)
+            min_dist = float(np.min(distances))
+
+            if min_dist < params['conflict_distance_threshold']:
+                conflict_step = int(np.argmin(distances))
+                conflict_time = conflict_step * params['t_delta']
+                conflict_location = traj_a[conflict_step].tolist()
+                severity = max(0.0, params['conflict_distance_threshold'] - min_dist)
+
+                alerts.append({
+                    'actor_a': int(idx_a),
+                    'actor_b': int(idx_b),
+                    'time': conflict_time,
+                    'location': conflict_location,
+                    'severity': severity
+                })
+
+    # TCP transmission
+    if alerts:
+        try:
+            host, port = params['socket_host'], params['socket_port']
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((host, port))
+                for alert in alerts:
+                    s.sendall((json.dumps(alert) + '\n').encode('utf-8'))
+            logger.log(f'{len(alerts)} proactive alerts sent via TCP', Logger.INFO)
+        except Exception as e:
+            logger.log(f'Error sending proactive alerts: {e}', Logger.ERROR)
+
 @algo_func(required_data=['current_point_cloud_numpy', 'current_label_list'])
 def create_per_object_pcdet_dataset(data_dict: dict, cfg_dict: dict, logger: Logger):
     """

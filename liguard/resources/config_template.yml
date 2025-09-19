@@ -212,6 +212,13 @@ proc: # liguard processing configurations
             enabled: False # set True to generate velocity from trajectory
             order: 4 # order of process - lower executes first
             t_delta: 0.1 # time delta between two points in trajectory (ms) = 1/fps
+        GenerateProactiveAlerts:
+            enabled: False
+            order: 5
+            conflict_distance_threshold: 0.1
+            t_delta: 0.1
+            socket_host: 192.168.1.2
+            socket_port: 5000
         create_per_object_pcdet_dataset: # create per object dataset in pcdet format
             enabled: False # set True to enable
             order: 1 # order of process - lower executes first
